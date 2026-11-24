@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["impact", "scope", "category", "reason"],
+  "properties": {
+    "impact": { "type": "integer", "enum": [0, 1, 2, 3] },
+    "scope": { "type": "integer", "enum": [0, 1, 2, 3] },
+    "category": {
+      "type": "string",
+      "enum": ["stall", "manual", "misoperation", "monitoring", "throughput", "future", "cleanup", "other"]
+    },
+    "reason": { "type": "string" }
+  }
+}

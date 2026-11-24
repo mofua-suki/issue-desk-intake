@@ -1,0 +1,10 @@
+[Unit]
+Description=公開候補を毎日準備する
+
+[Timer]
+OnCalendar=*-*-* 23:00:00 Asia/Tokyo
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

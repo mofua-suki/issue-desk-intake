@@ -1,0 +1,557 @@
+{
+  'paths':
+    {
+      '/api/intake/force-handoff':
+        {
+          'post':
+            {
+              'operationId': 'post_api_intake_force_handoff',
+              'summary': '利用者依頼の強制入れ替え要求を保存する',
+              'description': '運用の代行を許したPC別トークン専用。画面セッション・一時キーは拒否。利用者の発言原文statement（8〜8000文字、meaningfulApprovalStatement）と、利用者がチャットで指示した日時instructionAt（UTCオフセット付きISO 8601（秒まで。例 2026-11-11T11:58:00+09:00）、未来でなく7日以内。欠ける・不正は400）と任意の40桁小文字SHA revision。発行から1800秒の1回限りの要求を保存する。この段階は要求受付のみで、NASによる消費・強制交代、CLI・運用Skillは後続。反映までは実操作に使わない。現在のNAS更新動作は変えない。成功は保存完了で実行完了ではない。発言・指示の日時・トークン名・時刻はintake.logへ資格情報なしで記録する。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required': ['statement', 'instructionAt'],
+                              'additionalProperties': false,
+                              'properties':
+                                {
+                                  'statement': { 'type': 'string', 'minLength': 8, 'maxLength': 8000 },
+                                  'instructionAt':
+                                    {
+                                      'type': 'string',
+                                      'description': '利用者がチャットで指示した日時（UTCオフセット付きISO 8601（秒まで。例 2026-11-11T11:58:00+09:00）、未来でなく7日以内）。',
+                                    },
+                                  'revision': { 'type': 'string', 'pattern': '^[a-f0-9]{40}$' },
+                                },
+                            },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '要求を保存。期限はUnix秒。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'id': { 'type': 'string' },
+                                      'issuedAt': { 'type': 'integer' },
+                                      'expiresAt': { 'type': 'integer' },
+                                      'revision': { 'type': ['string', 'null'] },
+                                    },
+                                  'required': ['id', 'issuedAt', 'expiresAt', 'revision'],
+                                  'additionalProperties': false,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '502': { 'description': '保存または監査の失敗。自動再送しない。' },
+                },
+            },
+        },
+      '/api/v1/hosts/{host}/image-result':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_hosts_host_image_result',
+              'summary': 'イメージ更新の結果を送る',
+              'description': '自分のPCだけ。desiredはDB行またはnull。deploy-nextのjobは{id,repo,commit}またはnull、未報告のrunningを再返却。image-resultのtagはsha12と任意の接尾辞、digestはsha256:64桁。失敗タグは成功の再報告で解除しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'host': {}, 'status': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'tag': { 'type': 'string' },
+                                  'flavor': { 'type': 'string', 'enum': ['', '-python'] },
+                                  'digest': { 'type': 'string' },
+                                  'status': { 'type': 'string', 'enum': ['success', 'failed'] },
+                                  'stage': { 'type': 'string', 'enum': ['recover', 'docker', 'client', 'swap-finish', 'acquire', 'swap-start', 'apps', 'complete'] },
+                                  'reason': { 'type': 'string', 'description': 'NULを含まないUTF-8で200バイト以下。秘匿後も200バイト以下で保存。表示時は別途上限を適用する。' },
+                                  'detail': { 'type': 'string', 'description': 'NULを含まないUTF-8で200バイト以下。秘匿後も200バイト以下で保存。表示時は別途上限を適用する。' },
+                                  'selfCheckFailed': { 'type': 'array', 'maxItems': 40, 'items': { 'type': 'string', 'description': 'NULを含まないUTF-8で200バイト以下。秘匿後も200バイト以下で保存。表示時は別途上限を適用する。' } },
+                                  'fromTag': { 'type': 'string', 'pattern': '^[0-9a-f]{12}(-[a-z0-9-]+)?$' },
+                                  'startedAt': { 'type': 'string', 'format': 'date-time', 'description': 'RFC3339日時。表記上とUTC換算後の年は0001〜9999。' },
+                                },
+                              'additionalProperties': false,
+                              'required': ['tag', 'flavor', 'digest', 'status'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/hosts/{host}/live-check-next':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_hosts_host_live_check_next',
+              'summary': '実地確認を取得',
+              'description': 'idh_専用、自分のホストだけ。未報告runningを再送。形・安全性が外れた結果は元の値を保存せず不合格。同じ結果は再送可、他ホスト・古い世代・異なる再送は409。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '確認ジョブまたは報告の受領。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'job': { 'type': ['object', 'null'] } },
+                                  'additionalProperties': false,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+            },
+        },
+      '/api/v1/hosts/{host}/live-check-result':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_hosts_host_live_check_result',
+              'summary': '実地確認の結果を報告',
+              'description': 'idh_専用、自分のホストだけ。未報告runningを再送。形・安全性が外れた結果は元の値を保存せず不合格。同じ結果は再送可、他ホスト・古い世代・異なる再送は409。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '確認ジョブまたは報告の受領。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'ok': { 'type': 'boolean' } },
+                                  'additionalProperties': false,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'additionalProperties': false,
+                              'required': ['id', 'result'],
+                              'properties':
+                                {
+                                  'id': { 'type': 'integer', 'minimum': 1 },
+                                  'result':
+                                    {
+                                      'type': 'object',
+                                      'additionalProperties': false,
+                                      'required': ['pass', 'summary', 'metrics', 'failures'],
+                                      'properties':
+                                        {
+                                          'pass': { 'type': 'boolean' },
+                                          'summary': { 'type': 'string', 'minLength': 1, 'maxLength': 500 },
+                                          'metrics':
+                                            {
+                                              'type': 'object',
+                                              'maxProperties': 100,
+                                              'propertyNames': { 'pattern': '^[A-Za-z][A-Za-z0-9_]{0,63}$' },
+                                              'additionalProperties': { 'type': 'number' },
+                                            },
+                                          'failures':
+                                            {
+                                              'type': 'array',
+                                              'maxItems': 20,
+                                              'items':
+                                                {
+                                                  'type': 'object',
+                                                  'additionalProperties': false,
+                                                  'required': ['target', 'reason'],
+                                                  'properties':
+                                                    {
+                                                      'target': { 'type': 'string', 'minLength': 1, 'maxLength': 200 },
+                                                      'reason': { 'type': 'string', 'minLength': 1, 'maxLength': 500 },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/hosts/{host}/deploy-next':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_hosts_host_deploy_next',
+              'summary': 'アプリ配備を1件受け取る',
+              'description': '自分のPCだけ。desiredはDB行またはnull。deploy-nextのjobは{id,repo,commit}またはnull、未報告のrunningを再返却。image-resultのtagはsha12と任意の接尾辞、digestはsha256:64桁。失敗タグは成功の再報告で解除しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema': { 'type': 'object', 'properties': { 'job': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/v1/hosts/{host}/deploy-result':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_hosts_host_deploy_result',
+              'summary': 'アプリ配備の結果を送る',
+              'description': '自分のPCだけ。desiredはDB行またはnull。deploy-nextのjobは{id,repo,commit}またはnull、未報告のrunningを再返却。image-resultのtagはsha12と任意の接尾辞、digestはsha256:64桁。失敗タグは成功の再報告で解除しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'id': {}, 'status': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': ['string', 'integer'] },
+                                  'status': { 'type': 'string', 'enum': ['deployed', 'rolled_back', 'failed'] },
+                                  'reason':
+                                    {
+                                      'type': 'string',
+                                      'enum':
+                                        [
+                                          'healthy',
+                                          'rollback_healthy',
+                                          'rollback_failed',
+                                          'not_allowed',
+                                          'preflight_failed',
+                                          'interrupted',
+                                        ],
+                                    },
+                                  'previous': { 'type': 'string', 'pattern': '^[a-f0-9]{40}$' },
+                                },
+                              'additionalProperties': false,
+                              'required': ['id', 'status', 'reason'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/hosts/{host}/reader-next':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_hosts_host_reader_next',
+              'summary': '読む側の配備済みコミットを取得',
+              'description': 'idh_専用、自分のPCだけ。readerHostsのリポジトリごとに最新の配備IDでstatus=deployedのコミットを返す。queued・running・rolled_back・failedは除外。担当外のPCはjobs: []。パス・コマンド・URLは返さない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '一覧または結果の受領。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'jobs':
+                                        {
+                                          'type': 'array',
+                                          'items':
+                                            {
+                                              'type': 'object',
+                                              'properties':
+                                                {
+                                                  'repo': { 'type': 'string' },
+                                                  'commit': { 'type': 'string', 'pattern': '^[a-fA-F0-9]{40}$' },
+                                                },
+                                              'required': ['repo', 'commit'],
+                                              'additionalProperties': false,
+                                            },
+                                        },
+                                    },
+                                  'required': ['jobs'],
+                                  'additionalProperties': false,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+            },
+        },
+      '/api/v1/hosts/{host}/reader-result':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_hosts_host_reader_result',
+              'summary': '読む側の結果を保存',
+              'description': 'idh_専用、自分のPCだけ。statusごとの固定reasonと40桁の16進commit・previousだけを受け付ける。余分な項目・不正な値は400。readerHostsの担当外のrepo、またはそのrepoでdeployedの記録がないcommitは409。拒否時は保存しない。同じ結果は再送可、host・repo単位で最新結果を上書きする。応答はhost・repo・statusだけで本文を返さない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '一覧または結果の受領。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'host': { 'type': 'string' },
+                                      'repo': { 'type': 'string' },
+                                      'status':
+                                        { 'type': 'string', 'enum': ['synced', 'skipped', 'rolled_back', 'failed'] },
+                                    },
+                                  'required': ['host', 'repo', 'status'],
+                                  'additionalProperties': false,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'repo': { 'type': 'string', 'pattern': "^[\\w.-]+/[\\w.-]+$" },
+                                  'commit': { 'type': 'string', 'pattern': '^[a-fA-F0-9]{40}$' },
+                                  'status':
+                                    { 'type': 'string', 'enum': ['synced', 'skipped', 'rolled_back', 'failed'] },
+                                  'reason':
+                                    {
+                                      'type': 'string',
+                                      'enum':
+                                        [
+                                          'healthy',
+                                          'dirty',
+                                          'detached',
+                                          'diverged',
+                                          'ahead',
+                                          'not_on_default',
+                                          'not_allowed',
+                                          'rollback_healthy',
+                                          'rollback_check_failed',
+                                          'rollback_failed',
+                                          'preflight_failed',
+                                          'interrupted',
+                                        ],
+                                    },
+                                  'previous': { 'type': 'string', 'pattern': '^[a-fA-F0-9]{40}$' },
+                                },
+                              'required': ['repo', 'commit', 'status', 'reason'],
+                              'additionalProperties': false,
+                              'oneOf':
+                                [
+                                  {
+                                    'properties':
+                                      { 'status': { 'const': 'synced' }, 'reason': { 'enum': ['healthy'] } },
+                                  },
+                                  {
+                                    'properties':
+                                      {
+                                        'status': { 'const': 'skipped' },
+                                        'reason':
+                                          {
+                                            'enum':
+                                              [
+                                                'dirty',
+                                                'detached',
+                                                'diverged',
+                                                'ahead',
+                                                'not_on_default',
+                                                'not_allowed',
+                                              ],
+                                          },
+                                      },
+                                  },
+                                  {
+                                    'properties':
+                                      {
+                                        'status': { 'const': 'rolled_back' },
+                                        'reason': { 'enum': ['rollback_healthy', 'rollback_check_failed'] },
+                                      },
+                                  },
+                                  {
+                                    'properties':
+                                      {
+                                        'status': { 'const': 'failed' },
+                                        'reason': { 'enum': ['rollback_failed', 'preflight_failed', 'interrupted'] },
+                                      },
+                                  },
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

@@ -1,0 +1,617 @@
+{
+  'paths':
+    {
+      '/api/v1/merge-turns/{owner}/{name}/acquire':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_merge_turns_owner_name_acquire',
+              'summary': 'マージの番をacquire',
+              'x-idempotency': '有効な番を同じ持ち主が取り直してもepoch・期限は変えない。',
+              'description': 'nativeTestHost設定repoのacquire/renewはnativeTestGate={version:1,host:検証担当ID,configurationVersion:config.nativeTestVersions[host]}が必須で、不足・旧設定は409 NATIVE_TEST_GATE_REQUIRED。releaseは宣言不要。jobIdまたはrequestIdをちょうど1つ指定。jobIdならleaseのepoch必須。renew/releaseはturnEpoch必須。送り手PCと持ち主、lease/番の世代が違えば409(code=lease_lost/turn_lost)。acquireは競合時granted=falseとholder、承認待ち時granted=falseとreason、取得時granted=trueとturn={epoch,expiresAt}を返す。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'granted': { 'type': 'boolean' },
+                                      'reason': { 'type': 'string', 'description': '完了計画の承認待ちの理由。' },
+                                      'turn':
+                                        {
+                                          'type': 'object',
+                                          'properties': { 'epoch': {}, 'expiresAt': {} },
+                                          'additionalProperties': true,
+                                        },
+                                      'holder':
+                                        {
+                                          'type': 'object',
+                                          'properties': { 'host': {}, 'jobId': {}, 'requestId': {}, 'expiresAt': {} },
+                                          'additionalProperties': true,
+                                        },
+                                    },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters':
+                [
+                  { 'name': 'owner', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  { 'name': 'name', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'host': { 'type': 'string' },
+                                  'jobId': { 'type': 'integer' },
+                                  'requestId': { 'type': 'string' },
+                                  'epoch': { 'type': 'integer' },
+                                  'turnEpoch': { 'type': 'integer', 'minimum': 1 },
+                                  'nativeTestGate': { 'type': 'object', 'properties': { 'version': { 'type': 'integer', 'const': 1 }, 'host': { 'type': 'string' }, 'configurationVersion': { 'type': 'string', 'pattern': '^[a-f0-9]{16}$' } }, 'required': ['version', 'host', 'configurationVersion'], 'additionalProperties': false },
+                                },
+                              'additionalProperties': false,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/merge-turns/{owner}/{name}/renew':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_merge_turns_owner_name_renew',
+              'summary': 'マージの番をrenew',
+              'description': 'nativeTestHost設定repoのacquire/renewはnativeTestGate={version:1,host:検証担当ID,configurationVersion:config.nativeTestVersions[host]}が必須で、不足・旧設定は409 NATIVE_TEST_GATE_REQUIRED。releaseは宣言不要。jobIdまたはrequestIdをちょうど1つ指定。jobIdならleaseのepoch必須。renew/releaseはturnEpoch必須。送り手PCと持ち主、lease/番の世代が違えば409(code=lease_lost/turn_lost)。acquireは競合時granted=falseとholder、承認待ち時granted=falseとreason、取得時granted=trueとturn={epoch,expiresAt}を返す。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'properties': { 'turn': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters':
+                [
+                  { 'name': 'owner', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  { 'name': 'name', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'host': { 'type': 'string' },
+                                  'jobId': { 'type': 'integer' },
+                                  'requestId': { 'type': 'string' },
+                                  'epoch': { 'type': 'integer' },
+                                  'turnEpoch': { 'type': 'integer', 'minimum': 1 },
+                                  'nativeTestGate': { 'type': 'object', 'properties': { 'version': { 'type': 'integer', 'const': 1 }, 'host': { 'type': 'string' }, 'configurationVersion': { 'type': 'string', 'pattern': '^[a-f0-9]{16}$' } }, 'required': ['version', 'host', 'configurationVersion'], 'additionalProperties': false },
+                                },
+                              'additionalProperties': false,
+                              'required': ['turnEpoch'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/merge-turns/{owner}/{name}/release':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_merge_turns_owner_name_release',
+              'summary': 'マージの番をrelease',
+              'description': 'nativeTestHost設定repoのacquire/renewはnativeTestGate={version:1,host:検証担当ID,configurationVersion:config.nativeTestVersions[host]}が必須で、不足・旧設定は409 NATIVE_TEST_GATE_REQUIRED。releaseは宣言不要。jobIdまたはrequestIdをちょうど1つ指定。jobIdならleaseのepoch必須。renew/releaseはturnEpoch必須。送り手PCと持ち主、lease/番の世代が違えば409(code=lease_lost/turn_lost)。acquireは競合時granted=falseとholder、承認待ち時granted=falseとreason、取得時granted=trueとturn={epoch,expiresAt}を返す。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'released': { 'type': 'boolean' } },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters':
+                [
+                  { 'name': 'owner', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  { 'name': 'name', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'host': { 'type': 'string' },
+                                  'jobId': { 'type': 'integer' },
+                                  'requestId': { 'type': 'string' },
+                                  'epoch': { 'type': 'integer' },
+                                  'turnEpoch': { 'type': 'integer', 'minimum': 1 },
+                                  'nativeTestGate': { 'type': 'object', 'properties': { 'version': { 'type': 'integer', 'const': 1 }, 'host': { 'type': 'string' }, 'configurationVersion': { 'type': 'string', 'pattern': '^[a-f0-9]{16}$' } }, 'required': ['version', 'host', 'configurationVersion'], 'additionalProperties': false },
+                                },
+                              'additionalProperties': false,
+                              'required': ['turnEpoch'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/requests':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_requests',
+              'summary': '監視へのPR作成・マージ・クローズ依頼',
+              'description': '同じIDの同じ依頼は200、新規は201、別内容は409。pr_createはbranch/title/body、またはbranchなしのtitle/body/patch/base/patchSha256。パッチはUTF-8で200,000 bytes以内、空・NUL・GIT binary patch不可。baseは40桁SHA、patchSha256はUTF-8のSHA256一致が必要（不備400）。repositoriesがある構成で許可外のパッチ依頼は403、未設定は従来どおり受理。pr_createのapproval・instructionAtは事前承認（PR番号が決まる前の利用者の承認）で、merge_manualのapprovalRequestにその作成依頼のIDを指定すると、受付が照合して承認をマージ依頼へ写す。approvalDelegatedは送り手の値を捨て、運用代行を許したトークンの承認（pr_create・merge_manual）にだけ受付が付ける。pr_close は受付が閉じられなかったPRを監視へ依頼する（payload: number=PR番号、issue=閉じたIssue番号）。native_test は実装担当がそのrepoのnativeTestHostにだけ依頼する。payloadはhost・head・base・treeの4項目（各SHAは40桁）。test-onlyのPCは実装/PR操作を引き取れず、自分のtestRepositoriesにある自分宛てのnative_testだけを引き取る。full_test は受付内部だけが登録し、ホームの監視が空の payload でmainの全テストを実行する。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'properties': { 'request': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '201':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'properties': { 'request': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string', 'pattern': '^[0-9]+-[a-f0-9]{8}$' },
+                                  'kind':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['pr_create', 'merge_manual', 'full_test', 'pr_close', 'native_test'],
+                                    },
+                                  'repo': { 'type': 'string' },
+                                  'payload':
+                                    {
+                                      'oneOf':
+                                        [
+                                          {
+                                            'type': 'object',
+                                            'properties':
+                                              {
+                                                'branch': { 'type': 'string' },
+                                                'title': { 'type': 'string' },
+                                                'body': { 'type': 'string' },
+                                                'approval':
+                                                  {
+                                                    'type': 'string',
+                                                    'description': 'pr_create: 事前承認。PR番号が決まる前の利用者の承認発言の原文（500文字以内。記号の回答は見せた質問文と回答をまとめた文）。運用代行を許したトークンから送ったときだけ受付がapprovalDelegated: trueを付けて保存し、merge_manualのapprovalRequestから使う。',
+                                                  },
+                                                'instructionAt':
+                                                  {
+                                                    'type': 'string',
+                                                    'description': 'pr_create: approvalがあるとき必須。利用者がチャットで指示した日時（UTCオフセット付きISO 8601（秒まで。例 2026-11-11T11:58:00+09:00）、未来でなく7日以内）。approvalの無い指定は400。',
+                                                  },
+                                              },
+                                            'additionalProperties': true,
+                                            'required': ['branch', 'title', 'body'],
+                                          },
+                                          {
+                                            'type': 'object',
+                                            'properties':
+                                              {
+                                                'title': { 'type': 'string' },
+                                                'body': { 'type': 'string' },
+                                                'patch':
+                                                  {
+                                                    'type': 'string',
+                                                    'description': '空でないUTF-8・200,000 bytes以内。NULとGIT binary patch不可。',
+                                                  },
+                                                'base': { 'type': 'string', 'pattern': '^[0-9a-f]{40}$' },
+                                                'patchSha256': { 'type': 'string', 'pattern': '^[0-9a-f]{64}$' },
+                                                'approval':
+                                                  {
+                                                    'type': 'string',
+                                                    'description': 'pr_create: 事前承認。PR番号が決まる前の利用者の承認発言の原文（500文字以内。記号の回答は見せた質問文と回答をまとめた文）。運用代行を許したトークンから送ったときだけ受付がapprovalDelegated: trueを付けて保存し、merge_manualのapprovalRequestから使う。',
+                                                  },
+                                                'instructionAt':
+                                                  {
+                                                    'type': 'string',
+                                                    'description': 'pr_create: approvalがあるとき必須。利用者がチャットで指示した日時（UTCオフセット付きISO 8601（秒まで。例 2026-11-11T11:58:00+09:00）、未来でなく7日以内）。approvalの無い指定は400。',
+                                                  },
+                                              },
+                                            'additionalProperties': false,
+                                            'required': ['title', 'body', 'patch', 'base', 'patchSha256'],
+                                          },
+                                          {
+                                            'type': 'object',
+                                            'properties':
+                                              {
+                                                'number': { 'type': 'integer' },
+                                                'head': { 'type': 'string', 'pattern': '^[0-9a-f]{40}$' },
+                                                'approval':
+                                                  {
+                                                    'type': 'string',
+                                                    'description': 'merge_manual: 利用者の承認発言の原文（500文字以内。記号の回答は見せた質問文と回答をまとめた文）。',
+                                                  },
+                                                'instructionAt':
+                                                  {
+                                                    'type': 'string',
+                                                    'description': 'merge_manual: approvalがあるとき必須。利用者がチャットで指示した日時（UTCオフセット付きISO 8601（秒まで。例 2026-11-11T11:58:00+09:00）、未来でなく7日以内）。approvalの無い指定は400。',
+                                                  },
+                                                'approvalRequest':
+                                                  {
+                                                    'type': 'string',
+                                                    'pattern': '^[0-9]+-[a-f0-9]{8}$',
+                                                    'description': 'merge_manual: 事前承認を付けた作成依頼（pr_create）のID。approvalと同時の指定は400。受付は、その依頼が同じrepo・同じ送り手のpr_createで、status=done・result.status=created・result.number/headがこの依頼のnumber/headと同じで、運用代行トークンの承認（approval・instructionAt・approvalDelegated）を持つことを確かめ、合えばapproval・instructionAt・approvalDelegated: trueを写して保存する。合わなければ400。',
+                                                  },
+                                              },
+                                            'additionalProperties': true,
+                                            'required': ['number', 'head'],
+                                          },
+                                          {
+                                            'type': 'object',
+                                            'properties':
+                                              {
+                                                'number': { 'type': 'integer', 'minimum': 1 },
+                                                'issue': { 'type': 'integer', 'minimum': 1 },
+                                              },
+                                            'additionalProperties': false,
+                                            'required': ['number', 'issue'],
+                                          },
+                                        ],
+                                    },
+                                },
+                              'additionalProperties': false,
+                              'required': ['id', 'kind', 'repo', 'payload'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/requests/next':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_requests_next',
+              'summary': '監視への依頼を1件引き取る',
+              'description': 'kind必須、repoは繰返し指定。担当表の範囲の依頼だけ。requestはnullの場合がある。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'properties': { 'request': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'kind',
+                    'in': 'query',
+                    'schema': { 'type': 'string', 'enum': ['pr_create', 'merge_manual', 'full_test', 'pr_close', 'native_test'] },
+                    'required': true,
+                  },
+                  {
+                    'name': 'repo',
+                    'in': 'query',
+                    'schema': { 'type': 'array', 'items': { 'type': 'string' }, 'maxItems': 200 },
+                    'style': 'form',
+                    'explode': true,
+                  },
+                ],
+            },
+        },
+      '/api/v1/requests/{id}':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_requests_id',
+              'summary': '監視への依頼を読む',
+              'description': '処理と状態による可否は参照先の実装を正本とする。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'properties': { 'request': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/v1/requests/{id}/result':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_requests_id_result',
+              'summary': '監視への依頼をresult',
+              'description': 'native_testの結果はstatus=passed/failed/unrunnable/interrupted、head・base・tree（依頼と一致する40桁SHA）、message（3000文字以内）が必須。送り手と対象PC以外の参照・操作、担当変更後の結果、確定済み結果の変更は拒否する。担当変更後も引取済み要求のreleaseと未引取要求のcancelは可能。result/releaseは引き取った監視だけ。cancelは送り手がqueuedだけ取消。result.statusはpr_createならcreated/refused/failed、merge_manualならmerged/refused/failed、full_testならpassed/failed/unrunnable/interrupted、pr_closeならclosed/skipped/refused/failed。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'properties': { 'request': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'result':
+                                    {
+                                      'type': 'object',
+                                      'properties':
+                                        {
+                                          'status':
+                                            {
+                                              'type': 'string',
+                                              'enum':
+                                                [
+                                                  'created',
+                                                  'merged',
+                                                  'refused',
+                                                  'failed',
+                                                  'passed',
+                                                  'unrunnable',
+                                                  'interrupted',
+                                                ],
+                                            },
+                                        },
+                                      'additionalProperties': true,
+                                      'required': ['status'],
+                                    },
+                                },
+                              'additionalProperties': true,
+                              'required': ['result'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/requests/{id}/release':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_requests_id_release',
+              'summary': '監視への依頼をrelease',
+              'description': 'native_testの結果はstatus=passed/failed/unrunnable/interrupted、head・base・tree（依頼と一致する40桁SHA）、message（3000文字以内）が必須。送り手と対象PC以外の参照・操作、担当変更後の結果、確定済み結果の変更は拒否する。担当変更後も引取済み要求のreleaseと未引取要求のcancelは可能。result/releaseは引き取った監視だけ。cancelは送り手がqueuedだけ取消。result.statusはpr_createならcreated/refused/failed、merge_manualならmerged/refused/failed、full_testならpassed/failed/unrunnable/interrupted、pr_closeならclosed/skipped/refused/failed。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'properties': { 'request': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/v1/requests/{id}/cancel':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_requests_id_cancel',
+              'summary': '監視への依頼をcancel',
+              'description': 'native_testの結果はstatus=passed/failed/unrunnable/interrupted、head・base・tree（依頼と一致する40桁SHA）、message（3000文字以内）が必須。送り手と対象PC以外の参照・操作、担当変更後の結果、確定済み結果の変更は拒否する。担当変更後も引取済み要求のreleaseと未引取要求のcancelは可能。result/releaseは引き取った監視だけ。cancelは送り手がqueuedだけ取消。result.statusはpr_createならcreated/refused/failed、merge_manualならmerged/refused/failed、full_testならpassed/failed/unrunnable/interrupted、pr_closeならclosed/skipped/refused/failed。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'cancelled': {}, 'request': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+    },
+}

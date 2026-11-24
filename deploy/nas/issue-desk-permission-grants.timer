@@ -1,0 +1,11 @@
+[Unit]
+Description=issue-desk（NAS）の許可の付与の反映を1分ごとに実行する
+
+[Timer]
+# 起動1分後に一度、その後は1分ごと。期限切れ・取り消しの規則は次の回で外れる。
+OnBootSec=1min
+OnUnitActiveSec=1min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

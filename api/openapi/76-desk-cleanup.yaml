@@ -1,0 +1,155 @@
+{
+  "paths": {
+    "/api/desk-cleanup/inspect": {
+      "post": {
+        "summary": "整理前の対象を照合する",
+        "security": [
+          {
+            "screenSession": [],
+            "csrfToken": []
+          },
+          {
+            "pcToken": []
+          }
+        ],
+        "x-issue-desk-delegate": true,
+        "responses": {
+          "200": {
+            "description": "対象または終了記録"
+          },
+          "403": {
+            "description": "運用代行の許可なしまたは一時キー"
+          },
+          "409": {
+            "description": "対象変更・処理中・関連Issueが未終了"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "target"
+                ],
+                "properties": {
+                  "target": {
+                    "type": "string"
+                  },
+                  "fingerprint": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "userStatement": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "deskCleanupinspect",
+        "description": "利用者が明示した対象の終了。相談は記録を保持し起票結果を照合する。通知は内容単位の確認済みで原因修正とは区別する。対象変更や処理中は409。認証済み画面または運用代行トークンが必要で一時キーは403。"
+      }
+    },
+    "/api/desk-cleanup/close": {
+      "post": {
+        "summary": "明示された相談・通知・Issueを終了する",
+        "security": [
+          {
+            "screenSession": [],
+            "csrfToken": []
+          },
+          {
+            "pcToken": []
+          }
+        ],
+        "x-issue-desk-delegate": true,
+        "responses": {
+          "200": {
+            "description": "対象または終了記録"
+          },
+          "403": {
+            "description": "運用代行の許可なしまたは一時キー"
+          },
+          "409": {
+            "description": "対象変更・処理中・関連Issueが未終了"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "target",
+                  "fingerprint",
+                  "reason",
+                  "userStatement"
+                ],
+                "properties": {
+                  "target": {
+                    "type": "string"
+                  },
+                  "fingerprint": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "userStatement": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "deskCleanupclose",
+        "description": "利用者が明示した対象の終了。相談は記録を保持し起票結果を照合する。通知は内容単位の確認済みで原因修正とは区別する。対象変更や処理中は409。認証済み画面または運用代行トークンが必要で一時キーは403。"
+      }
+    },
+    "/api/desk-cleanup/archive": {
+      "get": {
+        "summary": "明示終了の記録を読む",
+        "security": [
+          {
+            "screenSession": [],
+            "csrfToken": []
+          },
+          {
+            "pcToken": []
+          }
+        ],
+        "x-issue-desk-delegate": true,
+        "responses": {
+          "200": {
+            "description": "対象または終了記録"
+          },
+          "403": {
+            "description": "運用代行の許可なしまたは一時キー"
+          },
+          "409": {
+            "description": "対象変更・処理中・関連Issueが未終了"
+          }
+        },
+        "operationId": "deskCleanuparchive",
+        "description": "利用者が明示した対象の終了。相談は記録を保持し起票結果を照合する。通知は内容単位の確認済みで原因修正とは区別する。対象変更や処理中は409。認証済み画面または運用代行トークンが必要で一時キーは403。 対象種別に応じた終了記録の内容が異なるため、共通の固定応答型は定義しない。"
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "dispatch": {
+    "leaseMinutes": 15,
+    "preferenceSeconds": 30,
+    "conflictRestartLines": 400,
+    "loadLimit": {
+      "ratio": 1,
+      "cpuPercent": 90,
+      "minutes": 10
+    }
+  },
+  "reviewNotes": {
+    "minOccurrences": 2,
+    "staleDays": 60,
+    "maxBytes": 4000
+  },
+  "usageReviewHost": null,
+  "retiredHosts": [],
+  "intakeSplit": {
+    "lines": 300,
+    "files": 10,
+    "scopePaths": 12,
+    "acceptance": 10,
+    "riskLines": 500,
+    "riskFiles": 16
+  },
+  "gpu": {
+    "maxGpuPercent": 20,
+    "minFreeVramMB": 4096,
+    "repositories": []
+  },
+  "reviewRoundLimit": 2,
+  "implementationRunLimit": 4,
+  "implementationUsageLimit": 8000000,
+  "sizeFixRounds": 2,
+  "prSizeFixRounds": 1,
+  "fixedTestRepairRounds": 1
+}

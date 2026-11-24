@@ -1,0 +1,976 @@
+{
+  'paths':
+    {
+      '/api/session':
+        {
+          'get':
+            {
+              'operationId': 'get_api_session',
+              'summary': '画面の接続: session',
+              'description': 'Authorizationは付けない。POSTは同一Origin必須。desktopはローカルの有効な起動キー、pairは10分以内の1回限りのコード（10分8試行）。sessionは{authenticated,local,csrf?,publicUrl}、接続成功は{authenticated:true,csrf}。 認証方式と設定により返すセッション情報が異なるため、固定応答型は定義しない。',
+              'x-issue-desk-delegate': false,
+              'security': [],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/desktop':
+        {
+          'post':
+            {
+              'operationId': 'post_api_desktop',
+              'summary': '画面の接続: desktop',
+              'description': 'Authorizationは付けない。POSTは同一Origin必須。desktopはローカルの有効な起動キー、pairは10分以内の1回限りのコード（10分8試行）。sessionは{authenticated,local,csrf?,publicUrl}、接続成功は{authenticated:true,csrf}。',
+              'x-issue-desk-delegate': false,
+              'security': [],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties': { 'key': { 'type': 'string' } },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+              'parameters': [{ 'name': 'Origin', 'in': 'header', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/pair':
+        {
+          'post':
+            {
+              'operationId': 'post_api_pair',
+              'summary': '画面の接続: pair',
+              'description': 'Authorizationは付けない。POSTは同一Origin必須。desktopはローカルの有効な起動キー、pairは10分以内の1回限りのコード（10分8試行）。sessionは{authenticated,local,csrf?,publicUrl}、接続成功は{authenticated:true,csrf}。',
+              'x-issue-desk-delegate': false,
+              'security': [],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '429': { '$ref': '#/components/responses/Error429' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties': { 'code': { 'type': 'string' } },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+              'parameters': [{ 'name': 'Origin', 'in': 'header', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/pair-code':
+        {
+          'post':
+            {
+              'operationId': 'post_api_pair_code',
+              'summary': '同じPCで接続コードを発行',
+              'description': '同じPCのみ。10分有効。コードやcsrfをログに出さない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'code': {}, 'expires': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+            },
+        },
+      '/api/tokens':
+        {
+          'get':
+            {
+              'operationId': 'get_api_tokens',
+              'summary': 'PCトークンの許可の一覧',
+              'description': '平文もハッシュも返さない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'array', 'items': { 'type': 'object', 'additionalProperties': true } },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/tokens/{id}/delegate':
+        {
+          'post':
+            {
+              'operationId': 'post_api_tokens_id_delegate',
+              'summary': '運用代行の許可を付け外す',
+              'description': '処理と状態による可否は参照先の実装を正本とする。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties': { 'delegate': { 'type': 'boolean' } },
+                              'additionalProperties': true,
+                              'required': ['delegate'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/decisions':
+        {
+          'get':
+            {
+              'operationId': 'get_api_decisions',
+              'summary': '利用者の決定の記録',
+              'description': '一時キーは一覧/全件の書出しのみ。PC別トークンは不可。削除済みを除き登録順の逆で返す。project指定時は共通の記録も含む。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'required': ['items', 'total', 'page', 'limit', 'hasMore'], 'properties': { 'items': { 'type': 'array', 'items': { 'type': 'object', 'additionalProperties': true } }, 'total': { 'type': 'integer', 'minimum': 0 }, 'page': { 'type': 'integer', 'minimum': 1 }, 'limit': { 'type': 'integer', 'minimum': 1, 'maximum': 200 }, 'hasMore': { 'type': 'boolean' } } } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters': [{ 'name': 'project', 'in': 'query', 'schema': { 'type': 'string' } }, { 'in': 'query', 'name': 'limit', 'schema': { 'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 100 } },
+                  { 'in': 'query', 'name': 'page', 'schema': { 'type': 'integer', 'minimum': 1, 'default': 1 } },],
+            },
+          'post':
+            {
+              'operationId': 'post_api_decisions',
+              'summary': '利用者の決定の記録',
+              'description': '一時キーは一覧/全件の書出しのみ。PC別トークンは不可。入力と応答の全項目の型は採録していない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content': { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                },
+            },
+        },
+      '/api/decisions/export':
+        {
+          'get':
+            {
+              'operationId': 'get_api_decisions_export',
+              'summary': '利用者の決定の記録',
+              'description': '一時キーは一覧/全件の書出しのみ。PC別トークンは不可。全件を書き出すためページ分割しない。 保存された判断記録の可変な内容を出力するため、固定応答型は定義しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/decisions/{id}':
+        {
+          'get':
+            {
+              'operationId': 'get_api_decisions_id',
+              'summary': '利用者の決定の記録',
+              'description': '一時キーは一覧/全件の書出しのみ。PC別トークンは不可。入力と応答の全項目の型は採録していない。 保存された判断記録の可変な内容を返すため、固定応答型は定義しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/decisions/{id}/save':
+        {
+          'post':
+            {
+              'operationId': 'post_api_decisions_id_save',
+              'summary': '利用者の決定の記録',
+              'description': '一時キーは一覧/全件の書出しのみ。PC別トークンは不可。入力と応答の全項目の型は採録していない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content': { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                },
+            },
+        },
+      '/api/decisions/{id}/remove':
+        {
+          'post':
+            {
+              'operationId': 'post_api_decisions_id_remove',
+              'summary': '利用者の決定の記録',
+              'description': '一時キーは一覧/全件の書出しのみ。PC別トークンは不可。入力と応答の全項目の型は採録していない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content': { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                },
+            },
+        },
+      '/api/push/key':
+        {
+          'get':
+            {
+              'operationId': 'get_api_push_key',
+              'summary': '受付画面の端末通知',
+              'description': '受付画面のセッションだけ。一時キー・PC別トークンは併記でも403。GET以外は同一Origin・CSRF必須。テスト通知は固定文を全購読に送信し、送信失敗は呼び出し元を止めない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required': ['publicKey'],
+                                  'properties': { 'publicKey': { 'type': 'string' } },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { 'description': 'メソッド不許可。' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+            },
+        },
+      '/api/push/subscriptions':
+        {
+          'post':
+            {
+              'operationId': 'post_api_push_subscriptions',
+              'summary': '受付画面の端末通知',
+              'description': '受付画面のセッションだけ。一時キー・PC別トークンは併記でも403。GET以外は同一Origin・CSRF必須。テスト通知は固定文を全購読に送信し、送信失敗は呼び出し元を止めない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'required': ['ok'], 'properties': { 'ok': { 'type': 'boolean' } } },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { 'description': 'メソッド不許可。' },
+                },
+              'parameters': [{ 'name': 'Origin', 'in': 'header', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required': ['endpoint', 'keys'],
+                              'properties':
+                                {
+                                  'endpoint':
+                                    {
+                                      'type': 'string',
+                                      'format': 'uri',
+                                      'description': 'HTTPSのApple・Google・Mozillaのプッシュサービス。',
+                                    },
+                                  'keys':
+                                    {
+                                      'type': 'object',
+                                      'required': ['p256dh', 'auth'],
+                                      'properties': { 'p256dh': { 'type': 'string' }, 'auth': { 'type': 'string' } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+          'delete':
+            {
+              'operationId': 'delete_api_push_subscriptions',
+              'summary': '受付画面の端末通知',
+              'description': '受付画面のセッションだけ。一時キー・PC別トークンは併記でも403。GET以外は同一Origin・CSRF必須。テスト通知は固定文を全購読に送信し、送信失敗は呼び出し元を止めない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'required': ['ok'], 'properties': { 'ok': { 'type': 'boolean' } } },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { 'description': 'メソッド不許可。' },
+                },
+              'parameters': [{ 'name': 'Origin', 'in': 'header', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required': ['endpoint'],
+                              'properties':
+                                {
+                                  'endpoint':
+                                    {
+                                      'type': 'string',
+                                      'format': 'uri',
+                                      'description': 'HTTPSのApple・Google・Mozillaのプッシュサービス。',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/push/test':
+        {
+          'post':
+            {
+              'operationId': 'post_api_push_test',
+              'summary': '受付画面の端末通知',
+              'description': '受付画面のセッションだけ。一時キー・PC別トークンは併記でも403。GET以外は同一Origin・CSRF必須。テスト通知は固定文を全購読に送信し、送信失敗は呼び出し元を止めない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'required': ['ok'], 'properties': { 'ok': { 'type': 'boolean' } } },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { 'description': 'メソッド不許可。' },
+                },
+              'parameters': [{ 'name': 'Origin', 'in': 'header', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                { 'required': true, 'content': { 'application/json': { 'schema': { 'type': 'object' } } } },
+            },
+        },
+      '/api/projects':
+        {
+          'get':
+            {
+              'operationId': 'get_api_projects',
+              'summary': '新しいプロジェクトの相談・同意・作成',
+              'description': 'projectCreation設定がなければ404。相談の会話・新規作成・作成の再開・分割案の起票は画面セッションだけ。読取（GET）と作成への同意（POST approve）は運用の代行を許したPC別トークンも使える（一時キーと未許可トークンは403）。各操作の応答は server/internal/projects/http.go、状態別の表示項目は server/internal/projects/presentation.go を参照。 プロジェクト作成相談の保存レコードを返し、その内容は相談の進行状態で変わるため、今回は固定応答型を定義しない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+          'post':
+            {
+              'operationId': 'post_api_projects',
+              'summary': '新しいプロジェクトの相談・同意・作成',
+              'description': 'projectCreation設定がなければ404。相談の会話・新規作成・作成の再開・分割案の起票は画面セッションだけ。読取（GET）と作成への同意（POST approve）は運用の代行を許したPC別トークンも使える（一時キーと未許可トークンは403）。各操作の応答は server/internal/projects/http.go、状態別の表示項目は server/internal/projects/presentation.go を参照。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '202':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string' },
+                                  'text': { 'type': 'string' },
+                                  'provider': { 'type': 'string', 'enum': ['codex', 'claude'], 'default': 'codex' },
+                                  'consultationProvider':
+                                    { 'type': 'string', 'enum': ['codex', 'claude'], 'default': 'codex' },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/projects/{id}':
+        {
+          'get':
+            {
+              'operationId': 'get_api_projects_id',
+              'summary': '新しいプロジェクトの相談・同意・作成',
+              'description': 'projectCreation設定がなければ404。相談の会話・新規作成・作成の再開・分割案の起票は画面セッションだけ。読取（GET）と作成への同意（POST approve）は運用の代行を許したPC別トークンも使える（一時キーと未許可トークンは403）。各操作の応答は server/internal/projects/http.go、状態別の表示項目は server/internal/projects/presentation.go を参照。 プロジェクト作成相談の保存レコードを返し、その内容は相談の進行状態で変わるため、今回は固定応答型を定義しない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/projects/{id}/chat':
+        {
+          'post':
+            {
+              'operationId': 'post_api_projects_id_chat',
+              'summary': '新しいプロジェクトの相談・同意・作成',
+              'description': 'projectCreation設定がなければ404。相談の会話・新規作成・作成の再開・分割案の起票は画面セッションだけ。読取（GET）と作成への同意（POST approve）は運用の代行を許したPC別トークンも使える（一時キーと未許可トークンは403）。各操作の応答は server/internal/projects/http.go、状態別の表示項目は server/internal/projects/presentation.go を参照。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '202':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content': { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                },
+            },
+        },
+      '/api/projects/{id}/approve':
+        {
+          'post':
+            {
+              'operationId': 'post_api_projects_id_approve',
+              'summary': '新しいプロジェクトの相談・同意・作成',
+              'description': '定義の確定した相談のリポジトリの作成に同意する。fingerprintは表示・読取した定義の指紋で、相談で定義が変わっていれば409。画面セッション（CSRF）か、運用の代行を許したPC別トークン（issue-desk-issue-control Skillのプロジェクト作成同意手順）が送れる。トークンでは利用者がチャットで対象を特定して承認した発言statement（8〜2000文字、空・定型語だけは400）と、利用者がチャットで指示した日時instructionAt（UTCオフセット付きISO 8601（秒まで。例 2026-11-11T11:58:00+09:00）、未来でなく7日以内）が必須で、approvalにvia=chat・送信元PC名pc・statement・instructionAtを記録する。画面ではstatementを使わずvia=screenを記録する。AIの判断・時間切れでは送らない。一時キーと未許可トークンは403。projectCreation設定がなければ404。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': false,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーは必須。PC別トークンでは送らなくてよい。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required': ['fingerprint'],
+                              'properties':
+                                {
+                                  'fingerprint': { 'type': 'string', 'description': '同意する定義の指紋。' },
+                                  'statement':
+                                    {
+                                      'type': 'string',
+                                      'minLength': 8,
+                                      'maxLength': 2000,
+                                      'description': 'PC別トークンでは必須。利用者がチャットで対象を特定して承認した発言そのまま。',
+                                    },
+                                  'instructionAt':
+                                    {
+                                      'type': 'string',
+                                      'description': 'PC別トークンでは必須。利用者がチャットで承認した日時（UTCオフセット付きISO 8601（秒まで。例 2026-11-11T11:58:00+09:00）、未来でなく7日以内）。',
+                                    },
+                                },
+                              'additionalProperties': false,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/projects/{id}/create':
+        {
+          'post':
+            {
+              'operationId': 'post_api_projects_id_create',
+              'summary': '新しいプロジェクトの相談・同意・作成',
+              'description': 'projectCreation設定がなければ404。相談の会話・新規作成・作成の再開・分割案の起票は画面セッションだけ。読取（GET）と作成への同意（POST approve）は運用の代行を許したPC別トークンも使える（一時キーと未許可トークンは403）。各操作の応答は server/internal/projects/http.go、状態別の表示項目は server/internal/projects/presentation.go を参照。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '202':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content': { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                },
+            },
+        },
+      '/api/projects/{id}/file':
+        {
+          'post':
+            {
+              'operationId': 'post_api_projects_id_file',
+              'summary': '新しいプロジェクトの相談・同意・作成',
+              'description': 'projectCreation設定がなければ404。相談の会話・新規作成・作成の再開・分割案の起票は画面セッションだけ。読取（GET）と作成への同意（POST approve）は運用の代行を許したPC別トークンも使える（一時キーと未許可トークンは403）。各操作の応答は server/internal/projects/http.go、状態別の表示項目は server/internal/projects/presentation.go を参照。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '202':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content': { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                },
+            },
+        },
+      '/api/health':
+        {
+          'get':
+            {
+              'operationId': 'get_api_health',
+              'summary': '受付と画面の版',
+              'description': '認証前に返す公開済みファイルのハッシュと版。内部の接続先ではv1以外を403にする。',
+              'x-issue-desk-delegate': false,
+              'security': [],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'ready': { 'type': 'boolean' },
+                                      'revision': { 'type': ['string', 'null'] },
+                                      'ui': { 'type': 'string' },
+                                    },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+    },
+}

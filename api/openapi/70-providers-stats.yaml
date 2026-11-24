@@ -1,0 +1,836 @@
+{
+  'paths':
+    {
+      '/api/cpu-profiles':
+        {
+          'get':
+            {
+              'operationId': 'get_api_cpu_profiles',
+              'summary': 'CPUプロファイル一覧',
+              'description': 'PC Bearer only; latest<=5 IDs/state/interval/kind/stops(absent:[]). Metadata: O_NOFOLLOW|O_NONBLOCK; fd regular/<=64KiB, read<=64KiB. Valid:capture-record; absent/oversize/FIFO/symlink/bad interval/read failure:filename-estimate-end-missing, filename start estimate/end=null. No body parsing. プロファイル集計の内容は測定データの有無や内容に依存するため、固定応答型は定義しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Profiles; missing:[].',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                },
+            },
+        },
+      '/api/cpu-profiles/{id}':
+        {
+          'get':
+            {
+              'operationId': 'get_api_cpu_profiles_id',
+              'summary': 'CPUプロファイル集計',
+              'description': 'PC Bearer only. Top 20 self/total by default, estimated from samples/timeDeltas; missing=null/incomplete. 400: bad ID/unsafe file; 404: missing; 413: >20MiB; 422: corrupt; 503: queue limit. プロファイルの関数・標本は入力された測定データに依存するため、固定応答型は定義しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'id',
+                    'in': 'path',
+                    'required': true,
+                    'schema': { 'type': 'string', 'pattern': '^intake-cpu-[0-9]{8}T[0-9]{6}Z(?:-[a-f0-9]{8,})?$' },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Top functions, sample estimates.',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '413': { 'description': 'Profile >20MiB.' },
+                  '422': { 'description': 'Corrupt profile.' },
+                  '503': { 'description': 'Queue limit.' },
+                },
+            },
+        },
+      '/api/attention/consultation-budget/{draftId}/continue':
+        {
+          'post':
+            {
+              'operationId': 'continue_consultation_budget',
+              'summary': '停止した相談の上限を足して続行する',
+              'description': 'Screen+CSRF, or a delegated PC token with statement (the chat approval by the user naming this consultation; issue-desk-issue-control Skillの相談続行手順). Local key and non-delegated PC:403; delegated PC without a meaningful statement or a valid instructionAt:400. The continuation records via (screen/chat), pc, statement and instructionAt. actions.continue_budget: stopped draft, idle, no child handoff; persist +20 calls/+3000000 weighted, resume. Stopped chat/retry refused. Successful operationId replay: before state check, current draft, no addition. Refetch on failure. See issue-desk-worker/docs/intake-input-budget.md#continuing-by-the-user-and-stats.',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'draftId',
+                    'in': 'path',
+                    'required': true,
+                    'schema': { 'type': 'string', 'format': 'uuid' },
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required': ['operationId', 'stopCount'],
+                              'properties':
+                                {
+                                  'operationId': { 'type': 'string', 'pattern': '^[a-zA-Z0-9-]{1,128}$' },
+                                  'stopCount':
+                                    {
+                                      'type': 'integer',
+                                      'minimum': 1,
+                                      'description': 'Alert stopCount or consultationBudget.stops.length; stale stops refused.',
+                                    },
+                                  'statement':
+                                    {
+                                      'type': 'string',
+                                      'minLength': 8,
+                                      'maxLength': 2000,
+                                      'description': 'Required for PC tokens: the own chat approval words of the user. Ignored on the screen.',
+                                    },
+                                  'instructionAt':
+                                    {
+                                      'type': 'string',
+                                      'description': 'Required for PC tokens: when the user gave the approval in the chat (RFC 3339 with a UTC offset and seconds, e.g. 2026-11-11T11:58:00+09:00; not in the future, within 7 days). Ignored on the screen.',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Updated draft; replay:current draft.',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                },
+            },
+        },
+      '/api/provider-disables':
+        {
+          'get':
+            {
+              'operationId': 'get_api_provider_disables',
+              'summary': '実行先の期限付き無効一覧',
+              'description': '無効化の記録と実行先情報を含み、その内訳は保存状態と実行環境で変わるため、今回は固定応答型を定義しない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503':
+                    {
+                      'description': 'Disable save failed.',
+                      'content':
+                        {
+                          'application/json':
+                            { 'schema': { 'type': 'object', 'properties': { 'error': { 'type': 'string' } } } },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/provider-disables/{provider}':
+        {
+          'post':
+            {
+              'operationId': 'post_api_provider_disables_step',
+              'summary': '実行先の期限付き無効を設定',
+              'description': 'User instruction only; codex/claude. Default24h/max7d. Both disabled or unready alternative:400; save failure:503.',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503':
+                    {
+                      'description': 'Disable save failed.',
+                      'content':
+                        {
+                          'application/json':
+                            { 'schema': { 'type': 'object', 'properties': { 'error': { 'type': 'string' } } } },
+                        },
+                    },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'provider',
+                    'in': 'path',
+                    'required': true,
+                    'schema': { 'type': 'string', 'enum': ['codex', 'claude'] },
+                  },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': 'Same intake Origin.',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'reason': { 'type': 'string', 'maxLength': 200 },
+                                  'until': { 'type': 'string', 'format': 'date-time' },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/provider-disables/{provider}/cancel':
+        {
+          'post':
+            {
+              'operationId': 'post_api_provider_disables_step_cancel',
+              'summary': '実行先の期限付き無効を取り消す',
+              'description': 'User instruction only; codex/claude. No disable:cancelled=false; save failure:503.',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503':
+                    {
+                      'description': 'Disable save failed.',
+                      'content':
+                        {
+                          'application/json':
+                            { 'schema': { 'type': 'object', 'properties': { 'error': { 'type': 'string' } } } },
+                        },
+                    },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'provider',
+                    'in': 'path',
+                    'required': true,
+                    'schema': { 'type': 'string', 'enum': ['codex', 'claude'] },
+                  },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': 'Same intake Origin.',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        { 'schema': { 'type': 'object', 'properties': {}, 'additionalProperties': true } },
+                    },
+                },
+            },
+        },
+      '/api/model-overrides':
+        {
+          'get':
+            {
+              'operationId': 'get_api_model_overrides',
+              'summary': '固定された工程規則とモデルの一覧',
+              'description': 'モデル設定と工程ごとの解決結果を含み、その内訳は設定によって変わるため、今回は固定応答型を定義しない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/model-overrides/{step}':
+        {
+          'post':
+            {
+              'operationId': 'post_api_model_overrides_step',
+              'summary': 'モデルの一時切り替えを設定',
+              'description': '工程規則は固定。新規切り替えは409で拒否する。保存済み切り替えも実行に適用しない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'step', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': 'Same intake Origin.',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'provider': { 'type': 'string', 'enum': ['codex', 'claude'] },
+                                  'model': { 'type': 'string' },
+                                  'effort': { 'type': ['string', 'null'] },
+                                  'until': { 'type': 'string' },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/model-overrides/{step}/cancel':
+        {
+          'post':
+            {
+              'operationId': 'post_api_model_overrides_step_cancel',
+              'summary': 'モデルの一時切り替えを取り消す',
+              'description': 'User-directed; step/provider/model/effort/expiry: server/internal/httpapi/model_routes.go.',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'step', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': 'Same intake Origin.',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        { 'schema': { 'type': 'object', 'properties': {}, 'additionalProperties': true } },
+                    },
+                },
+            },
+        },
+      '/api/stats/overview':
+        {
+          'get':
+            {
+              'operationId': 'get_api_stats_overview',
+              'summary': '運用の概要',
+              'description': 'JST today/7/30 days inclusive. Shared-DB aggregates only, no rows/bodies. Unreadable DB: aggregates=null, unavailable reason. PC tokens including delegation:403. 集計の内訳は対象期間・データと欠測状態に依存し、内訳全体の固定型は定義しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'range',
+                    'in': 'query',
+                    'schema': { 'type': 'string', 'enum': ['today', '7d', '30d'], 'default': '7d' },
+                  },
+                  {
+                    'name': 'project',
+                    'in': 'query',
+                    'description': 'Registered owner/repo; absent/empty:all.',
+                    'schema': { 'type': 'string' },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'range/project/fromDate/toDate/implementations/implementationTiers/durations/tokens/models/consultTiers/roundTrips/daily(incl.tokens)/unavailable. Missing:null. See issue-desk-worker/docs/ops-overview.md.',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                },
+            },
+        },
+      '/api/stats/rework':
+        {
+          'get':
+            {
+              'operationId': 'get_api_stats_rework',
+              'summary': '手戻りの内訳・実装終了理由・実装回数（共有DB）',
+              'description': 'Default summary omits breakdown.issues, breakdown.followups.groups[].issues and implementation.issues. details=true includes them. READ ONLY usage_rows/jobs/job_events; no runner.log/state. Merge-at JST inclusive from/to, default14/max92d. PC:delegation not required. Unreadable:200/unavailable, breakdown/implementation=null. Numbers/IDs only. Definitions: issue-desk-worker/docs/intake-api-stats.md#rework-breakdown-and-provider-comparison-get-apistatsrework and its implementation section. implementation.runs and days[].runs count completed runs, excluding runs in progress on an active lease; unknownDetails.inProgress is always 0. implementation.reasons and days[].reasons count runs per end reason: success, fixed-test, checks, timeout, question, prerequisite, guard, usage-limit, review-hold, stopped, lease-expired, unknown. lease-expired requires a matching lease expiration without a known outcome. Clients show 0 for stopped or lease-expired when omitted by an older intake. Other missing keys stay missing. 集計の内訳は対象期間・データと欠測状態に依存し、内訳全体の固定型は定義しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  { 'name': 'details', 'in': 'query', 'description': 'true includes per-issue details; default false.', 'schema': { 'type': 'boolean', 'default': false } },
+                  {
+                    'name': 'from',
+                    'in': 'query',
+                    'description': 'JST YYYY-MM-DD; default:13 days before end.',
+                    'schema': { 'type': 'string' },
+                  },
+                  {
+                    'name': 'to',
+                    'in': 'query',
+                    'description': 'JST YYYY-MM-DD inclusive; default:today.',
+                    'schema': { 'type': 'string' },
+                  },
+                  {
+                    'name': 'project',
+                    'in': 'query',
+                    'description': 'Registered owner/repo; absent/empty:all.',
+                    'schema': { 'type': 'string' },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'fromDate/toDate/project/unavailable/breakdown: issue-desk-worker/docs/intake-api-stats.md.',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                },
+            },
+        },
+      '/api/stats':
+        {
+          'get':
+            {
+              'operationId': 'get_api_stats',
+              'summary': '稼働実績',
+              'description': 'Default summary omits usage.before/after drafts, sessions, repairs, contextReadPaths, contextReadPathsOmitted, issues and omittedIssues; tiers and followups rows and omitted; implementation.before/after issues; inputBudget.before/after records. details=true includes them. tables retains its table selection semantics. Read-only: issue-desk-worker/docs/intake-api-stats.md, Period Parameters onward. Missing!=0; unreadable:200/reasons, others continue; invalid period/project:400. JST date/minute bounds: all4 or default7+7days, <=92d/period. tiers keeps implementation/implementationDecision. implementation.before/after runs and days[].runs count completed runs, excluding runs in progress on an active lease; unknownDetails.inProgress is always 0. implementation.before/after reasons and days[].reasons use the same end reasons as /api/stats/rework, including stopped (absent from older intake responses: show 0; other missing keys stay missing). implementationTiers/runner.log steps: use /api/stats/overview.',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'usage.before/after.intakeTiming groups saved intake rows by step, provider, model, effort, tier and diagnosticKind; count and elapsedMs/firstOutputMs median, p90 and missing are included in summary. Missing dimensions and quantiles with no known values are null. See docs/ai-call-diagnostics.md. fixedTestUsage: issue-desk-worker/docs/parallel-implementation.md#fixed-test-deadline-usage-all-pcs (unreadable:200, reason, before/after=null; no samples:null). byStepProvider: issue-desk-worker/docs/intake-api-stats.md#ai-usage-across-all-pcs-and-usage-limits; intakeCache: issue-desk-worker/docs/ai-usage-aggregation.md#intake-ai-cache; toolErrors: issue-desk-worker/docs/ai-usage-detail.md#detail-statistics.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'additionalProperties': true,
+                                  'properties':
+                                    {
+                                      'stopChecks':
+                                        {
+                                          'type': ['object', 'null'],
+                                          'description': 'tables=stopChecks、またはtables省略時に含む。読取不能はnull。見直し日を日本時間の今日が過ぎた行を先頭に並べる。当日は超過しない。',
+                                          'required': ['rows', 'unknownCheckIds'],
+                                          'properties':
+                                            {
+                                              'rows':
+                                                {
+                                                  'type': 'array',
+                                                  'items':
+                                                    {
+                                                      'type': 'object',
+                                                      'required': ['id', 'kind', 'purpose', 'introducedAt', 'nextReviewAt', 'overdue', 'total', 'last30Days', 'blocked', 'warned', 'lastFiredAt', 'reviewResult'],
+                                                      'properties':
+                                                        {
+                                                          'id': { 'type': 'string' },
+                                                          'kind': { 'type': 'string', 'enum': ['hook', 'guard'] },
+                                                          'purpose': { 'type': 'string' },
+                                                          'introducedAt': { 'type': 'string', 'format': 'date' },
+                                                          'nextReviewAt': { 'type': 'string', 'format': 'date' },
+                                                          'overdue': { 'type': 'boolean' },
+                                                          'total': { 'type': ['integer', 'null'], 'minimum': 0, 'description': '全期間の発動数。集計対象外はnull（記録なし）。' },
+                                                          'last30Days': { 'type': ['integer', 'null'], 'minimum': 0, 'description': '集計時刻の30×24時間前から集計時刻までの発動数（両端を含む）。暦日単位ではない。' },
+                                                          'blocked': { 'type': ['integer', 'null'], 'minimum': 0 },
+                                                          'warned': { 'type': ['integer', 'null'], 'minimum': 0 },
+                                                          'lastFiredAt': { 'type': ['string', 'null'], 'format': 'date-time' },
+                                                          'reviewResult': { 'type': ['string', 'null'], 'enum': ['残す', '直す', '外す', null], 'description': '最新の見直し結果。未見直しはnull。' },
+                                                        },
+                                                    },
+                                                },
+                                              'unknownCheckIds': { 'type': 'array', 'items': { 'type': 'string' }, 'description': '台帳にない検査IDの記録。counted=falseの台帳IDに記録があってもここには含めず、行の発動数もnullとする。'  },
+                                            },
+                                        },
+                                      'sizeEstimates': { '$ref': '#/components/schemas/SizeEstimateStats' },
+                                      'inputBudget':
+                                        {
+                                          'type': 'object',
+                                          'description': 'tables=inputBudget, included by default; inspection-at periods/project. store.query id/project/inputBudget only; safe numbers/IDs, no bodies/credentials/images/absolute paths. No timer/usage change. Details: issue-desk-worker/docs/intake-api-stats.md#input-limit-observations-inputbudget.',
+                                          'properties':
+                                            {
+                                              'project': { 'type': 'string' },
+                                              'unavailable': { 'type': 'array', 'items': { 'type': 'string' } },
+                                              'coverage':
+                                                {
+                                                  'type': 'object',
+                                                  'description': 'complete=false, recordingStart=null. Unrecorded/invalid/duplicate, per-draft retention and cumulative dropped known/missing: Input Limit Observations. Never allocate dropped to periods.',
+                                                },
+                                              'before':
+                                                {
+                                                  'type': ['object', 'null'],
+                                                  'description': 'Check-at [start,end), ISO UTC. count=snapshots, knownChecks=draft/checkId, transmissions=codex/claude pre_send (failed-resume/fallback_full separate). Paired snapshots!=executions. Groups/records/missing: Input Limit Observations. Mean:known incl.0; all missing mean/max=null. Unrecorded/outside retention:coverage. historicalStopTotal/reductionEffect=null; no historical-total/overall-savings inference. Read failure:null+safe unavailable; other tables continue.',
+                                                },
+                                              'after':
+                                                {
+                                                  'type': ['object', 'null'],
+                                                  'description': 'After period; same format/denominators/missing rules as before.',
+                                                },
+                                            },
+                                        },
+                                      'storeLoad':
+                                        {
+                                          'type': ['object', 'null'],
+                                          'description': 'Local; period/project-independent; disabled:null; restart clears. Up to 5 completed observation-time 1-min buckets, including late reports. observed=false excluded from averages; delay average uses delay-observed buckets only (missing:null). >=3 observed minutes, >1000ms delay or >30 parses/min or >10000 parse-ms/min: intake-store-list-load. Clear after 10 consecutive below-threshold minutes; missing resets timer. See issue-desk-worker/docs/operations-stall.md#watching-full-store-parses.',
+                                          'properties':
+                                            {
+                                              'minutes':
+                                                {
+                                                  'type': 'array',
+                                                  'maxItems': 5,
+                                                  'items':
+                                                    {
+                                                      'type': 'object',
+                                                      'properties':
+                                                        {
+                                                          'at': { 'type': 'string', 'format': 'date-time' },
+                                                          'observed': { 'type': 'boolean' },
+                                                          'calls': { 'type': 'integer' },
+                                                          'parses': { 'type': 'integer' },
+                                                          'parseMs': { 'type': 'number' },
+                                                          'eventLoopMaxMs': { 'type': ['number', 'null'] },
+                                                        },
+                                                    },
+                                                },
+                                              'total': { 'type': 'object' },
+                                              'average': { 'type': 'object' },
+                                              'callers':
+                                                {
+                                                  'type': 'array',
+                                                  'maxItems': 5,
+                                                  'items':
+                                                    {
+                                                      'type': 'object',
+                                                      'properties':
+                                                        {
+                                                          'caller': { 'type': 'string' },
+                                                          'calls': { 'type': 'integer' },
+                                                          'parses': { 'type': 'integer' },
+                                                          'parseMs': { 'type': 'number' },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                      'fixedTestUsage': { 'type': 'object', 'additionalProperties': true },
+                                      'implementation':
+                                        {
+                                          'oneOf':
+                                            [
+                                              {
+                                                'type': 'object',
+                                                'required': ['before', 'after'],
+                                                'additionalProperties': false,
+                                                'properties':
+                                                  {
+                                                    'before': { 'type': 'object', 'additionalProperties': true },
+                                                    'after': { 'type': 'object', 'additionalProperties': true },
+                                                  },
+                                              },
+                                              { 'type': 'null' },
+                                            ],
+                                        },
+                                      'consultationBudget': { '$ref': '#/components/schemas/ConsultationBudgetStats' },
+                                      'filingCheck':
+                                        {
+                                          'type': 'object',
+                                          'required': ['project', 'unavailable', 'before', 'after', 'reasons'],
+                                          'additionalProperties': false,
+                                          'properties':
+                                            {
+                                              'project': { 'type': 'string' },
+                                              'unavailable': { 'type': 'array', 'items': { 'type': 'string' } },
+                                              'before':
+                                                {
+                                                  'description': 'Unavailable:null; see reasons.before.',
+                                                  'oneOf':
+                                                    [
+                                                      {
+                                                        'type': 'object',
+                                                        'required': ['counts', 'triggers', 'outcomes', 'diagnostics'],
+                                                        'additionalProperties': true,
+                                                        'properties':
+                                                          {
+                                                            'counts':
+                                                              {
+                                                                'type': 'object',
+                                                                'additionalProperties':
+                                                                  { 'type': 'integer', 'minimum': 0 },
+                                                              },
+                                                            'triggers':
+                                                              {
+                                                                'type': 'object',
+                                                                'additionalProperties':
+                                                                  { 'type': 'integer', 'minimum': 0 },
+                                                              },
+                                                            'outcomes':
+                                                              {
+                                                                'type': 'object',
+                                                                'additionalProperties':
+                                                                  { 'type': 'integer', 'minimum': 0 },
+                                                              },
+                                                            'diagnostics':
+                                                              {
+                                                                'type': 'object',
+                                                                'required': ['invalidLines'],
+                                                                'properties':
+                                                                  {
+                                                                    'invalidLines': { 'type': 'integer', 'minimum': 0 },
+                                                                  },
+                                                                'additionalProperties': true,
+                                                              },
+                                                          },
+                                                      },
+                                                      { 'type': 'null' },
+                                                    ],
+                                                },
+                                              'after':
+                                                {
+                                                  'description': 'Unavailable:null; see reasons.after.',
+                                                  'oneOf':
+                                                    [
+                                                      {
+                                                        'type': 'object',
+                                                        'required': ['counts', 'triggers', 'outcomes', 'diagnostics'],
+                                                        'additionalProperties': true,
+                                                        'properties':
+                                                          {
+                                                            'counts':
+                                                              {
+                                                                'type': 'object',
+                                                                'additionalProperties':
+                                                                  { 'type': 'integer', 'minimum': 0 },
+                                                              },
+                                                            'triggers':
+                                                              {
+                                                                'type': 'object',
+                                                                'additionalProperties':
+                                                                  { 'type': 'integer', 'minimum': 0 },
+                                                              },
+                                                            'outcomes':
+                                                              {
+                                                                'type': 'object',
+                                                                'additionalProperties':
+                                                                  { 'type': 'integer', 'minimum': 0 },
+                                                              },
+                                                            'diagnostics':
+                                                              {
+                                                                'type': 'object',
+                                                                'required': ['invalidLines'],
+                                                                'properties':
+                                                                  {
+                                                                    'invalidLines': { 'type': 'integer', 'minimum': 0 },
+                                                                  },
+                                                                'additionalProperties': true,
+                                                              },
+                                                          },
+                                                      },
+                                                      { 'type': 'null' },
+                                                    ],
+                                                },
+                                              'inputReduction':
+                                                {
+                                                  'description': 'Optional retained-check input-limit reduction, not all calls or stops. Boolean inputReduced: known; true: reduced; legacy/unmeasured: unknown. Excludes unconditional reduceNonOverlapping and pre-call limit stops without a check. before/after use the existing [From,To) and project selection. reduced <= known; rate = reduced/known, or null when known=0. If either period cannot be read, the entire field is null and unavailable identifies inputReduction, period and reason; event aggregates and reasons remain independent.',
+                                                  'oneOf':
+                                                    [
+                                                      {
+                                                        'type': 'object',
+                                                        'required': ['before', 'after', 'coverage'],
+                                                        'additionalProperties': false,
+                                                        'properties':
+                                                          {
+                                                            'before': { 'type': 'object', 'required': ['known', 'reduced', 'unknown', 'rate'], 'additionalProperties': false, 'properties': { 'known': { 'type': 'integer', 'minimum': 0 }, 'reduced': { 'type': 'integer', 'minimum': 0 }, 'unknown': { 'type': 'integer', 'minimum': 0 }, 'rate': { 'type': ['number', 'null'], 'minimum': 0, 'maximum': 1 } } },
+                                                            'after': { 'type': 'object', 'required': ['known', 'reduced', 'unknown', 'rate'], 'additionalProperties': false, 'properties': { 'known': { 'type': 'integer', 'minimum': 0 }, 'reduced': { 'type': 'integer', 'minimum': 0 }, 'unknown': { 'type': 'integer', 'minimum': 0 }, 'rate': { 'type': ['number', 'null'], 'minimum': 0, 'maximum': 1 } } },
+                                                            'coverage': { 'type': 'string', 'enum': ['retained_checks_only'] },
+                                                          },
+                                                      },
+                                                      { 'type': 'null' },
+                                                    ],
+                                                },
+                                              'reasons':
+                                                {
+                                                  'type': 'object',
+                                                  'required': ['before', 'after'],
+                                                  'additionalProperties': false,
+                                                  'properties':
+                                                    {
+                                                      'before':
+                                                        {
+                                                          'type': ['string', 'null'],
+                                                          'description': 'Missing/unreadable/outside period etc.; null if available.',
+                                                        },
+                                                      'after':
+                                                        {
+                                                          'type': ['string', 'null'],
+                                                          'description': 'Missing/unreadable/outside period etc.; null if available.',
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                      'usage':
+                                        {
+                                          'type': 'object',
+                                          'additionalProperties': true,
+                                          'properties':
+                                            {
+                                              'before': { '$ref': '#/components/schemas/UsageToolErrorsPeriod' },
+                                              'after': { '$ref': '#/components/schemas/UsageToolErrorsPeriod' },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'details', 'in': 'query', 'description': 'true includes detail arrays; default false. Combine with tables to select reports.', 'schema': { 'type': 'boolean', 'default': false } },
+                  { 'name': 'project', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'beforeFrom', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'beforeTo', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'afterFrom', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'afterTo', 'in': 'query', 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'tables',
+                    'in': 'query',
+                    'schema': { 'type': 'string' },
+                    'description': 'Comma-separated tables incl.inputBudget and stopChecks; omitted:all; empty/unknown:400.',
+                  },
+                ],
+            },
+        },
+    },
+}

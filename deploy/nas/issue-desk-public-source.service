@@ -1,0 +1,12 @@
+[Unit]
+Description=公開候補を準備する
+
+[Service]
+Type=oneshot
+WorkingDirectory=__DIR__
+# 非公開の環境ファイルに JOBS_REGISTRY、PREPARATION_ROOT、任意の PREVIOUS_DIR を絶対パスで指定する。
+EnvironmentFile=%h/.config/issue-desk/public-source-preparation.env
+ExecStart=/bin/sh __DIR__/deploy/nas/run-public-source-preparation.sh
+# 送信を使う場合だけ、承認済み保存先などのパスを指定する。
+EnvironmentFile=-%h/.config/issue-desk/public-source-sending.env
+ExecStart=/bin/sh __DIR__/deploy/nas/run-public-source-sending.sh

@@ -1,0 +1,11 @@
+.git
+**/node_modules
+client/dist
+server/bin
+**/runtime
+**/private
+**/config.local.json
+**/.env
+**/.env.*
+**/*.sqlite*
+**/*.log

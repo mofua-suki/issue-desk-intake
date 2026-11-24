@@ -1,0 +1,402 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { execFileSync, spawnSync } from 'node:child_process';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { join, resolve } from 'node:path';
+
+const script = resolve('scripts/github-publish-from-gitea.ts');
+function fixture() {
+  const dir = mkdtempSync(join(process.cwd(), '.preview-test-'));
+  const source = join(dir, 'source'),
+    dest = join(dir, 'dest'),
+    bin = join(dir, 'bin'),
+    log = join(dir, 'writes'),
+    candidate = join(dir, 'candidate'),
+    state = join(dir, 'state.json'),
+    failPush = join(dir, 'fail-push'),
+    pushArgs = join(dir, 'push-args');
+  mkdirSync(source);
+  mkdirSync(dest);
+  mkdirSync(bin);
+  const git = (cwd: string, ...args: string[]) =>
+    execFileSync('git', args, {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  git(source, 'init', '-q', '-b', 'main');
+  git(source, 'config', 'user.name', 'Test');
+  git(source, 'config', 'user.email', 'test@invalid');
+  const commit = (repo: string, file: string, content: string) => {
+    writeFileSync(join(repo, file), content);
+    git(repo, 'add', file);
+    git(repo, 'commit', '-qm', content);
+    return git(repo, 'rev-parse', 'HEAD');
+  };
+  const first = commit(source, 'common', 'common');
+  git(dest, 'init', '-q', '-b', 'main');
+  git(dest, 'config', 'user.name', 'Test');
+  git(dest, 'config', 'user.email', 'test@invalid');
+  git(dest, 'fetch', '-q', source, 'main');
+  git(dest, 'reset', '--hard', '-q', 'FETCH_HEAD');
+  const base = commit(dest, 'public', 'public');
+  const sha = commit(source, 'change', 'change');
+  commit(source, 'later', 'later');
+  git(source, 'checkout', '-q', '-b', 'private', sha);
+  commit(source, 'private-branch-only', 'private branch');
+  git(source, 'checkout', '-q', '--detach', sha);
+  commit(source, 'private-tag-only', 'private tag');
+  git(source, 'tag', 'private-tag');
+  git(source, 'checkout', '-q', 'main');
+  writeFileSync(log, '');
+  writeFileSync(state, JSON.stringify({ prs: [], failCreate: false }));
+  writeFileSync(
+    join(bin, 'gh'),
+    `#!${process.execPath}
+const fs = require('node:fs');
+const cp = require('node:child_process');
+const statePath = ${JSON.stringify(state)};
+const dest = ${JSON.stringify(dest)};
+const log = ${JSON.stringify(log)};
+const args = process.argv.slice(2);
+const data = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+if (args[0] === 'api' && args[3] === 'repos/owner/repo') {
+  console.log(JSON.stringify({full_name:'owner/repo', default_branch:'main', clone_url:'https://github.com/owner/repo.git'}));
+} else if (args[0] === 'api' && args[3].startsWith('repos/owner/repo/pulls?')) {
+  if (data.failAfterCreate && data.prs.length) process.exit(1);
+  console.log(JSON.stringify(data.prs));
+} else if (args[0] === 'pr' && args[1] === 'create') {
+  fs.appendFileSync(log, 'pr-create\\n');
+  const branch = args[args.indexOf('--head') + 1];
+  const base = args[args.indexOf('--base') + 1];
+  const sha = cp.execFileSync('/usr/bin/git', ['rev-parse', 'refs/heads/' + branch], {cwd:dest, encoding:'utf8'}).trim();
+  const baseSha = cp.execFileSync('/usr/bin/git', ['rev-parse', 'refs/heads/' + base], {cwd:dest, encoding:'utf8'}).trim();
+  data.prs.push({state:'open', html_url:'https://github.com/owner/repo/pull/1', head:{ref:branch,sha,repo:{full_name:'owner/repo'}},base:{ref:base,sha:baseSha,repo:{full_name:'owner/repo'}}});
+  fs.writeFileSync(statePath, JSON.stringify(data));
+  if (data.failCreate) process.exit(1);
+} else process.exit(1);
+`,
+    { mode: 0o755 },
+  );
+  writeFileSync(
+    join(bin, 'git'),
+    `#!/bin/bash
+args=("$@")
+for i in "\${!args[@]}"; do
+  if [ "\${args[$i]}" = 'https://github.com/owner/repo.git' ]; then args[$i]=${JSON.stringify(dest)}; fi
+done
+case " $* " in
+  *' push '*) printf '%s\n' "\${args[@]}" > ${JSON.stringify(pushArgs)}; echo push >> ${JSON.stringify(log)}; if [ -f ${JSON.stringify(failPush)} ]; then /usr/bin/git "\${args[@]}" || exit $?; rm -f ${JSON.stringify(failPush)}; exit 1; fi;;
+  *' commit-tree '*) result=$(/usr/bin/git "\${args[@]}") || exit $?; /usr/bin/git cat-file -p "$result" > ${JSON.stringify(candidate)}; printf '%s\n' "$result"; exit 0;;
+esac
+exec /usr/bin/git "\${args[@]}"
+`,
+    { mode: 0o755 },
+  );
+  const call = (overrides: Record<string, string> = {}) => {
+    const opts: Record<string, string> = {
+      '--source': source,
+      '--branch': 'main',
+      '--source-sha': sha,
+      '--repository': 'owner/repo',
+      '--base-branch': 'main',
+      '--base-sha': base,
+      ...overrides,
+    };
+    return spawnSync(
+      process.execPath,
+      [script, ...Object.entries(opts).flat()],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: `${bin}:${process.env.PATH}`,
+          GIT_AUTHOR_NAME: 'secret-value',
+          GIT_COMMITTER_EMAIL: 'secret-value@invalid',
+        },
+      },
+    );
+  };
+  return {
+    dir,
+    source,
+    dest,
+    git,
+    commit,
+    first,
+    base,
+    sha,
+    call,
+    log,
+    candidate,
+    bin,
+    state,
+    failPush,
+    pushArgs,
+  };
+}
+
+test('プレビュー判定 公開先の読取失敗・不正JSON・照合中の基点更新は書き込まず停止する', () => {
+  const f = fixture();
+  try {
+    const gh = join(f.bin, 'gh');
+    const originalGh = readFileSync(gh, 'utf8');
+    writeFileSync(
+      gh,
+      `#!/bin/sh\nif [ "$1" != api ]; then echo "$*" >> '${f.log}'; fi\nexit 1\n`,
+      { mode: 0o755 },
+    );
+    let r = f.call();
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /公開先を読み取れません/);
+    assert.equal(readFileSync(f.log, 'utf8'), '');
+
+    writeFileSync(
+      gh,
+      `#!/bin/sh\nif [ "$1" = api ]; then printf '{invalid\\n'; else echo "$*" >> '${f.log}'; exit 1; fi\n`,
+      { mode: 0o755 },
+    );
+    r = f.call();
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /公開先を照合できません/);
+    assert.equal(readFileSync(f.log, 'utf8'), '');
+
+    writeFileSync(gh, originalGh, { mode: 0o755 });
+    const updated = f.commit(f.dest, 'update', 'update');
+    f.git(f.dest, 'reset', '--hard', '-q', f.base);
+    const originalGit = join(f.bin, 'git-original');
+    renameSync(join(f.bin, 'git'), originalGit);
+    writeFileSync(
+      join(f.bin, 'git'),
+      `#!/bin/sh
+case " $* " in
+  *' push '*) echo push >> '${f.log}';;
+  *' commit-tree '*) result=$('${originalGit}' "$@") || exit $?; /usr/bin/git -C '${f.dest}' update-ref refs/heads/main '${updated}' || exit $?; printf '%s\\n' "$result"; exit 0;;
+esac
+exec '${originalGit}' "$@"
+`,
+      { mode: 0o755 },
+    );
+    r = f.call();
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /参照のSHAが照合中に変わりました/);
+    assert.equal(f.git(f.dest, 'rev-parse', 'refs/heads/main'), updated);
+    assert.equal(readFileSync(f.log, 'utf8'), '');
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true });
+  }
+});
+
+test('プレビュー判定 合成Git: 入力と参照を照合し停止理由を区別する', () => {
+  const f = fixture();
+  try {
+    let r = f.call();
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /対象: owner\/repo/);
+    assert.match(r.stdout, new RegExp(`基点: main ${f.base}`));
+    assert.match(r.stdout, new RegExp(`統合元SHA: ${f.sha}`));
+    assert.match(r.stdout, /候補ツリー指紋: [a-f0-9]{40}/);
+    assert.match(r.stdout, /変更パス: \["change"\]/);
+    const proof = r.stdout.match(/確認値: ([a-f0-9]{64})/)?.[1];
+    assert.ok(proof);
+    r = f.call({ '--base-sha': f.first, '--confirm': proof });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /基点SHA/);
+    r = f.call({ '--source-sha': f.base, '--confirm': proof });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /指定SHA/);
+    r = f.call({
+      '--source': join(f.dir, 'secret-internal-url'),
+      '--confirm': proof,
+    });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /読み取れません/);
+    assert.doesNotMatch(r.stdout + r.stderr, /secret-internal-url/);
+    r = f.call({ '--base-branch': 'other', '--confirm': proof });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /参照が一致/);
+    r = f.call({ '--source-sha': f.first, '--confirm': proof });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /差分がありません/);
+    f.commit(f.dest, 'change', 'conflict');
+    r = f.call({
+      '--base-sha': f.git(f.dest, 'rev-parse', 'HEAD'),
+      '--confirm': proof,
+    });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /競合/);
+    f.git(f.dest, 'checkout', '-q', '--orphan', 'unrelated');
+    f.commit(f.dest, 'unrelated', 'unrelated');
+    f.git(f.dest, 'branch', '-f', 'main', 'HEAD');
+    r = f.call({
+      '--base-sha': f.git(f.dest, 'rev-parse', 'HEAD'),
+      '--confirm': proof,
+    });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /無関係な履歴/);
+    assert.equal(readFileSync(f.log, 'utf8'), '');
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true });
+  }
+});
+
+test('合成Git: 公開先の変更を保ち指定SHA以降を除いた木を表示する', () => {
+  const f = fixture();
+  try {
+    const r = f.call();
+    assert.equal(r.status, 0, r.stderr);
+    const tree = r.stdout.match(/候補ツリー指紋: ([a-f0-9]{40})/)?.[1];
+    assert.ok(tree);
+    writeFileSync(join(f.dest, 'change'), 'change');
+    f.git(f.dest, 'add', 'change');
+    const expected = f.git(f.dest, 'write-tree');
+    assert.equal(tree, expected);
+    const candidate = readFileSync(f.candidate, 'utf8');
+    assert.match(candidate, new RegExp(`^tree ${tree}\\nparent ${f.base}\\n`));
+    assert.doesNotMatch(candidate, /secret-value/);
+    assert.equal((candidate.match(/^parent /gm) || []).length, 1);
+    assert.match(r.stdout, new RegExp(`基点: main ${f.base}`));
+    assert.match(r.stdout, new RegExp(`統合元SHA: ${f.sha}`));
+    assert.match(r.stdout, /変更パス: \["change"\]/);
+    assert.deepEqual(
+      f.git(f.dest, 'ls-tree', '--name-only', tree).split('\n').sort(),
+      ['change', 'common', 'public'],
+    );
+    assert.deepEqual(
+      f.git(f.dest, 'ls-tree', '--name-only', f.base).split('\n').sort(),
+      ['common', 'public'],
+    );
+    assert.equal(readFileSync(f.log, 'utf8'), '');
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true });
+  }
+});
+
+test('確認済み候補を専用枝に送り応答消失後も同じPRを再利用する', () => {
+  const f = fixture();
+  try {
+    const preview = f.call();
+    assert.equal(preview.status, 0, preview.stderr);
+    const proof = preview.stdout.match(/確認値: ([a-f0-9]{64})/)?.[1];
+    assert.ok(proof);
+    let r = f.call({ '--confirm': '0'.repeat(64) });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /確認値/);
+    assert.equal(readFileSync(f.log, 'utf8'), '');
+    writeFileSync(f.state, JSON.stringify({ prs: [], failCreate: true }));
+    r = f.call({ '--confirm': proof });
+    assert.notEqual(r.status, 0);
+    assert.equal(r.stdout, preview.stdout);
+    assert.match(r.stderr, /PR作成結果/);
+    const branch = `intake-publish/${proof}`;
+    const head = f.git(f.dest, 'rev-parse', `refs/heads/${branch}`);
+    assert.equal(
+      f.git(f.dest, 'rev-list', '--parents', '-n', '1', head),
+      `${head} ${f.base}`,
+    );
+    assert.deepEqual(
+      f.git(f.dest, 'ls-tree', '--name-only', head).split('\n').sort(),
+      ['change', 'common', 'public'],
+    );
+    const state = JSON.parse(readFileSync(f.state, 'utf8'));
+    assert.equal(state.prs.length, 1);
+    state.failCreate = false;
+    writeFileSync(f.state, JSON.stringify(state));
+    r = f.call({ '--confirm': proof });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /PR: https:\/\/github\.com\/owner\/repo\/pull\/1/);
+    assert.match(r.stdout, new RegExp(`確認対象SHA: ${f.sha}`));
+    assert.equal(readFileSync(f.log, 'utf8'), 'push\npr-create\n');
+    assert.deepEqual(readFileSync(f.pushArgs, 'utf8').trim().split('\n'), [
+      'push',
+      '--no-follow-tags',
+      '--recurse-submodules=no',
+      '--',
+      f.dest,
+      `${head}:refs/heads/${branch}`,
+    ]);
+    assert.equal(JSON.parse(readFileSync(f.state, 'utf8')).prs.length, 1);
+    state.prs[0].base.ref = 'other';
+    writeFileSync(f.state, JSON.stringify(state));
+    r = f.call({ '--confirm': proof });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /PRが候補と一致しません/);
+    assert.equal(readFileSync(f.log, 'utf8'), 'push\npr-create\n');
+    state.prs[0].base.ref = 'main';
+    writeFileSync(f.state, JSON.stringify(state));
+    f.git(f.dest, 'branch', '-f', branch, f.base);
+    r = f.call({ '--confirm': proof });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /公開枝が候補と一致しません/);
+    assert.equal(readFileSync(f.log, 'utf8'), 'push\npr-create\n');
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true });
+  }
+});
+
+test('PR作成後の照合失敗と終了済みPRを区別し重複作成しない', () => {
+  const f = fixture();
+  try {
+    const preview = f.call();
+    assert.equal(preview.status, 0, preview.stderr);
+    const proof = preview.stdout.match(/確認値: ([a-f0-9]{64})/)?.[1];
+    assert.ok(proof);
+    writeFileSync(f.state, JSON.stringify({ prs: [], failAfterCreate: true }));
+    const failed = f.call({ '--confirm': proof });
+    assert.notEqual(failed.status, 0);
+    assert.match(failed.stderr, /PR作成は成功しましたが、作成後の照合に失敗/);
+    assert.match(failed.stderr, /PRを照合できません/);
+    assert.doesNotMatch(failed.stdout, /PR: /);
+    const state = JSON.parse(readFileSync(f.state, 'utf8'));
+    assert.equal(state.prs.length, 1);
+    state.failAfterCreate = false;
+    state.prs[0].state = 'closed';
+    writeFileSync(f.state, JSON.stringify(state));
+    const closed = f.call({ '--confirm': proof });
+    assert.notEqual(closed.status, 0);
+    assert.match(closed.stderr, /既存のPRは閉じられています/);
+    state.prs[0].merged_at = '2026-01-01T00:00:00Z';
+    writeFileSync(f.state, JSON.stringify(state));
+    f.git(f.dest, 'branch', '-D', `intake-publish/${proof}`);
+    const merged = f.call({ '--confirm': proof });
+    assert.notEqual(merged.status, 0);
+    assert.match(merged.stderr, /既存のPRはマージ済みです/);
+    assert.equal(readFileSync(f.log, 'utf8'), 'push\npr-create\n');
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true });
+  }
+});
+
+test('送信済み枝からPR作成を再開し基点変更時には送信しない', () => {
+  const f = fixture();
+  try {
+    const preview = f.call();
+    assert.equal(preview.status, 0, preview.stderr);
+    const proof = preview.stdout.match(/確認値: ([a-f0-9]{64})/)?.[1];
+    assert.ok(proof);
+    writeFileSync(f.failPush, '1');
+    const initial = f.call({ '--confirm': proof });
+    assert.notEqual(initial.status, 0);
+    assert.match(initial.stderr, /送信結果/);
+    assert.equal(readFileSync(f.log, 'utf8'), 'push\n');
+    writeFileSync(f.log, '');
+    const resumed = f.call({ '--confirm': proof });
+    assert.equal(resumed.status, 0, resumed.stderr);
+    assert.equal(readFileSync(f.log, 'utf8'), 'pr-create\n');
+    assert.equal(JSON.parse(readFileSync(f.state, 'utf8')).prs.length, 1);
+    f.commit(f.dest, 'new-base', 'new-base');
+    const refused = f.call({ '--confirm': proof });
+    assert.notEqual(refused.status, 0);
+    assert.match(refused.stderr, /基点SHA/);
+    assert.equal(readFileSync(f.log, 'utf8'), 'pr-create\n');
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true });
+  }
+});

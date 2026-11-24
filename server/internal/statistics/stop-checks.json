@@ -1,0 +1,332 @@
+[
+  {
+    "id": "unasked-send",
+    "kind": "hook",
+    "purpose": "質問だけの回の無断送信を防ぐ",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "unasked-work",
+    "kind": "hook",
+    "purpose": "質問だけの回の無断作業を防ぐ",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "attention-unread",
+    "kind": "hook",
+    "purpose": "通知の原因を確認する",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "answer-first",
+    "kind": "hook",
+    "purpose": "質問への回答を先にする",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "silent-watch",
+    "kind": "hook",
+    "purpose": "通知の届かない見張りを防ぐ",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "stall-unhandled",
+    "kind": "hook",
+    "purpose": "任された停滞への対処を促す",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "foreground-repeat",
+    "kind": "hook",
+    "purpose": "前景の長い処理を減らす",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "apology-prevention",
+    "kind": "hook",
+    "purpose": "失敗時の再発防止を確認する",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "scope",
+    "kind": "hook",
+    "purpose": "依頼に関係する報告に絞る",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "filing-question",
+    "kind": "hook",
+    "purpose": "不具合の起票を利用者に聞かずに行う",
+    "introducedAt": "2026-11-06",
+    "introductionNote": "共通番号4549の直接PRで導入",
+    "nextReviewAt": "2026-12-06",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "duplicate-search",
+    "kind": "hook",
+    "purpose": "起票提案前に重複を調べる",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "unwatched-background",
+    "kind": "hook",
+    "purpose": "切り離した処理を見張る",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "unnecessary-question",
+    "kind": "hook",
+    "purpose": "自分で決められる質問を減らす",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "report-length",
+    "kind": "hook",
+    "purpose": "長すぎる報告を防ぐ",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "report-watch-note",
+    "kind": "hook",
+    "purpose": "不要な見張り説明を防ぐ",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "report-question-position",
+    "kind": "hook",
+    "purpose": "質問を末尾にまとめる",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "decision-log",
+    "kind": "hook",
+    "purpose": "作業の判断を報告する",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "filing-watch",
+    "kind": "hook",
+    "purpose": "起票後に見張る",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "watch-rearm",
+    "kind": "hook",
+    "purpose": "見張りを張り直す",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "denied-manual",
+    "kind": "hook",
+    "purpose": "拒否された操作を利用者任せにしない",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "unread-operation",
+    "kind": "hook",
+    "purpose": "受付操作の結果を読んで報告する",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "instruction-wait",
+    "kind": "hook",
+    "purpose": "許可済みの作業を進める",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "waiting-reference",
+    "kind": "hook",
+    "purpose": "回答待ちの質問を最後の返答だけで分かるようにする",
+    "introducedAt": "2026-11-12",
+    "introductionNote": "回答待ちの同じ報告が流れて質問を見失った件を受けて追加",
+    "nextReviewAt": "2026-12-12",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "question-format",
+    "kind": "hook",
+    "purpose": "質問の分類と番号を確認する",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "permission-settings",
+    "kind": "hook",
+    "purpose": "許可設定変更の依頼を避ける",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "manual-request",
+    "kind": "hook",
+    "purpose": "手作業の依頼前に自分で試す",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "investigation-before-answer",
+    "kind": "hook",
+    "purpose": "回答前の多数の調査を知らせる",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": true
+  },
+  {
+    "id": "duplicate-issue-guard",
+    "kind": "guard",
+    "purpose": "重複する依頼の送信を防ぐ",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": false
+  },
+  {
+    "id": "gitea-issue-api-guard",
+    "kind": "guard",
+    "purpose": "Gitea Issue APIへの直接アクセスを防ぐ",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": false
+  },
+  {
+    "id": "gitea-token-guard",
+    "kind": "guard",
+    "purpose": "Giteaトークンの直接利用を防ぐ",
+    "introducedAt": "2026-11-05",
+    "introductionNote": "実際の導入日は未確認のため台帳登録日を記載",
+    "nextReviewAt": "2026-12-05",
+    "reviews": [],
+    "counted": false
+  },
+  {
+    "id": "authorized-question",
+    "kind": "hook",
+    "purpose": "依頼で許可済みの通常操作の再確認を止める",
+    "introductionNote": "質問の判定に追加",
+    "introducedAt": "2026-11-09",
+    "nextReviewAt": "2027-02-09",
+    "counted": true,
+    "reviews": []
+  },
+  {
+    "id": "irreversible-question",
+    "kind": "hook",
+    "purpose": "破壊的・不可逆な質問の具体的な理由を確認する",
+    "introductionNote": "質問の判定に追加",
+    "introducedAt": "2026-11-09",
+    "nextReviewAt": "2027-02-09",
+    "counted": true,
+    "reviews": []
+  },
+  {
+    "id": "stop-question",
+    "kind": "hook",
+    "purpose": "停止を破壊的・不可逆として尋ねる質問を止める",
+    "introductionNote": "質問の判定に追加",
+    "introducedAt": "2026-11-09",
+    "nextReviewAt": "2027-02-09",
+    "counted": true,
+    "reviews": []
+  }
+]

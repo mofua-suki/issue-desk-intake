@@ -1,0 +1,92 @@
+{
+  "targets": [
+    {
+      "kind": "skill",
+      "name": "usage-per-issue"
+    },
+    {
+      "kind": "skill",
+      "name": "issue-desk-operations"
+    },
+    {
+      "kind": "skill",
+      "name": "priority-issue"
+    },
+    {
+      "kind": "skill",
+      "name": "issue-desk-issue-control"
+    },
+    {
+      "kind": "skill",
+      "name": "issue-desk-admin"
+    },
+    {
+      "kind": "skill",
+      "name": "model-override"
+    },
+    {
+      "kind": "skill",
+      "name": "provider-disable"
+    },
+    {
+      "kind": "skill",
+      "name": "host-drain"
+    },
+    {
+      "kind": "skill",
+      "name": "desk-list"
+    },
+    {
+      "kind": "skill",
+      "name": "desk-attention"
+    },
+    {
+      "kind": "skill",
+      "name": "user-interaction"
+    },
+    {
+      "kind": "skill",
+      "name": "check-gitea-issues"
+    },
+    {
+      "kind": "skill",
+      "name": "merge-manual-pr"
+    },
+    {
+      "kind": "skill",
+      "name": "change-ordering"
+    },
+    {
+      "kind": "skill",
+      "name": "issue-desk-api"
+    },
+    {
+      "kind": "skill",
+      "name": "obsolete-cleanup"
+    },
+    {
+      "kind": "skill",
+      "name": "task-completion"
+    },
+    {
+      "kind": "skill",
+      "name": "nas-verify"
+    },
+    {
+      "kind": "skill",
+      "name": "host-ssh-permissions"
+    },
+    {
+      "kind": "skill",
+      "name": "issue-desk-stats"
+    },
+    {
+      "kind": "skill",
+      "name": "issue-desk-finalization"
+    },
+    {
+      "kind": "skill",
+      "name": "refactor-sweep"
+    }
+  ]
+}

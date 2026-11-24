@@ -1,0 +1,722 @@
+{
+  'paths':
+    {
+      '/api/v1/jobs':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_jobs',
+              'summary': 'ジョブ一覧を読む',
+              'description': '既定200件、最大200件。limitと1始まりのpageで続きを読み、hasMoreがfalseになるまで繰り返す。並行して優先度や状態が変わるとページ間で行がずれることがある。statusはジョブの状態名のカンマ区切り。各job.reviewHoldsは非負の安全な整数またはnull（unknown）。欠測・旧形式・読取失敗を0回とみなさない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'properties': { 'jobs': { 'type': 'array', 'items': { '$ref': '#/components/schemas/ReadJob' } }, 'total': { 'type': 'integer' }, 'page': { 'type': 'integer' }, 'limit': { 'type': 'integer' }, 'hasMore': { 'type': 'boolean' } }, 'required': ['jobs', 'total', 'page', 'limit', 'hasMore'], 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters':
+                [
+                  { 'name': 'repo', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'status', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'limit', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 200 } },
+                  { 'name': 'page', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'default': 1 } },
+                ],
+            },
+        },
+      '/api/v1/jobs/next':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_jobs_next',
+              'parameters':
+                [{ 'name': 'x-issue-desk-contract', 'in': 'header', 'required': false, 'schema': { 'type': 'string' } }],
+              'summary': '仕事を1件受け取る',
+              'description': 'hostは送り手と同じ。lease={epoch,expiresAt}。停止印・ready・依存・範囲・PCの枠を受付が判定。unknown_host・drain・not_readyの後でdispatch.loadLimitとdispatch.leaseMinutesによる過負荷を判定し、新規配布を見送る（内部結果job=null・reason=load、HTTP応答は本文なしの204）。判定は/api/hostsのoverloadedと共通。非超過標本などで回復後は次の配布要求から通常判定へ戻り、既存ジョブは変更しない。x-issue-desk-contractが受付の版と違えば409 CONTRACT_MISMATCH（ヘッダーの欠落では断らない）。実行中のlease・報告は継続。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'job':
+                                        {
+                                          'type': 'object',
+                                          'properties':
+                                            {
+                                              'dependencyMerges':
+                                                {
+                                                  'type': 'array',
+                                                  'description': '依存があり、解消済みの依存がある場合にだけ配布応答のjobへ付く。各要素は依存Issueの解消情報。依存がない場合は省略。',
+                                                  'items':
+                                                    {
+                                                      'type': 'object',
+                                                      'properties':
+                                                        {
+                                                          'repo': { 'type': 'string' },
+                                                          'number': { 'type': 'integer' },
+                                                          'status': { 'type': 'string', 'enum': ['merged', 'closed'] },
+                                                          'prNumber':
+                                                            {
+                                                              'type': ['integer', 'null'],
+                                                              'description': '保存済みPR番号。未保存の場合はnull。closedでも保存値があれば返す。',
+                                                            },
+                                                          'mergeCommitSha':
+                                                            {
+                                                              'type': ['string', 'null'],
+                                                              'description': '保存済みマージコミットSHA。未保存または不明の場合はnull。closedでも保存値があれば返す。',
+                                                            },
+                                                        },
+                                                      'required':
+                                                        ['repo', 'number', 'status', 'prNumber', 'mergeCommitSha'],
+                                                      'additionalProperties': false,
+                                                    },
+                                                },
+                                            },
+                                          'additionalProperties': true,
+                                        },
+                                      'lease': {},
+                                    },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '204': { 'description': '配れる仕事がない。本文なし。' },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'host': { 'type': 'string' },
+                                  'capacity': { 'type': 'integer', 'minimum': 1 },
+                                  'repos': { 'type': 'array', 'maxItems': 1000, 'items': { 'type': 'string', 'pattern': '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' }, 'description': '引き取り可能なリポジトリで担当範囲を絞る。省略は担当全体、空配列は引き取らない。' },
+                                  'waitSeconds':
+                                    {
+                                      'type': 'integer',
+                                      'minimum': 0,
+                                      'maximum': 60,
+                                      'description': '配れる仕事の通知を待つ秒数。省略は即時応答。',
+                                    },
+                                },
+                              'additionalProperties': false,
+                              'required': ['capacity'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/jobs/{id}':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_jobs_id',
+              'summary': 'ジョブ・依存・出来事を読む',
+              'description': '処理と状態による可否は参照先の実装を正本とする。job.reviewHoldsは非負の安全な整数またはnull（unknown）。0と欠測を区別する。eventsは直近100件を古い順に返し、受付が初めてPR番号を受け取った出来事pr_created（data: pr・epoch）が含まれる。再実装後の公開確認で範囲保護を解除した出来事running_publication（data: generation・epoch・pr・branch・headSha）が含まれる場合がある。これは有効なleaseのrunning状態報告でPRと公開工程を確認した受付が保存する履歴で、Workerのevents投稿では作成できない。dependsOnは全件を返し件数上限はない。過去のPR時刻は補完しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'job': { '$ref': '#/components/schemas/ReadJob' }, 'dependsOn': { 'type': 'array', 'items': { 'type': 'integer' } }, 'events': { 'type': 'array', 'maxItems': 100, 'items': { '$ref': '#/components/schemas/ReadJobEvent' } } },
+                                  'required': ['job', 'dependsOn', 'events'],
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/v1/jobs/{id}/lease':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_jobs_id_lease',
+              'summary': 'ジョブのleaseを報告',
+              'description': 'hostは送り手と同じ。leaseのepoch不一致は409(code=lease_lost)。idは1〜16桁の正整数。status/kindと各値の検査は server/internal/jobs。scopeはresult=granted|wait。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'job': {}, 'lease': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'host': { 'type': 'string' },
+                                  'epoch': { 'type': 'integer' },
+                                  'progress': { 'type': 'object', 'additionalProperties': true },
+                                },
+                              'additionalProperties': false,
+                              'required': ['epoch'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/jobs/{id}/state':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_jobs_id_state',
+              'summary': 'ジョブのstateを報告',
+              'x-idempotency': '終了状態の同じ報告は、同じhost・epoch・内容なら前の結果を返し、副作用を繰り返さない。acceptanceTransfersは報告と同一トランザクションで保存し、既存の移管報告との内容不一致は409(code=acceptance_transfer_conflict)。',
+              'description': 'hostは送り手と同じ。leaseのepoch不一致は409(code=lease_lost)。idは1〜16桁の正整数。status/kindと各値の検査は server/internal/jobs。continuationは受付管理情報でありWorkerのview申告を採用しない。headSha付きでartifact欄が存在しない旧行は、初回epoch=1から現在epochまで欠落・重複・逆転のないleased履歴のhostが全て現在の有効なleaseのhostと一致するときだけ、headSha・branchの変更を受理して報告元owner・現世代のartifactと原子的に保存する。最後のleaseやcontinuation.hostだけでは補完しない。通常retry・retest・適格なautoRetestを経ても不正artifactの存在を保持し、旧形式として補完しない。不正なartifact・履歴不足・別hostの未公開成果置換は409(code=artifact_unavailable)で保存せず、別host・古いepoch・期限切れleaseは409(code=lease_lost)。公開証拠による引継ぎと明示的な初期状態からの再試行は従来どおり。resultはJSONで32768文字以下（超過は400、保存なし）。固定テストのコントローラー報告はさらにJSON UTF-8で32768 bytes以下に制限する。固定テストのresult.fixedTestEvidence（version=1）は抜粋前の秘匿化出力と実行状態から作る。namesは最大200件・各1000文字、証拠全体はJSON UTF-8で16000 bytes以下。total不明はnull、欠落・中断・環境異常・上限超過はcomplete=false。timeoutは実行時の時間切れだけを表し、他の失敗があるとcomplete=false。新形式はerrorやdetailから補完しない。実装結果とテスト記録が報告枠に収まらない場合はimplementationResultMissing=trueとし、testFailuresとtestTimeoutのcompleteをfalseにする。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema': { 'type': 'object', 'properties': { 'job': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'host': { 'type': 'string' },
+                                  'epoch': { 'type': 'integer' },
+                                  'status':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['queued', 'running', 'held', 'failed', 'stopped', 'merged', 'closed'],
+                                    },
+                                  'controllerTest': {'type':'object','description':'実装モデルの結果とは分離した固定検証のイベント。planSHAと実測したtest（causeObservation・diagnostic）を送り、leaseの送信元・世代・対象SHAを照合する。完全な固定検証の合格だけを同じ証拠型の条件へ使う。','required':['planSHA','test'],'properties':{'planSHA':{'type':'string'},'test':{'type':'object'}}},
+                                  'controllerReport': {'type':'object','description':'投稿済みの訂正報告だけの証拠。受付は対象Issue・本文指紋と、job ID・世代・head・planSHAを含む目印を照合し、同世代で現epochより前に貸出された担当者または現担当の投稿を受理する。世代を含まない旧目印は現担当の投稿のみ受理する。','required':['planSHA','head','marker','bodySHA'],'properties':{'planSHA':{'type':'string'},'head':{'type':'string'},'marker':{'type':'string'},'bodySHA':{'type':'string'}}},
+                                  'holdReason': { 'type': 'string' },
+                                  'branch': { 'type': 'string' },
+                                  'pr': { 'type': 'integer' },
+                                  'headSha': { 'type': 'string' },
+                                  'diffFingerprint': {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$", "description": "baseとheadの一意なmerge-baseからheadまでの三点差分を表すsha256。merge-baseが無いか複数ある場合は報告しない。headがbaseの取り込みだけのマージである間は、その第1親をheadに読み替えることを繰り返し、読み替えた後のheadで差分を求める。取り込みだけのマージとは、親が2つで、第2親がbaseの祖先、第1親がbaseの祖先でなく、treeが両親を競合なく自動マージした結果（git merge-tree --write-tree 第1親 第2親）と一致するコミットをいう。手で編集したマージ、競合を解いたマージ、base以外の枝のマージは読み替えない。これにより、baseが同じファイルを変えていても、取り込みだけなら指紋は変わらない。両treeを再帰走査し、パス・モード・内容が異なるファイル、シンボリックリンク、サブモジュールを列挙する（renameは削除と追加）。パスの生バイトの符号なし辞書順に並べ、各行を長さ8バイトの符号なしbig endianのパス長、パスの生バイト、変更前モード6桁ASCII、変更後モード6桁ASCII、変更前の内容長8バイトbig endianと内容、変更後の内容長8バイトbig endianと内容の順で連結する。欠落側はモード000000と長さ0。通常ファイルとリンクの内容は変換しないblobの全バイト、サブモジュールはcommit object IDの小文字16進ASCIIとする。モードはGit treeの6桁表現。区切りや末尾改行は加えず、連結バイト列をSHA-256してsha256:と小文字16進64桁で表す。空差分は長さ0でsha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855。固定例: a.txtをモード100644・内容x\\n（78 0a）で新規追加した場合、入力hexは0000000000000005612e74787430303030303031303036343400000000000000000000000000000002780a、結果はsha256:85b96e7304348fab90523950169bc034c4a66fa8e30896f65c093b1b1daab191。同じ報告のheadShaが必須。nullは消去、欠落は対象が同じ場合だけ保持する。読出し時も保存されたjobId・generation・branch・pr・headShaを現在のジョブと照合し、不一致または項目欠落なら指紋をnullとして返す。承認の引継ぎ判定では、判定時点のジョブと保存された対象を必ず照合する。"},
+                                  'view':
+                                    {
+                                      'type': 'object',
+                                      'description': 'client入力の各JSON項目は32768文字以下。レビュー保留の累計はreviewHolds、保持済み下限はreviewHoldsLowerBoundで報告する。累計は非負の安全な整数（0〜9007199254740991）またはnull。明示0は累計0回の報告で、nullはunknown（完全性が不明）を表す。view全体またはreviewHoldsの欠落、負数・小数・文字列・安全整数の範囲外などの不正値も、累計を0に補完せず完全性をunknownにする。これらの累計の欠落・不正値だけでは状態報告を拒否しない。受付は保存済み累計・下限と報告された有効な累計・下限の最大値を下限として保存し、減らさない。下限が0でも確定した累計0回とは限らず、unknownになった完全性は後続の有効な報告（明示0を含む）で復元しない。取得時のjob.reviewHoldsは完全性がunknownならnull、それ以外は保持済み下限を返す。splitIndexは受付管理の分割案番号でWorkerのstate viewから除外する。dependencyReviewsは受付管理の読取専用項目でWorkerのstate viewから除外する。正規形式はview.dependencyReviews[先行のキー]のrelation（unrelated/required）、空でなく4000 UTF-16単位以内のevidence、consultationId、at（日時）。記録の検証と作成は受付側の後続作業が担い、この保護だけでは既存記録の来歴や有効性を証明しない。acceptanceTransferRecordsは受付が保存・再照合する読取専用項目でclientのviewからは除外し、受付が付加する照合情報はclient入力枠の外に保存する。acceptanceTransferInput・acceptanceTransferChecks・acceptanceTransferWaitも受付の読取専用項目でclient報告から除外する。Inputは起票時の本文スナップショットとcomplete（全文かどうか）、Checksは本文・追加指示（view.instructionsの参照contextを含む）と移管項目の指紋をキーにしたrelation（required/unrelated）・evidence・consultationId、Waitはblocking・checks・waits・targets・targetChecks（依存先ごとの判断指紋）・targetPaths（依存先ごとの再移管経路の判断指紋列）・ownedChecks（経路が一時的に探索対象外でも所有根拠を照合できる判断記録）・ownedPaths（自動依存を所有する経路。各経路の上流が明示的に無関係になれば子孫も撤回し、別の有効な経路は保持）・ownedTargets（受付が追加した依存と根拠。明示的な無関係の再判定だけで撤回し、通常の依存は保持）・missingSince（requiredかつmissingの案IDごとの初回検出ISO時刻）・orphanedWaits（1時間の猶予後に待ちから外した案のproposalId・source・criterion・artifacts・reason・missingSince）とsince（待機開始ISO時刻、待機していなければnull）。移管先の成果物はstatus=mergedに加えresult.mergeCommitの40桁SHAで実マージを確認する。空差分完了や調査報告だけでは解放しない。これらは受付が開始前の追加成果物条件と依存待ち表示に使い、再試行・再開だけでは未完成を解放しない。acceptanceTransferRecordsのversion=1、source、既知のprovider、report、proposalsを保持。proposalsはnumber/id/legacyId/status/reason/evidenceと既知のproposalId/issueを持つ。statusはmissing/unfiled/unknown/rejected/discarded/conflict/filed。通知結果不明でも既知のissueを保持する。現在の採用記録を履歴より優先し、履歴だけの拒否・破棄は内容指紋を照合する。再照合はジョブごとのトランザクションで行い、1件の失敗で他の更新を巻き戻さない。',
+                                      'properties':
+                                        {
+                                          'reviewHolds':
+                                            {
+                                              'type': ['integer', 'null'],
+                                              'minimum': 0,
+                                              'maximum': 9007199254740991,
+                                              'description': 'レビュー保留の累計。非負の安全な整数またはnull。明示0は累計0回、null・欠落・不正値はunknown（完全性が不明）。保存済み下限は減らさず、不明期間の完全性は後続報告で復元しない。起動時と未着手返却も報告する。',
+                                            },
+                                          'reviewHoldsLowerBound':
+                                            {
+                                              'type': 'integer',
+                                              'minimum': 0,
+                                              'maximum': 9007199254740991,
+                                              'description': '保持済み累計の下限。非負の安全な整数。保存済みと報告された有効な累計・下限の最大値を保持し、unknown時にも減らさない。欠落・不正値は下限を更新する値に使わない。下限は完全性を保証せず、確定累計とは区別する。',
+                                            },
+                                          'fixedTestPass':
+                                            {
+                                              'type': ['object', 'null'],
+                                              'description': '固定テストの合格。最大4096 bytes。内容が古い・合格が無い場合はnullで消す。出力・秘密を含めない。部分合格は同じkeyの記録を必須とする。',
+                                              'required': ['key'],
+                                              'additionalProperties': false,
+                                              'properties':
+                                                {
+                                                  'key':
+                                                    {
+                                                      'type': 'string',
+                                                      'pattern': "^[a-f0-9]{40,} \\[",
+                                                      'description': '内容ID＋空白＋コマンド配列のJSON（passedContentと同じ）',
+                                                    },
+                                                  'head': { 'type': 'string', 'pattern': '^[a-f0-9]{40}$' },
+                                                  'passedSelection':
+                                                    {
+                                                      'type': 'object',
+                                                      'required':
+                                                        ['key', 'base', 'files', 'omitted', 'total', 'counts'],
+                                                      'properties':
+                                                        {
+                                                          'key': { 'type': 'string' },
+                                                          'base': { 'type': ['string', 'null'] },
+                                                          'files': { 'type': 'array', 'items': { 'type': 'string' } },
+                                                          'omitted': { 'type': 'array', 'items': { 'type': 'string' } },
+                                                          'total': { 'type': 'integer' },
+                                                          'counts':
+                                                            {
+                                                              'type': 'object',
+                                                              'additionalProperties': { 'type': 'integer' },
+                                                            },
+                                                        },
+                                                    },
+                                                  'passedNasSkip':
+                                                    {
+                                                      'type': 'object',
+                                                      'required': ['key', 'base', 'reason'],
+                                                      'properties':
+                                                        {
+                                                          'key': { 'type': 'string' },
+                                                          'base': { 'type': ['string', 'null'] },
+                                                          'reason': { 'type': 'string' },
+                                                          'nasElsewhere': { 'type': 'boolean' },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                          'fixedTestRepairs':
+                                            {
+                                              'type': 'array',
+                                              'maxItems': 50,
+                                              'description': 'Codexの固定テストの修正1回ごとの結果。配列全体を報告し、担当PCの交代時も引き継ぐ。sizeFixの回は含めない。',
+                                              'items':
+                                                {
+                                                  'type': 'object',
+                                                  'additionalProperties': false,
+                                                  'required': ['generation', 'round', 'at', 'outcome'],
+                                                  'properties':
+                                                    {
+                                                      'generation':
+                                                        {
+                                                          'type': 'integer',
+                                                          'minimum': 0,
+                                                          'description': '同じ回のworkerUsage.generation（Engineの実行番号）。受付の世代とは異なる。',
+                                                        },
+                                                      'round': { 'type': 'integer', 'minimum': 1 },
+                                                      'at':
+                                                        {
+                                                          'type': 'string',
+                                                          'format': 'date-time',
+                                                          'description': '記録時刻（UTCのISO 8601、ミリ秒付き）。',
+                                                        },
+                                                      'outcome':
+                                                        {
+                                                          'type': 'string',
+                                                          'enum': ['passed', 'failed', 'ai-failed', 'not-tested'],
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                          'prerequisiteMissingGenerations': { 'type': 'array', 'items': { 'type': 'integer', 'minimum': 0 }, 'description': '受付が前提不足の状態報告から保存する実装回数除外の世代。' },
+                                          'retestPassedGenerations': { 'type': 'array', 'items': { 'type': 'integer', 'minimum': 1 }, 'description': '旧Workerの再テスト合格による実装回数除外の世代。既存保存値との互換欄。現Workerは新規生成しない。' },
+                                          'codexNotStartedGenerations':
+                                            {
+                                              'type': 'array',
+                                              'items': { 'type': 'integer', 'minimum': 0 },
+                                              'description': 'Codexの依存の起動前準備で止まり、AIを起動しなかった受付の世代。実装回数から除外する。',
+                                            },
+                                          'codexStartedGenerations':
+                                            {
+                                              'type': 'array',
+                                              'items': { 'type': 'integer', 'minimum': 0 },
+                                              'description': 'Codexの起動前準備を通過した受付の世代。同じ世代での環境停止を未起動として除外しない。',
+                                            },
+                                          'codexDepsUnavailable':
+                                            {
+                                              'type': ['array', 'null'],
+                                              'items':
+                                                {
+                                                  'type': 'object',
+                                                  'required': ['command', 'detail', 'checks'],
+                                                  'properties':
+                                                    {
+                                                      'command': { 'type': 'string' },
+                                                      'detail': { 'type': 'string' },
+                                                      'checks':
+                                                        {
+                                                          'type': 'array',
+                                                          'items': { 'type': 'string', 'enum': ['lint', 'typecheck'] },
+                                                        },
+                                                    },
+                                                },
+                                              'description': '環境理由で実行できなかったlint・typecheckの伏せ字済み記録。次の指示へ引き継ぎ、起動前確認と報告での実行で解消したらnullを送る。',
+                                            },
+                                          'reimplementExpected':
+                                            {
+                                              'type': 'object',
+                                              'required': ['generation', 'reimplements'],
+                                              'properties':
+                                                {
+                                                  'generation': { 'type': 'integer', 'minimum': 0 },
+                                                  'reimplements': { 'type': 'boolean' },
+                                                },
+                                              'description': '受付専用。retry の次世代の再実装判定。client の state 報告からは除外する。',
+                                            },
+                                          'reimplementMismatch':
+                                            {
+                                              'type': 'object',
+                                              'required': ['generation', 'reason'],
+                                              'properties':
+                                                {
+                                                  'generation': { 'type': 'integer', 'minimum': 0 },
+                                                  'reason': { 'type': 'string', 'maxLength': 300 },
+                                                },
+                                              'description': '再実装しない予定の世代で実装AIを呼んだ記録。同じ世代は一度だけ。',
+                                            },
+                                          'tierFailureReason':
+                                            {
+                                              'type': ['string', 'null'],
+                                              'description': 'EF2: 環境・変更と無関係な失敗で難易度を維持する理由。不明・実装由来ならnull。tierHistoryの維持記録はfromとtoが同じでaction=keep。',
+                                            },
+                                        },
+                                      'additionalProperties': true,
+                                    },
+                                  'result':
+                                    {
+                                      'type': 'object',
+                                      'description': 'JSONで32768文字以下。merged報告はmergeCommitを保持し、移管があればacceptanceTransfersとfollowupIssuesを添える。両項目の合計はJSONで24Ki文字以下。不正な番号対応・明示null・上限超過は400、状態・移管記録とも保存しない。旧結果の省略は既存記録を消さず移管を推測しない。共有DBへの保存主体は受付。別DBの案・下書きとの再照合は到着順に依存せず起動時・既存周期でも復旧する。',
+                                      'properties':
+                                        {
+                                          'mergeCommit': { 'type': ['string', 'null'] },
+                                          'acceptanceTransfers':
+                                            {
+                                              'type': 'array',
+                                              'maxItems': 30,
+                                              'items':
+                                                {
+                                                  'type': 'object',
+                                                  'additionalProperties': false,
+                                                  'required': ['criterion', 'artifacts', 'followupNumbers'],
+                                                  'properties':
+                                                    {
+                                                      'criterion':
+                                                        { 'type': 'string', 'minLength': 1, 'maxLength': 2000 },
+                                                      'artifacts':
+                                                        {
+                                                          'type': 'array',
+                                                          'minItems': 1,
+                                                          'maxItems': 30,
+                                                          'items':
+                                                            { 'type': 'string', 'minLength': 1, 'maxLength': 2000 },
+                                                        },
+                                                      'followupNumbers':
+                                                        {
+                                                          'type': 'array',
+                                                          'minItems': 1,
+                                                          'uniqueItems': true,
+                                                          'items': { 'type': 'integer', 'minimum': 1 },
+                                                          'description': 'followupIssuesの1始まり番号。配列範囲内を必須とし、既存の新旧案IDへ対応付ける。同じ案IDの内容不一致は根拠付き未解決として保持する。',
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                          'followupIssues':
+                                            {
+                                              'type': 'array',
+                                              'items': { 'type': 'object' },
+                                              'description': '移管の対応案。既存の分割案検査（title、purpose、acceptance、任意のchangePaths等）に従う。題名の部分一致で起票先を選ばない。',
+                                            },
+                                        },
+                                      'additionalProperties': true,
+                                    },
+                                },
+                              'additionalProperties': false,
+                              'required': ['epoch', 'status'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/jobs/{id}/scope':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_jobs_id_scope',
+              'summary': 'ジョブのscopeを報告',
+              'description': 'hostは送り手と同じ。leaseのepoch不一致は409(code=lease_lost)。idは1〜16桁の正整数。addの上限はmax(2*baseline, intakeSplit.files)。baselineは確認可能な起票時の宣言件数で、複数回追加や縮小後も維持し、初回追加前の縮小は保存されたbeforeを参照する。起票時件数を確定できない既存行はbaseline=0。テストを除外し、大小文字の重複は1件、ワイルドカードとディレクトリは件数に含めず、具体的な追加ファイルは数える。filesは共有既定値の補完前の明示設定の正の安全な整数を使い、欠落・不正・値取得不能時は範囲追加専用の8（共有Outputの既定値10とは別）。担当表全体の読込・形式エラーは拒否する。超過時は追加範囲を反映せず、stopped、hold_reason解除、lease期限解除、マージの番の解放、result.errorとscope_over_limitイベントを同一トランザクションで保存し、コミット成功後に409(code=lease_lost)を返す。保存・コミット失敗は元の失敗を返す。停止理由には件数・上限・起票時件数・追加しようとした先頭10ファイル・残件数を含む。理由付き再開と既存の超過承認は維持する。上限内で他のrunningの製品コードと重なる追加は従来どおり200・result=wait、held・scope_waitとなり、重複がなければ200・result=granted。テストだけの重なりは待たない。Workerは既存の409・lease_lost識別を使うためコード変更は不要。actualは現在の範囲を狭めるだけで広げず、成功はresult=granted。addとactualはどちらか一方を指定し、同時指定は400。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'result': {}, 'job': {}, 'blockers': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'host': { 'type': 'string' },
+                                  'epoch': { 'type': 'integer' },
+                                  'add': { 'type': 'array', 'items': { 'type': 'string' }, 'minItems': 1 },
+                                  'actual': { 'type': 'array', 'items': { 'type': 'string' }, 'minItems': 1, 'maxItems': 200 },
+                                },
+                              'additionalProperties': false,
+                              'required': ['epoch'],
+                              'oneOf':
+                                [
+                                  { 'required': ['add'] },
+                                  { 'required': ['actual'] },
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/jobs/{id}/events':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_jobs_id_events',
+              'summary': 'ジョブのeventsを報告',
+              'description': 'PC別トークン専用。hostは送り手と同じ。leaseのepoch・持ち主・期限の不一致は409(code=lease_lost)。kind=implementation_usage_check は自動再実装の使用量判定で、dataに未送信分を含むローカルのrows配列とskipped件数を渡す。画面・個別承認付きの同じ実装実行で最初のAI再呼び出しを行うとき、停止理由の解消を条件とせず、最初の判定と同じadmissionIdを付けてadmissionRecall=trueを送る。許可は同じ受付世代で一度だけ消費され、消費後は通常の使用量判定を行う。最初の実装判定にも再送識別用のadmissionIdが必要で、再呼び出しにはその同じIDを必須とする。全期間のDB行と重複を除いて合算し、上限超過・未知ならusageLimitReasonに停止理由、許可ならnullを返す。停止理由はIssue単位の要対応1件を最新理由で更新する。idは1〜16桁の正整数。通常のeventsの検査は server/internal/jobs。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    { 'ok': {}, 'job': {}, 'usageLimitReason': { 'type': ['string', 'null'] } },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'host': { 'type': 'string' },
+                                  'epoch': { 'type': 'integer' },
+                                  'kind': { 'type': 'string' },
+                                  'data': { 'type': 'object', 'additionalProperties': true },
+                                },
+                              'additionalProperties': false,
+                              'required': ['epoch', 'kind'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/jobs/{id}/notes':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_jobs_id_notes',
+              'summary': 'ジョブのnotesを報告',
+              'description': 'hostは送り手と同じ。leaseのepoch不一致は409(code=lease_lost)。idは1〜16桁の正整数。status/kindと各値の検査は server/internal/jobs。scopeはresult=granted|wait。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema': { 'type': 'object', 'properties': { 'id': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'host': { 'type': 'string' },
+                                  'epoch': { 'type': 'integer' },
+                                  'kind': { 'type': 'string' },
+                                  'data': { 'type': 'object', 'additionalProperties': true },
+                                },
+                              'additionalProperties': false,
+                              'required': ['epoch', 'kind', 'data'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

@@ -1,0 +1,25 @@
+{
+  "postgresVersion": "17.11",
+  "packageVersion": "17.11.0-beta.19",
+  "platforms": {
+    "linux-x64": {
+      "url": "https://registry.npmjs.org/@embedded-postgres/linux-x64/-/linux-x64-17.11.0-beta.19.tgz",
+      "integrity": "sha512-Mg2SUiVf0TW9vECO8qfv41730WgJOKguOaK4acUuIB4L8HeVuiYgQzlIj2kh73Q3OLxRdeub7D8C/SkExMlqrg=="
+    },
+    "linux-arm64": {
+      "url": "https://registry.npmjs.org/@embedded-postgres/linux-arm64/-/linux-arm64-17.11.0-beta.19.tgz",
+      "integrity": "sha512-Rl7wWkWFa8TYT9ZdMSGETq0EiE8Y4djD7oAVbaUHl/KWXpQm8rPLGgGYTYyqfHG3dg0uKhBIlN/Cs3wvP7dqew=="
+    }
+  },
+  "clientPackageVersion": "0.1.0",
+  "clients": {
+    "linux-x64": {
+      "url": "https://registry.npmjs.org/@serve-tools/postgres-linux-x64-gnu/-/postgres-linux-x64-gnu-0.1.0.tgz",
+      "integrity": "sha512-eOS+j6ghmWicxHlrMXnXd3Lg8RfJzFv+O/GlB5Wawyx9B6msXzWT0b+6Ryz+4FaztVJyqYBPv/rFh0wM94nw4g=="
+    },
+    "linux-arm64": {
+      "url": "https://registry.npmjs.org/@serve-tools/postgres-linux-arm64-gnu/-/postgres-linux-arm64-gnu-0.1.0.tgz",
+      "integrity": "sha512-+tF4NcCrH91ekufwn2Uc4jxdYf7UQyT6OoN9/8FMM1vc596X8sOKw6TFscGCD+b8wJuGfmqnbamjjFdz139vQQ=="
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["readFiles", "reviewedFiles", "changeScope"],
+  "properties": {
+    "readFiles": {
+      "description": "追加で読む資料。空でなければコントローラーが読み、次の呼び出しで資料に加える（changeScope は使わない）。文字列は全文、オブジェクトは部分読み取り（outline・lines・keyword）。file はGiteaのパスか予約名 repo-index（索引）・repo-search（全体検索）。",
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "mode", "start", "end", "keyword", "context"],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "string",
+                "enum": ["outline", "lines", "keyword"]
+              },
+              "start": {
+                "type": ["integer", "null"]
+              },
+              "end": {
+                "type": ["integer", "null"]
+              },
+              "keyword": {
+                "type": ["string", "null"]
+              },
+              "context": {
+                "type": ["integer", "null"]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "reviewedFiles": {
+      "description": "本文を読んだGitea資料のパス（記録用）。",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "changeScope": {
+      "description": "見積もった変更範囲。known=true でファイル単位のパス。ディレクトリ（末尾 /）は reason に理由があるときだけ。特定できなければ known=false と理由。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["known", "paths", "reason"],
+      "properties": {
+        "known": {
+          "type": "boolean"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

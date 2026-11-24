@@ -1,0 +1,11 @@
+[Unit]
+Description=issue-desk（NAS）の共有DBのバックアップを毎日実行する
+
+[Timer]
+# 毎日 03:40（日本時間）。NAS が止まっていて逃した回は、起動後に1回実行する。
+OnCalendar=*-*-* 03:40:00 Asia/Tokyo
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

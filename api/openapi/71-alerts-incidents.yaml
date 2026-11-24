@@ -1,0 +1,561 @@
+{
+  'paths':
+    {
+      '/api/stalls/alerts':
+        {
+          'get':
+            {
+              'operationId': 'get_api_stalls_alerts',
+              'summary': '要対応: stalls',
+              'description': 'Per-kind rows, unfixed types. intake_ai_failure: issue-desk-worker/docs/operations-stall.md#intake-ai-execution-failures. prerequisite_missing: held/holdReason, artifacts(artifact/repo/issue), reason/startedAt/updatedAt; reason includes missing artifact, connected producer, comparison/completion consultation and next operation; startedAt is the first persisted completion-check time, falling back to job updatedAt before any check. Completion records (job detail prerequisiteResolution, keyed by artifact hash) carry artifact, startedAt, state, reason, searchId/contextKey/checks when checked, searchIds for visited comparison batches (searchId is the pending or last batch), consultationId when consulting, issue(project/number) when connected/filed, and evidence when a producer is selected. Empty resolution is absent before reconciliation; Issue creation/closure never releases the hold. outside implementation count, no auto-investigation/retry; retry after resolution. intake_ai_long_running: liveAiCalls actual CLI elapsedMs > 1,800,000, even null usage; clears next read after completion. Exclusions/fields/safety/no side effects: issue-desk-worker/docs/ai-usage.md#long-running-intake-calls. Same screen/key/delegated-PC access.',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {"type":"array","items":{"type":"object","description":"種類や保存時期により項目は異なる。外部入力・旧記録由来の値は追加の項目を許容する。","properties":{"kind":{"type":["string","null"]},"title":{"type":["string","null"]},"project":{"type":["string","null"]}},"additionalProperties":true}},
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/full-test/alerts':
+        {
+          'get':
+            {
+              'operationId': 'get_api_full_test_alerts',
+              'summary': '要対応: full-test',
+              'description': '現行実装は旧記録を読まず、常に空配列を返す。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {"type":"array","maxItems":0,"items":{"type":"object","additionalProperties":true},"description":"現行実装は常に空配列を返す。"},
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/usage-review/alerts':
+        {
+          'get':
+            {
+              'operationId': 'get_api_usage_review_alerts',
+              'summary': '要対応: usage-review',
+              'description': '利用量の見直しのうち、判定が not_recouped で未確認の回を返す。該当がなければ空配列。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {"type":"array","items":{"type":"object","properties":{"round":{},"title":{"type":"string"},"reason":{},"startedAt":{},"startDate":{},"investigationIssue":{}},"required":["round","title","reason","startedAt","startDate","investigationIssue"],"additionalProperties":true}},
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/incidents/{id}/respond':
+        {
+          'post':
+            {
+              'operationId': 'post_incident_respond',
+              'summary': '自分で対応する',
+              'description': '{}; screen same Origin+CSRF or temporary key same Origin only. PC even with delegation:403. Missing:404; not waiting within deadline:409. Changes waiting to user-responded; returns ID/state.',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }],
+              'parameters':
+                [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string', 'format': 'uuid' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        { 'schema': { 'type': 'object', 'additionalProperties': false, 'maxProperties': 0 } },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Incident result.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required': ['id', 'state'],
+                                  'properties':
+                                    {
+                                      'id': { 'type': 'string' },
+                                      'state':
+                                        {
+                                          'type': 'string',
+                                          'enum': ['waiting', 'user', 'resolved', 'expired', 'acting', 'acted'],
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                },
+            },
+        },
+      '/api/incidents/{id}/acknowledge':
+        {
+          'post':
+            {
+              'operationId': 'post_incident_acknowledge',
+              'summary': '有事を確認済みにする',
+              'description': '{}; screen:Origin+CSRF, key:Origin, PC:delegation(else403). Token ack records PC/time in progress. Missing:404; waiting:409. Ack after response/resolution/timeout; ended resolved/acted auto-acked by cycle. Replay unchanged; returns ID/state.',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string', 'format': 'uuid' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        { 'schema': { 'type': 'object', 'additionalProperties': false, 'maxProperties': 0 } },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Incident result.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required': ['id', 'state'],
+                                  'properties':
+                                    {
+                                      'id': { 'type': 'string' },
+                                      'state':
+                                        {
+                                          'type': 'string',
+                                          'enum': ['waiting', 'user', 'resolved', 'expired', 'acting', 'acted'],
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                },
+            },
+        },
+      '/api/attention/alerts':
+        {
+          'get':
+            {
+              'operationId': 'get_api_attention_alerts',
+              'summary': '要対応: attention',
+              'x-filter-semantics': 'Include groups are AND; exclusions take precedence. Missing project or kind does not match includes. Empty, whitespace-padded, control-character and unknown parameters are invalid.',
+              'description': 'When a timing stage fails, error responses carry Server-Timing for stages reached, including the failed stage; failures before timing begins may have no timing metrics. Per-kind rows; no fixed full types. Rows include monitoring records, not only user decisions. job_recovery preserves optional requiresUser (true=user decision, false=monitoring, absent=legacy unknown), recoveryState and causeKey. handoff=true records a failed reply/repair validation or changed decision premise separately from the original Judge requiresUser; these notify records are cause-level handoffs even when requiresUser=false. Rejected/unknown sends or abandoned recovery are cause-level handoffs; unknown kinds remain monitoring records. Classification never authorizes an operation. dependency_stall: one row per predecessor with state, desk, title and waiting successors in reason; unknown start is explicitly marked, otherwise startedAt is the earliest qualifying wait. acceptance_transfer/state=dependency_waiting: key/project/number/title/kindName/stateLabel/reason/startedAt/updatedAt. reason lists artifacts/source/destination-or-unfiled-proposal/consultation and normal resolution; startedAt is the first artifact wait time, updatedAt is the job state update time (not necessarily the wait time). Count these rows and use startedAt for wait duration. GET only reads; screen or operations-token consultation chat/submit resolves evidence/filing, required PR merges release dispatch; retry/resume alone never releases. issue-desk-worker/docs/request-dependencies.md#transferred-acceptance-artifacts. consultation_stop/state=stopped: explicit stops remaining stalled for at least 24h; key/project/draftId/title/stateLabel/startedAt/updatedAt/reason/elapsedMinutes, handoff=true and requiresUser=false. reason includes stop reason, actor, timestamp and elapsed time. Missing/invalid stop timestamps never escalate; reply/resume/finish/discard hides the row. No automatic resume; timeout stalls do not escalate. consultation_budget/state=waiting: key/project/draftId/title/stateLabel/startedAt/updatedAt/reason; reason=ID/calls/amount/limits/last questions-reply/continuation needed. issue-desk-worker/docs/intake-input-budget.md#stopping-at-the-budget. heavy_rework: issue-desk-worker/docs/intake-api.md#attention-automation-get-apiattentionalerts. incident: issue-desk-worker/docs/incident-deadline.md#states-and-operations. unfiled_proposal: configured repo, unfinished proposal except notified/discarded or scan_excluded/rejected rejection, posted >1h/<=7d. Dedupe repo/source/proposal ID, or comment ID for malformed records without proposal ID: oldest posting/latest check; ineligible clears; proposalStatus=latest state, checkedAt=latest check/null; no body. Details: docs/followup-proposals.md#recording-exclusions-and-attention-items. split_scope_held: parentSplit draft with splitScopeHeld=true; release hides. draftId opens consultation, detail advises normal proposal; startedAt=updatedAt or createdAt, updatedAt=draft update, count=1. ops_watch/stageWatch=true (monitorObservation/successObservation/lastSuccessAt): issue-desk-worker/docs/incident-deadline.md#stage-watch-operation-records.',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters': [{"name": "project", "in": "query", "required": false, "description": "Include exact project values; repeat for OR.", "schema": {"type": "array", "items": {"type": "string", "minLength": 1}}, "style": "form", "explode": true}, {"name": "kind", "in": "query", "required": false, "description": "Include exact API row kind values (= CLI items[].caseKind, not items[].kind); repeat for OR.", "schema": {"type": "array", "items": {"type": "string", "minLength": 1}}, "style": "form", "explode": true}, {"name": "excludeProject", "in": "query", "required": false, "description": "Exclude exact project values; repeat for OR.", "schema": {"type": "array", "items": {"type": "string", "minLength": 1}}, "style": "form", "explode": true}, {"name": "excludeKind", "in": "query", "required": false, "description": "Exclude exact API row kind values (= CLI items[].caseKind, not items[].kind); repeat for OR.", "schema": {"type": "array", "items": {"type": "string", "minLength": 1}}, "style": "form", "explode": true}],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'headers': { 'Server-Timing': { 'description': 'Durations in milliseconds: drafts (draft alerts), saved (saved attention cases), notices (notices), stage (stage notices), incidents (incident alerts), jobs (job attention), jobRecovery (current job-recovery decisions), checkout (checkout alerts), rework (heavy rework), rc (release-candidate alerts), visible (archive visibility filtering). Filtering query parameters is performed after visible and is not included in these stages.', 'schema': { 'type': 'string' } } },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {"type":"array","items":{"type":"object","description":"種類や保存時期により項目は異なる。外部入力・旧記録由来の値は追加の項目を許容する。","properties":{"kind":{"type":["string","null"]},"title":{"type":["string","null"]},"project":{"type":["string","null"]}},"additionalProperties":true}},
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { 'description': '受付の処理または通信に失敗。', 'headers': { 'Server-Timing': { '$ref': '#/components/headers/AttentionErrorServerTiming' } }, 'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } } },
+                  '503': { 'description': '受付の記録を読み書きできません。', 'headers': { 'Server-Timing': { '$ref': '#/components/headers/AttentionErrorServerTiming' } }, 'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } } },
+                  'default': { 'description': 'エラー応答。', 'headers': { 'Server-Timing': { '$ref': '#/components/headers/AttentionErrorServerTiming' } }, 'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } } },
+                },
+            },
+        },
+      '/api/ops-watch/archive':
+        {
+          'get':
+            {
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'operationId': 'get_api_ops_watch_archive',
+              'summary': '自動整理した通知の退避一覧',
+              'description': 'Read-only archives <=30x24h from removedAt; invalid dates retained. notice=original, id=restore archive ID, reason=cleanup cause, restoredAt=restore time. Screen/key: same Origin; PC: delegation.',
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Archives',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'array',
+                                  'items':
+                                    {
+                                      'type': 'object',
+                                      'required': ['id', 'notice', 'removedAt', 'reason'],
+                                      'properties':
+                                        {
+                                          'id': { 'type': 'string', 'format': 'uuid' },
+                                          'notice':
+                                            {
+                                              'type': 'object',
+                                              'additionalProperties': true,
+                                              'description': 'Original notice; host/title/reason/issues/updatedAt etc. unchanged.',
+                                            },
+                                          'removedAt': { 'type': 'string', 'format': 'date-time' },
+                                          'reason':
+                                            {
+                                              'type': 'string',
+                                              'enum': ['issue_resolved', 'retried', 'expired_without_issue'],
+                                            },
+                                          'restoredAt': { 'type': 'string', 'format': 'date-time' },
+                                        },
+                                      'additionalProperties': false,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '401': { 'description': 'Unauthenticated' },
+                  '403': { 'description': 'Missing delegation/Origin/CSRF' },
+                  '500': { 'description': 'Save/read failed' },
+                },
+            },
+        },
+      '/api/ops-watch/archive/{id}/restore':
+        {
+          'post':
+            {
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'operationId': 'post_api_ops_watch_archive_id_restore',
+              'summary': '退避した通知を復元する',
+              'description': '{}; restores unchanged notice/updatedAt, records restoredAt. Retry safe after partial failure; no revival after ack. Missing/>30d:404; ID conflict/1000 limit:409; invalid:400. Screen:Origin+CSRF; key:Origin; PC:delegation. No Issue/job/draft changes; cleanup applies.',
+              'parameters':
+                [
+                  {
+                    'name': 'id',
+                    'in': 'path',
+                    'required': true,
+                    'schema':
+                      {
+                        'type': 'string',
+                        'format': 'uuid',
+                        'pattern': '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$',
+                      },
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        { 'schema': { 'type': 'object', 'properties': {}, 'additionalProperties': false } },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Restored',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required': ['id', 'noticeId', 'restored'],
+                                  'properties':
+                                    {
+                                      'id': { 'type': 'string', 'format': 'uuid' },
+                                      'noticeId': { 'type': 'string' },
+                                      'restored': { 'type': 'boolean', 'const': true },
+                                    },
+                                  'additionalProperties': false,
+                                },
+                            },
+                        },
+                    },
+                  '400': { 'description': 'Invalid input' },
+                  '401': { 'description': 'Unauthenticated' },
+                  '403': { 'description': 'Missing delegation/Origin/CSRF' },
+                  '404': { 'description': 'Missing/expired archive' },
+                  '409': { 'description': 'Conflicting ID/1000 limit' },
+                  '500': { 'description': 'Save/read failed' },
+                },
+            },
+        },
+      '/api/ops-watch/notices/{id}/acknowledge':
+        {
+          'post':
+            {
+              'operationId': 'post_api_ops_watch_notices_id_acknowledge',
+              'summary': '運用の見張りの通知を確認済みにする',
+              'description': '{}; removes only UUID notice from settings; absent ID:200. Bad ID/body:400, no save. No Issue/job/draft changes. Screen: same Origin+CSRF; key: same Origin; PC: delegation (otherwise 403). Unauthenticated:401. Delegation log contains only notice ID/PC.',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'id',
+                    'in': 'path',
+                    'required': true,
+                    'schema':
+                      {
+                        'type': 'string',
+                        'format': 'uuid',
+                        'pattern': '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$',
+                      },
+                  },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': false,
+                    'schema': { 'type': 'string' },
+                    'description': 'Intake Origin:screen/key only.',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        { 'schema': { 'type': 'object', 'properties': {}, 'additionalProperties': false } },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Acknowledged; absent also succeeds.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required': ['id', 'acknowledged'],
+                                  'properties':
+                                    {
+                                      'id': { 'type': 'string', 'format': 'uuid' },
+                                      'acknowledged': { 'type': 'boolean', 'const': true },
+                                    },
+                                  'additionalProperties': false,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                },
+            },
+        },
+      '/api/usage-review/rounds/{round}/acknowledge':
+        {
+          'post':
+            {
+              'operationId': 'post_api_usage_review_rounds_round_acknowledge',
+              'summary': '利用量の見直しを確認済みにする',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'OK',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'round', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': 'Same intake Origin.',
+                  },
+                ],
+            },
+        },
+      '/api/proposals/repost':
+        {
+          'post':
+            {
+              'operationId': 'post_api_proposals_repost',
+              'summary': '書き手の拒否で起票しなかった後続案を投稿し直させる',
+              'description': 'One/user instruction. Eligibility/destination/replacement/outcomes: docs/followup-proposals.md#reposting-rejected-proposals. Unfinished queued/acked commands are reused; failed or done commands can be replaced while no accepted proposal record exists. Done only means queued in the watcher outbox; the previous command ID is retained. Screen:Origin+CSRF; key:Origin; PC:delegation+offset instructionAt (missing/invalid/future:400, before checkedAt:409). Unauthenticated:401; nondelegated PC:403. Delegation logged; writer/permissions unchanged.',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': false,
+                    'schema': { 'type': 'string' },
+                    'description': 'Intake Origin:screen/key only.',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required': ['project', 'number', 'commentId'],
+                              'properties':
+                                {
+                                  'project': { 'type': 'string', 'description': 'Source owner/repo.' },
+                                  'number':
+                                    { 'type': 'integer', 'minimum': 1, 'description': 'Source Gitea Issue number.' },
+                                  'commentId':
+                                    { 'type': 'integer', 'minimum': 1, 'description': 'Source proposal comment ID.' },
+                                  'instructionAt':
+                                    {
+                                      'type': 'string',
+                                      'format': 'date-time',
+                                      'description': 'User instruction time with UTC offset; required for PC tokens.',
+                                    },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'New or deduplicated command.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required': ['commandId', 'targetHost', 'status', 'created'],
+                                  'properties':
+                                    {
+                                      'commandId': { 'type': 'string', 'description': 'Command ID.' },
+                                      'targetHost': { 'type': 'string', 'description': 'Target PC.' },
+                                      'status': { 'type': 'string', 'enum': ['queued', 'acked', 'done', 'failed'] },
+                                      'created': { 'type': 'boolean', 'description': 'true if newly added.' },
+                                      'project': { 'type': 'string' },
+                                      'number': { 'type': 'integer' },
+                                      'commentId': { 'type': 'integer' },
+                                      'proposalId': { 'type': 'string' },
+                                      'result':
+                                        {
+                                          'type': ['object', 'null'],
+                                          'additionalProperties': true,
+                                          'description': 'Watcher result when done/failed.',
+                                        },
+                                    },
+                                  'additionalProperties': false,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                },
+            },
+        },
+    },
+}

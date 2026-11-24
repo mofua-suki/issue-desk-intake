@@ -1,0 +1,1777 @@
+{
+  "cases": [
+    {
+      "name": "closed-idle",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "issue": {
+            "number": 1
+          }
+        }
+      ],
+      "activeIssues": [],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "issue": {
+              "number": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "closed-in-flight-running",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "jobStatus": "running",
+          "jobView": {},
+          "holdReason": null,
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "running",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "running",
+            "followup": false
+          }
+        ],
+        "drafts": []
+      }
+    },
+    {
+      "name": "closed-in-flight-publishing",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "jobStatus": "running",
+          "jobView": {
+            "phase": "publishing"
+          },
+          "holdReason": null,
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "publishing",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "publishing",
+            "followup": false
+          }
+        ],
+        "drafts": []
+      }
+    },
+    {
+      "name": "closed-in-flight-scope_wait",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "jobStatus": "held",
+          "jobView": {},
+          "holdReason": "scope_wait",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "scope_waiting",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "scope_waiting",
+            "followup": false
+          }
+        ],
+        "drafts": []
+      }
+    },
+    {
+      "name": "closed-in-flight-releasing",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "jobStatus": "running",
+          "jobView": {
+            "phase": "releasing"
+          },
+          "holdReason": null,
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "releasing",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "releasing",
+            "followup": false
+          }
+        ],
+        "drafts": []
+      }
+    },
+    {
+      "name": "closed-in-flight-question",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "jobStatus": "held",
+          "jobView": {
+            "liveCheck": {
+              "status": "pending"
+            }
+          },
+          "holdReason": "question",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "deploying",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "deploying",
+            "followup": false
+          }
+        ],
+        "drafts": []
+      }
+    },
+    {
+      "name": "closed-legacy-running",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "labels": [
+            "state/running"
+          ],
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "running",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "running",
+            "followup": false
+          }
+        ],
+        "drafts": []
+      }
+    },
+    {
+      "name": "unfiled-job-continuation",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "jobStatus": "queued",
+          "jobView": {
+            "continuation": {
+              "pending": true
+            }
+          },
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        ],
+        "drafts": []
+      }
+    },
+    {
+      "name": "posted-absent",
+      "issues": [],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "issue": {
+            "number": 9
+          }
+        }
+      ],
+      "activeIssues": [],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "wire": {
+        "issues": [],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "issue": {
+              "number": 9
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "posted-open",
+      "issues": [
+        {
+          "number": 1,
+          "state": "open",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "untracked",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "issue": {
+            "number": 1
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "untracked",
+            "followup": false
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "issue": {
+              "number": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "posted-mixed-absent",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "issues": [
+            {
+              "number": 1
+            },
+            {
+              "project": "other/app",
+              "number": 9
+            }
+          ]
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "issues": [
+              {
+                "number": 1
+              },
+              {
+                "project": "other/app",
+                "number": 9
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "split-attention",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "splitChildren": [
+            "00000000-0000-4000-8000-000000000002",
+            "00000000-0000-4000-8000-000000000003"
+          ],
+          "splitIssues": [
+            {},
+            {}
+          ],
+          "wireFamilyProgress": {
+            "total": 2,
+            "completed": 0,
+            "closed": 1,
+            "remaining": 1,
+            "unknown": 0,
+            "stopped": []
+          }
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "project": "owner/app",
+          "status": "submitted",
+          "parentSplit": "00000000-0000-4000-8000-000000000001",
+          "issue": {
+            "number": 1
+          }
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000003",
+          "project": "owner/app",
+          "status": "draft",
+          "parentSplit": "00000000-0000-4000-8000-000000000001",
+          "questions": [
+            {
+              "text": "which?"
+            }
+          ]
+        }
+      ],
+      "activeIssues": [],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001",
+        "00000000-0000-4000-8000-000000000002",
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "splitIssues": [
+              {},
+              {}
+            ],
+            "familyProgress": {
+              "total": 2,
+              "completed": 0,
+              "closed": 1,
+              "remaining": 1,
+              "unknown": 0,
+              "stopped": []
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000002",
+            "project": "owner/app",
+            "status": "submitted",
+            "parentSplit": "00000000-0000-4000-8000-000000000001",
+            "issue": {
+              "number": 1
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000003",
+            "project": "owner/app",
+            "status": "draft",
+            "parentSplit": "00000000-0000-4000-8000-000000000001",
+            "questions": [
+              {
+                "text": "which?"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "family-in-progress",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "jobStatus": "running",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "running",
+            "followup": false
+          }
+        },
+        {
+          "number": 2,
+          "state": "closed",
+          "jobStatus": "merged",
+          "wire": {
+            "project": "owner/app",
+            "number": 2,
+            "state": "closed",
+            "status": "completed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "splitChildren": [
+            "00000000-0000-4000-8000-000000000002",
+            "00000000-0000-4000-8000-000000000003"
+          ],
+          "splitIssues": [
+            {},
+            {}
+          ],
+          "wireFamilyProgress": {
+            "total": 2,
+            "completed": 1,
+            "closed": 0,
+            "remaining": 1,
+            "unknown": 0,
+            "stopped": []
+          }
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "project": "owner/app",
+          "status": "submitted",
+          "parentSplit": "00000000-0000-4000-8000-000000000001",
+          "issue": {
+            "number": 1
+          }
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000003",
+          "project": "owner/app",
+          "status": "submitted",
+          "parentSplit": "00000000-0000-4000-8000-000000000001",
+          "issue": {
+            "number": 2
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001",
+        "00000000-0000-4000-8000-000000000002",
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "running",
+            "followup": false
+          },
+          {
+            "project": "owner/app",
+            "number": 2,
+            "state": "closed",
+            "status": "completed",
+            "followup": false
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "splitIssues": [
+              {},
+              {}
+            ],
+            "familyProgress": {
+              "total": 2,
+              "completed": 1,
+              "closed": 0,
+              "remaining": 1,
+              "unknown": 0,
+              "stopped": []
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000002",
+            "project": "owner/app",
+            "status": "submitted",
+            "parentSplit": "00000000-0000-4000-8000-000000000001",
+            "issue": {
+              "number": 1
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000003",
+            "project": "owner/app",
+            "status": "submitted",
+            "parentSplit": "00000000-0000-4000-8000-000000000001",
+            "issue": {
+              "number": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "family-complete",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "jobStatus": "merged",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "completed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "splitChildren": [
+            "00000000-0000-4000-8000-000000000002"
+          ],
+          "splitIssues": [
+            {}
+          ],
+          "wireFamilyProgress": {
+            "total": 1,
+            "completed": 1,
+            "closed": 0,
+            "remaining": 0,
+            "unknown": 0,
+            "stopped": []
+          }
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "project": "owner/app",
+          "status": "submitted",
+          "parentSplit": "00000000-0000-4000-8000-000000000001",
+          "issue": {
+            "number": 1
+          }
+        }
+      ],
+      "activeIssues": [],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "completed",
+            "followup": false
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "splitIssues": [
+              {}
+            ],
+            "familyProgress": {
+              "total": 1,
+              "completed": 1,
+              "closed": 0,
+              "remaining": 0,
+              "unknown": 0,
+              "stopped": []
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000002",
+            "project": "owner/app",
+            "status": "submitted",
+            "parentSplit": "00000000-0000-4000-8000-000000000001",
+            "issue": {
+              "number": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "closed-cleanup",
+      "issues": [
+        {
+          "number": 1,
+          "state": "open",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "untracked",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "closed",
+          "cleanup": {
+            "reason": "user"
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "untracked",
+            "followup": false
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "closed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "handoff",
+      "issues": [
+        {
+          "number": 1,
+          "state": "open",
+          "draft": 1,
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "pending",
+            "followup": false,
+            "intakeId": "00000000-0000-4000-8000-000000000001"
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "project_handoff",
+          "issue": {
+            "number": 1
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "pending",
+            "followup": false,
+            "intakeId": "00000000-0000-4000-8000-000000000001"
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "project_handoff",
+            "issue": {
+              "number": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "followup",
+      "issues": [
+        {
+          "number": 1,
+          "state": "open",
+          "body": "<!-- issue-desk:followup -->",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "untracked",
+            "followup": true
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "error",
+          "proposal": {
+            "kind": "followup"
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "untracked",
+            "followup": true
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "error",
+            "proposal": {
+              "kind": "followup"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "unfiled-consultation",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "draft": 1,
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false,
+            "intakeId": "00000000-0000-4000-8000-000000000001"
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "thinking",
+          "issue": {
+            "number": 1
+          },
+          "messages": [
+            {
+              "role": "user",
+              "text": "continue",
+              "images": [
+                {
+                  "id": "00000000-0000-4000-8000-000000000009"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false,
+            "intakeId": "00000000-0000-4000-8000-000000000001"
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "thinking",
+            "issue": {
+              "number": 1
+            },
+            "messages": [
+              {
+                "role": "user",
+                "text": "continue"
+              },
+              {
+                "role": "image-marker",
+                "images": [
+                  {}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "investigation-continuation",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "investigation_reported",
+          "investigations": [
+            {
+              "project": "owner/app",
+              "number": 1
+            }
+          ]
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "investigation_reported",
+            "investigations": [
+              {
+                "project": "owner/app",
+                "number": 1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "closed-hides-open",
+      "issues": [
+        {
+          "number": 1,
+          "state": "open",
+          "draft": 1,
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "pending",
+            "followup": false,
+            "intakeId": "00000000-0000-4000-8000-000000000001"
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "closed",
+          "splitIssues": [
+            {}
+          ],
+          "issue": {
+            "number": 1
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "pending",
+            "followup": false,
+            "intakeId": "00000000-0000-4000-8000-000000000001"
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "closed",
+            "splitIssues": [
+              {}
+            ],
+            "issue": {
+              "number": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown-status",
+      "issues": [],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "future_state"
+        }
+      ],
+      "activeIssues": [],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "wire": {
+        "issues": [],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "future_state"
+          }
+        ]
+      }
+    },
+    {
+      "name": "family-nested",
+      "issues": [],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "splitChildren": [
+            "00000000-0000-4000-8000-000000000002"
+          ],
+          "wireFamilyProgress": {
+            "total": 1,
+            "completed": 0,
+            "closed": 0,
+            "remaining": 0,
+            "unknown": 1,
+            "stopped": []
+          }
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "project": "owner/app",
+          "status": "submitted",
+          "parentSplit": "00000000-0000-4000-8000-000000000001",
+          "splitChildren": [
+            "00000000-0000-4000-8000-000000000003"
+          ]
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000003",
+          "project": "owner/app",
+          "status": "error",
+          "parentSplit": "00000000-0000-4000-8000-000000000002"
+        }
+      ],
+      "activeIssues": [],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001",
+        "00000000-0000-4000-8000-000000000002",
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "wire": {
+        "issues": [],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "familyProgress": {
+              "total": 1,
+              "completed": 0,
+              "closed": 0,
+              "remaining": 0,
+              "unknown": 1,
+              "stopped": []
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000002",
+            "project": "owner/app",
+            "status": "submitted",
+            "parentSplit": "00000000-0000-4000-8000-000000000001"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000003",
+            "project": "owner/app",
+            "status": "error",
+            "parentSplit": "00000000-0000-4000-8000-000000000002"
+          }
+        ]
+      }
+    },
+    {
+      "name": "posted-investigation-decoration",
+      "issues": [
+        {
+          "number": 1,
+          "state": "open",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "untracked",
+            "followup": false
+          }
+        },
+        {
+          "number": 2,
+          "state": "closed",
+          "wire": {
+            "project": "owner/app",
+            "number": 2,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "issue": {
+            "number": 2
+          },
+          "investigations": [
+            {
+              "project": "owner/app",
+              "number": 1
+            }
+          ],
+          "priorityReviewRound": 1
+        }
+      ],
+      "activeIssues": [
+        1,
+        2
+      ],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "open",
+            "status": "untracked",
+            "followup": false
+          },
+          {
+            "project": "owner/app",
+            "number": 2,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        ],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "issue": {
+              "number": 2
+            },
+            "investigations": [
+              {
+                "project": "owner/app",
+                "number": 1
+              }
+            ],
+            "priorityReviewRound": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "family-unknown",
+      "issues": [],
+      "drafts": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "status": "submitted",
+          "splitChildren": [
+            "00000000-0000-4000-8000-000000000002"
+          ],
+          "splitIssues": [
+            {}
+          ],
+          "wireFamilyProgress": {
+            "total": 1,
+            "completed": 0,
+            "closed": 0,
+            "remaining": 0,
+            "unknown": 1,
+            "stopped": []
+          }
+        }
+      ],
+      "activeIssues": [],
+      "activeDrafts": [
+        "00000000-0000-4000-8000-000000000001"
+      ],
+      "wire": {
+        "issues": [],
+        "drafts": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "status": "submitted",
+            "splitIssues": [
+              {}
+            ],
+            "familyProgress": {
+              "total": 1,
+              "completed": 0,
+              "closed": 0,
+              "remaining": 0,
+              "unknown": 1,
+              "stopped": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "closed-followup-with-reviewing-close-request",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "body": "<!-- issue-desk:followup -->",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": true
+          }
+        }
+      ],
+      "drafts": [],
+      "closes": [
+        {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "number": 1,
+          "status": "reviewing",
+          "target": {
+            "title": "closed target"
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": true
+          }
+        ],
+        "drafts": [],
+        "closes": [
+          {
+            "id": "10000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "number": 1,
+            "status": "reviewing",
+            "target": {
+              "title": "closed target",
+              "followup": false,
+              "desk": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "closed-followup-with-confirm-close-request",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "body": "<!-- issue-desk:followup -->",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": true
+          }
+        }
+      ],
+      "drafts": [],
+      "closes": [
+        {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "number": 1,
+          "status": "confirm",
+          "target": {
+            "title": "closed target"
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": true
+          }
+        ],
+        "drafts": [],
+        "closes": [
+          {
+            "id": "10000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "number": 1,
+            "status": "confirm",
+            "target": {
+              "title": "closed target",
+              "followup": false,
+              "desk": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "closed-followup-with-closing-close-request",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "body": "<!-- issue-desk:followup -->",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": true
+          }
+        }
+      ],
+      "drafts": [],
+      "closes": [
+        {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "number": 1,
+          "status": "closing",
+          "target": {
+            "title": "closed target"
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": true
+          }
+        ],
+        "drafts": [],
+        "closes": [
+          {
+            "id": "10000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "number": 1,
+            "status": "closing",
+            "target": {
+              "title": "closed target",
+              "followup": false,
+              "desk": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "closed-ordinary-with-reviewing-close-request",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "body": "",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "closes": [
+        {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "number": 1,
+          "status": "reviewing",
+          "target": {
+            "title": "closed target"
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        ],
+        "drafts": [],
+        "closes": [
+          {
+            "id": "10000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "number": 1,
+            "status": "reviewing",
+            "target": {
+              "title": "closed target",
+              "followup": false,
+              "desk": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "closed-ordinary-with-confirm-close-request",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "body": "",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "closes": [
+        {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "number": 1,
+          "status": "confirm",
+          "target": {
+            "title": "closed target"
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        ],
+        "drafts": [],
+        "closes": [
+          {
+            "id": "10000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "number": 1,
+            "status": "confirm",
+            "target": {
+              "title": "closed target",
+              "followup": false,
+              "desk": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "closed-ordinary-with-closing-close-request",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "body": "",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        }
+      ],
+      "drafts": [],
+      "closes": [
+        {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "number": 1,
+          "status": "closing",
+          "target": {
+            "title": "closed target"
+          }
+        }
+      ],
+      "activeIssues": [
+        1
+      ],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": false
+          }
+        ],
+        "drafts": [],
+        "closes": [
+          {
+            "id": "10000000-0000-4000-8000-000000000001",
+            "project": "owner/app",
+            "number": 1,
+            "status": "closing",
+            "target": {
+              "title": "closed target",
+              "followup": false,
+              "desk": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "terminal-close-request-does-not-protect-closed-issue",
+      "issues": [
+        {
+          "number": 1,
+          "state": "closed",
+          "body": "<!-- issue-desk:followup -->",
+          "wire": {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": true
+          }
+        }
+      ],
+      "drafts": [],
+      "closes": [
+        {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "project": "owner/app",
+          "number": 1,
+          "status": "closed"
+        }
+      ],
+      "activeIssues": [],
+      "activeDrafts": [],
+      "wire": {
+        "issues": [
+          {
+            "project": "owner/app",
+            "number": 1,
+            "state": "closed",
+            "status": "closed",
+            "followup": true
+          }
+        ],
+        "drafts": [],
+        "closes": []
+      }
+    }
+  ]
+}

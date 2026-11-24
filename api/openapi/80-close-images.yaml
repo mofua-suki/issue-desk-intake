@@ -1,0 +1,743 @@
+{
+  'paths':
+    {
+      '/api/issue/close':
+        {
+          'post':
+            {
+              'operationId': 'post_api_issue_close',
+              'summary': '画面からIssueを閉じる',
+              'description': '画面だけ。一時キー/PC別トークンは403。スクリプトはissues/closeを使う。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string', 'format': 'uuid' },
+                                  'project': { 'type': 'string' },
+                                  'number': { 'type': 'integer' },
+                                  'reason':
+                                    { 'type': 'string', 'enum': ['voluntary', 'resolved', 'duplicate', 'other_route'] },
+                                  'description': { 'type': 'string' },
+                                  'comment': { 'type': 'string' },
+                                  'route': { 'type': 'string', 'description': 'other_route の直接PR。owner/repo#番号。' },
+                                  'force': { 'type': 'boolean' },
+                                },
+                              'additionalProperties': true,
+                              'required': ['id', 'project', 'number', 'reason', 'description'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/close-reason':
+        {
+          'post':
+            {
+              'operationId': 'post_api_close_reason',
+              'summary': '表示用のクローズ理由を変更',
+              'description': 'Giteaへ書かず、表示の記録だけを変更。PC別トークンは運用代行の許可が必要。closedAtで現在の終了記録を照合する。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': false,
+                    'schema': { 'type': 'string' },
+                    'description': '画面セッション・一時キーでは同一Originが必須。PCトークンは省略可で、指定時は同一Originを検査する。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'project': { 'type': 'string' },
+                                  'number': { 'type': 'integer' },
+                                  'reason': { 'type': 'string' },
+                                  'route': { 'type': 'string', 'description': 'other_route の直接PR。owner/repo#番号。' },
+                                  'closedAt': { 'type': 'string', 'description': '照合するクローズ日時。' },
+                                  'description': { 'type': 'string' },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/meta':
+        {
+          'get':
+            {
+              'operationId': 'get_api_meta',
+              'summary': '画面のプロジェクト・実行先の情報',
+              'description': '処理と状態による可否は参照先の実装を正本とする。 受付と設定のメタ情報は実行環境に依存するため、固定応答型は定義しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/events':
+        {
+          'get':
+            {
+              'operationId': 'get_api_events',
+              'summary': '画面への即時通知（SSE）',
+              'description': '画面セッションだけ。text/event-stream。セッションの失効/停止で切断。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'text/event-stream': { 'schema': { 'type': 'string' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/list':
+        {
+          'get':
+            {
+              'operationId': 'get_api_list',
+              'summary': '画面の依頼一覧（全体・差分）',
+              'description': '画面のCookieセッションとNASのローカル一時キーで読める（未認証は401）。view=countsは運用代行を許したPC別トークンでも読め、それ以外の一覧取得ではPC別トークンは403。view=countsは画面の要対応・実行中・待機中・停止中の表示行数をcounts.attention・counts.running・counts.waiting・counts.stoppedに返す。counts.followupsは未完了の後続相談・Issue・クローズ確認の表示行数。相談・確認自身が終了したら履歴へ移して数えず、対象Issueが終了していても未処理の確認は残す。Issueのstatus=completedでも受入確認の未了・読取不能が残れば数え、status=closedは履歴へ移す。着手が遅れた割り込みIssueは4分類へ入るため数えない。checkedAtは取得時刻、scopeはactive。partial=trueは補助入力の欠測による暫定値で、unavailableに不足経路を返す（件数と無関係なhostsは含めない）。基礎一覧の取得失敗はエラーであり0件にしない。要対応は利用者の具体的な質問・承認待ち、実行中は実行元の処理所有を確認した仕事、待機中は条件と自動再開経路のある仕事、停止中は自動再開の予定がないか実行の根拠を確認できない仕事。優先順は要対応・停止中・実行中・待機中。保存済みの親子リンクから実在する子を持つ親相談を判定し、状態によらず一覧の表示と件数から除外して独立した子作業を数える。子がまだ作られていない分割案は独立した相談として保持する。親子判定用の軽量行はparentSplit・parentConsultationと、保存済み子リンクの存在を示すhasChildrenを返す。同じ仕事の補助通知はその仕事に紐付ける。view=workはcountsに加えて4分類のgroupsと親相談のfamiliesを返す。workは画面のCookieセッションとNASローカル一時キーで読め、PCトークンでは403。view=workのgroups内の各行のworkはstate・reason・nextActor・nextAction、待機中ではwaitCondition・resumeByを返す。executionActive・executionScheduledは実行元の読取時点の根拠で、操作の認可には使わない。view=countsまたはworkではTODO・カーソル保持・一覧本文の返却を省き、sinceは併用不可。一覧用の軽量データだけを返し、本文・会話・資料・収集画像の中身・資格情報は含めない。sinceが無ければ全体（full=true。rowsはIssue・相談・TODO・クローズ依頼の行、auxは要対応4種類、hostsはPC負荷、cursorは次の差分の基準点）。sinceにカーソルを渡すと、基準点からのadded・updated・removedと、変わった要対応（aux）・PC負荷（hosts）だけを返す。変更が無ければadded・updated・removedは空でauxは{}、hostsは含めない。取得時刻（hostsのcheckedAt）だけでは変更としない。許可されないプロジェクトの保存済みの相談・TODO・クローズ依頼は全体・差分の応答にも基準点にも含めない（プロジェクト未定の相談は含める）。基準点はプロセス内だけに有効期間5分・最大64件・軽量データの累計16MiB（UTF-8のバイト数）で保持し、期限切れ・未知・再起動前・表現や許可範囲が異なるカーソルはreset=trueの全体応答に戻す。保持できないときはcursor=nullの全体応答で、画面は次もsinceなしで取る。unavailableは今回読めなかった補助データの名前で、空や削除として扱わず表示済みの内容を残す。unreadProjectsは今回読めなかった候補のリポジトリ（読めた候補の行は返す）。そのリポジトリのIssue行は差分でremovedにせず基準点に前回の内容のまま残し、全体応答のrowsには含めない（画面は表示済みの行を読取失敗の目印付きで残し、読めるようになったら全体照合する）。view=counts・workではpartial=trueとunreadProjectsを返し、件数に読めなかったリポジトリの行を含まない。tabs=activeではTODOを読まず、他の行と補助情報を返す。tabs省略は全範囲。範囲の異なるカーソルはreset=trueの全体応答に戻す。sinceの形式不正、tabsのactive以外の値、重複指定、未知のクエリは400。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  { 'name': 'view', 'in': 'query', 'required': false, 'schema': { 'type': 'string', 'enum': ['counts', 'work'] }, 'description': 'countsは4分類とフォローアップの件数、workは件数と分類済みの各項目・画面には表示しない親の参照情報を返す。両方ともsinceと併用不可。PCトークンは運用代行付きのcountsだけ。' },
+                  { 'name': 'tabs', 'in': 'query', 'required': false, 'schema': { 'type': 'string', 'enum': ['active'] }, 'description': 'activeはTODOを除く範囲。省略時は全範囲。' },
+                  {
+                    'name': 'since',
+                    'in': 'query',
+                    'required': false,
+                    'schema': { 'type': 'string', 'pattern': '^[A-Za-z0-9._-]{1,128}$' },
+                    'description': '前の応答のcursor。省略は全体の取得で、画面の初回・切断やタブの復帰・不明な通知の後の全体照合に使う。',
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '全体（full=true）、差分（full=false）、またはview=countsの件数。',
+                      'headers': { 'Server-Timing': { 'description': '読取・差分計算・JSON化の所要時間（ミリ秒）。', 'schema': { 'type': 'string' } } },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'oneOf': [
+{
+                                  'type': 'object',
+                                  'required': ['cursor', 'full', 'reset', 'unavailable', 'scope'],
+                                  'properties':
+                                    {
+                                      'scope': { 'type': 'string', 'enum': ['active', 'full'], 'description': '実際に返した取得範囲。' },
+                                      'cursor': { 'type': ['string', 'null'] },
+                                      'full': { 'type': 'boolean' },
+                                      'reset': { 'type': 'boolean' },
+                                      'rows': { 'type': 'array', 'items': { '$ref': '#/components/schemas/ListRow' } },
+                                      'added': { 'type': 'array', 'items': { '$ref': '#/components/schemas/ListRow' } },
+                                      'updated':
+                                        { 'type': 'array', 'items': { '$ref': '#/components/schemas/ListRow' } },
+                                      'removed': { 'type': 'array', 'items': { 'type': 'string' } },
+                                      'aux':
+                                        {
+                                          'type': 'object',
+                                          'description': '要対応4種類。reviewsの判定とattentionAlertsのheavy_reworkは計算結果をプロセス内に最大5分保持して返すため、新しい使用量・マージの反映は最大5分遅れる。見直しの回の内容・重み・集計期間・対象リポジトリが変われば保持中でも計算し直し、確認済みにした回は次の応答から消える。',
+                                          'properties':
+                                            {
+                                              'reviews': { 'type': 'array', 'items': { 'type': 'object' } },
+                                              'fullTests': { 'type': 'array', 'items': { 'type': 'object' } },
+                                              'stalls': { 'type': 'array', 'items': { 'type': 'object' } },
+                                              'attentionAlerts': { 'type': 'array', 'items': { 'type': 'object' } },
+                                            },
+                                        },
+                                      'hosts': { 'type': ['object', 'null'], 'additionalProperties': true, 'description': 'PC表示はGET /api/hostsと同じ。各行のrepositoriesは担当表の実装担当で、空配列は担当なし、nullまたは旧応答で項目がない場合は不明。' },
+                                      'unavailable': { 'type': 'array', 'items': { 'type': 'string' } },
+                                      'unreadProjects': { 'type': 'array', 'minItems': 1, 'items': { '$ref': '#/components/schemas/UnreadProject' } },
+                                    },
+                                },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "counts",
+                                      "checkedAt",
+                                      "scope",
+                                      "partial",
+                                      "unavailable"
+                                    ],
+                                    "properties": {
+                                      "counts": {
+                                        "type": "object",
+                                        "required": [
+                                          "attention",
+                                          "running", "waiting", "stopped", "inProgress", "followups"
+                                        ],
+                                        "properties": {
+                                          "followups": {"type": "integer", "minimum": 0, "description": "未完了のフォローアップ表示行数。相談・確認自身が終了したら除外し、対象Issueが終了していても未処理の確認は含む。Issueのcompleted後も受入確認が未了・読取不能なら含み、closedは除く。"},
+                                          "attention": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "description": "要対応タブの集約後の表示行数。"
+                                          },
+                                          "running": { "type": "integer", "minimum": 0, "description": "実行中の仕事数。" },
+                                          "waiting": { "type": "integer", "minimum": 0, "description": "条件と自動再開経路のある待機中の仕事数。" },
+                                          "stopped": { "type": "integer", "minimum": 0, "description": "停止中または実処理未確認の仕事数。" },
+                                          "inProgress": { "deprecated": true,
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "description": "非推奨。runningと同値の互換名。未完了全体の合計ではない。"
+                                          }
+                                        },
+                                        "additionalProperties": false
+                                      },
+                                      "checkedAt": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      "scope": {
+                                        "type": "string",
+                                        "enum": [
+                                          "active"
+                                        ]
+                                      },
+                                      "partial": {
+                                        "type": "boolean"
+                                      },
+                                      "unavailable": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "unreadProjects": { "type": "array", "minItems": 1, "items": { "$ref": "#/components/schemas/UnreadProject" } }
+                                    },
+                                    "additionalProperties": false
+                                  },
+{
+  "type": "object",
+  "required": [
+    "counts",
+    "checkedAt",
+    "scope",
+    "partial",
+    "unavailable",
+    "groups",
+    "families"
+  ],
+  "properties": {
+    "counts": {
+      "type": "object",
+      "required": [
+        "attention",
+        "running",
+        "waiting",
+        "stopped",
+        "inProgress",
+        "followups"
+      ],
+      "properties": {
+        "followups": {"type": "integer", "minimum": 0, "description": "未完了のフォローアップ表示行数。相談・確認自身が終了したら除外し、対象Issueが終了していても未処理の確認は含む。Issueのcompleted後も受入確認が未了・読取不能なら含み、closedは除く。"},
+        "attention": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "要対応タブの集約後の表示行数。"
+        },
+        "inProgress": {
+          "type": "integer",
+          "minimum": 0,
+          "deprecated": true,
+          "description": "非推奨。runningと同値の互換名。未完了全体の合計ではない。"
+        },
+        "running": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "実行中の仕事数。"
+        },
+        "waiting": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "条件と自動再開経路のある待機中の仕事数。"
+        },
+        "stopped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "停止中または実処理未確認の仕事数。"
+        }
+      },
+      "additionalProperties": false
+    },
+    "checkedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "active"
+      ]
+    },
+    "partial": {
+      "type": "boolean"
+    },
+    "unavailable": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unreadProjects": { "type": "array", "minItems": 1, "items": { "$ref": "#/components/schemas/UnreadProject" } },
+    "groups": {
+      "type": "object",
+      "required": [
+        "attention",
+        "running",
+        "waiting",
+        "stopped"
+      ],
+      "propertyNames": {
+        "enum": [
+          "attention",
+          "running",
+          "waiting",
+          "stopped"
+        ]
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "kind",
+            "status",
+            "work"
+          ],
+          "properties": {
+            "work": {
+              "type": "object",
+              "required": [
+                "state",
+                "reason",
+                "nextActor",
+                "nextAction"
+              ],
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "attention",
+                    "running",
+                    "waiting",
+                    "stopped"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "nextActor": {
+                  "type": "string"
+                },
+                "nextAction": {
+                  "type": "string"
+                },
+                "waitCondition": {
+                  "type": "string"
+                },
+                "resumeBy": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "waiting"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "waitCondition",
+                      "resumeBy"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "description": "画面と同じ分類・通知集約後の独立した仕事。各行のworkに理由・担当・次の行動を保持し、関連通知・個別承認を残す。"
+    },
+    "families": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "残作業または確認不能な子がある起票済み親相談の参照情報。画面には表示せず件数にも含めない。"
+    }
+  },
+  "additionalProperties": false
+}
+                                ] },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/list/timing':
+        {
+          'post':
+            {
+              'operationId': 'post_api_list_timing',
+              'summary': '画面の依頼一覧を開くまでの所要の報告',
+              'description': '画面のCookieセッションだけ。数値の項目だけを受け付け、Serverのメモリに最新20件を保持する（再起動で消える）。GET /api/meta の listMeasurements.browser で読む。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'additionalProperties': false,
+                              'properties':
+                                {
+                                  'fetchMs': { 'type': 'number', 'minimum': 0 },
+                                  'ttfbMs': { 'type': 'number', 'minimum': 0 },
+                                  'integrateMs': { 'type': 'number', 'minimum': 0 },
+                                  'drawMs': { 'type': 'number', 'minimum': 0 },
+                                  'firstDisplayMs': { 'type': 'number', 'minimum': 0 },
+                                  'paintMs': { 'type': 'number', 'minimum': 0 },
+                                  'fromNavigationMs': { 'type': 'number', 'minimum': 0 },
+                                  'encodedBytes': { 'type': 'number', 'minimum': 0 },
+                                  'decodedBytes': { 'type': 'number', 'minimum': 0 },
+                                  'rows': { 'type': 'number', 'minimum': 0 },
+                                },
+                            },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受け付けた。',
+                      'content': { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                },
+            },
+        },
+      '/api/list/entry':
+        {
+          'get':
+            {
+              'operationId': 'get_api_list_entry',
+              'summary': '画面の依頼一覧の1件',
+              'description': '画面のCookieセッションとNASのローカル一時キーで読める（PC別トークンは403、未認証は401）。通知された対象1件の一覧用データだけを返し、全体の応答を作ってから絞らない。typeはissue（projectとnumber）・draft・todo・closeRequest（idだけ）。Issueは全Issue一覧・コメントを取得せず、既存の一覧の行（listRow）の組み立てを使う。全体用のカーソルは進めない。存在しない・一覧の対象でないものは404、許可されないプロジェクトは403、状態が移ったもの（TODOから相談への移行など）は409で、画面は404だけを削除と扱い、409では全体を照合する。入力の形式が不正なら400。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'type',
+                    'in': 'query',
+                    'required': true,
+                    'schema': { 'type': 'string', 'enum': ['issue', 'draft', 'todo', 'closeRequest'] },
+                    'description': '対象の種類。',
+                  },
+                  {
+                    'name': 'project',
+                    'in': 'query',
+                    'required': false,
+                    'schema': { 'type': 'string' },
+                    'description': 'type=issueのときのowner/repo。',
+                  },
+                  {
+                    'name': 'number',
+                    'in': 'query',
+                    'required': false,
+                    'schema': { 'type': 'integer', 'minimum': 1 },
+                    'description': 'type=issueのときのGitea番号。',
+                  },
+                  {
+                    'name': 'id',
+                    'in': 'query',
+                    'required': false,
+                    'schema': { 'type': 'string', 'pattern': '^[a-f0-9-]{36}$' },
+                    'description': 'draft・todo・closeRequestの識別子。',
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '対象1件の行。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/ListRow' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/images':
+        {
+          'post':
+            {
+              'operationId': 'post_api_images',
+              'summary': '画面の画像をアップロード',
+              'description': 'projectとdraftまたはtodoまたはnumberで所属を指定。dataは画像のdata URL、id/messageIdはUUID。decodeImageでPNG/JPEG/WebPを検査。本文上限2900000 bytes、1メッセージ4枚・1相談12枚。PC別トークンは不可。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '201':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'project': { 'type': 'string' },
+                                  'draft': { 'type': 'string' },
+                                  'todo': { 'type': 'string' },
+                                  'number': { 'type': 'integer' },
+                                  'id': { 'type': 'string' },
+                                  'messageId': { 'type': 'string' },
+                                  'data': { 'type': 'string' },
+                                },
+                              'additionalProperties': true,
+                              'required': ['id', 'messageId', 'data'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/images/{id}':
+        {
+          'get':
+            {
+              'operationId': 'get_api_images_id',
+              'summary': '画像を読む',
+              'description': '画像の所属を確認し、mimeとbytesを返す。queryの全検査は server/internal/images/http.go を参照。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'image/*': { 'schema': { 'type': 'string', 'format': 'binary' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  { 'name': 'draft', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'todo', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'project', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'number', 'in': 'query', 'schema': { 'type': 'integer' } },
+                ],
+            },
+        },
+      '/api/images/{id}/remove':
+        {
+          'post':
+            {
+              'operationId': 'post_api_images_id_remove',
+              'summary': '画像を外す',
+              'description': '処理と状態による可否は参照先の実装を正本とする。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'project': { 'type': 'string' },
+                                  'draft': { 'type': 'string' },
+                                  'todo': { 'type': 'string' },
+                                  'number': { 'type': 'integer' },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

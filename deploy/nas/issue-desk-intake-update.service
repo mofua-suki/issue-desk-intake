@@ -1,0 +1,9 @@
+[Unit]
+Description=issue-desk-intakeの配布版を更新する
+
+[Service]
+Type=oneshot
+# 更新・交代・切り戻し全体には期限を設けない。再送だけ update-skills.sh で制限する。
+TimeoutStartSec=infinity
+WorkingDirectory=__DIR__
+ExecStart=/bin/sh __DIR__/deploy/nas/update.sh

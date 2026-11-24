@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "Preserve",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+    "lib": ["ES2024", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
+    "typeRoots": ["./client/node_modules/@types"],
+    "types": ["node"],
+    "paths": { "typescript": ["./client/node_modules/typescript/lib/typescript.d.ts"] },
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": [
+    "scripts/**/*.ts",
+    "shared/src/**/*.ts",
+    "shared/src/**/*.mts",
+    "test/**/*.ts",
+    "deploy/**/*.ts",
+    "server/internal/projects/templates/**/*.ts",
+    "client/test/**/*.ts",
+    "client/scripts/**/*.ts",
+    "api/types.ts",
+    "skills/**/*.ts"
+  ]
+}

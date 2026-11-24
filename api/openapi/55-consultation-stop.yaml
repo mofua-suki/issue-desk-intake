@@ -1,0 +1,102 @@
+{
+  "paths": {
+    "/api/drafts/{id}/stop": {
+      "post": {
+        "operationId": "post_api_drafts_id_stop",
+        "summary": "未起票の相談を保存したまま停止",
+        "description": "運用代行を許可したPCトークン、受付画面、正規CLI一時キーだけ。既存の相談所有者・プロジェクト権限を検証する。thinkingの未起票相談（実行中・待機中・再試行待ち）だけをstalledへ原子的に保存し、ready=false、run/retryAt=null、queued=false、revisionを1増やす。その保存が成功した後だけ、捕捉した旧実行ctxを取消す。本文・発言・画像・使用量・予算・既存の終了履歴を保持する。consultationStopsに操作ID・入力revision・時刻・操作元・理由・旧runを残す。同じoperationIdと同じrevision/理由/操作元の再送は冪等で、新たに開始された実行を取消さない。同IDの別内容、古いrevision、起票済み・起票中・auto_ready・終了済みは409。保存失敗は取消しない。停止後は再起動・周期で再開せず、処理中の遅延回答はstatus/runの検査で保存を拒否する。明示的なchat/retryでだけ再開する。既に別IDとして開始した相談子は別の停止対象。API成功は停止状態の永続化と取消要求を示し、全子プロセスの終了完了はGETのactionsで再確認する。",
+        "x-issue-desk-delegate": true,
+        "security": [
+          {
+            "screenSession": [],
+            "csrfToken": []
+          },
+          {
+            "cliKey": []
+          },
+          {
+            "pcToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "停止を永続化し実行の取消を要求済み、または同じ操作の照合済み。相談の現在の投影を返す。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "操作ID・revision・理由が不正"
+          },
+          "403": {
+            "description": "認証方式または運用代行の権限が不足"
+          },
+          "404": {
+            "description": "相談が無い、または参照権限が無い"
+          },
+          "409": {
+            "description": "状態・revision・操作IDの内容が競合"
+          },
+          "503": {
+            "description": "実行器または保存先を利用できない。保存されなければ取消さない。"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "画面・一時キーでは受付の同一Originが必須。PC別トークンでは不要。"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "operationId",
+                  "revision",
+                  "reason"
+                ],
+                "properties": {
+                  "operationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+[Unit]
+Description=issue-desk（NAS）の共有DBをバックアップする
+
+[Service]
+Type=oneshot
+# __DIR__ は update-units.sh が配置先に置き換える。
+WorkingDirectory=__DIR__
+ExecStart=/bin/sh __DIR__/deploy/nas/db-backup.sh

@@ -1,0 +1,6 @@
+[
+  "stage-watch.ts",
+  "direct-pr.ts",
+  "desk-ops.ts|notice",
+  "reply-issue.ts|--over-limit-statement|--implementation-limit-retry|--approval-question|--approval-answer"
+]

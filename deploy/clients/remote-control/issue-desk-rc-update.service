@@ -1,0 +1,13 @@
+# 正本は issue-desk-intake の deploy/clients/remote-control/。rc-setup.sh が置き、rc-update.sh が変わった回に更新する。手で変えない。
+# 正本の写し（~/.issue-desk/remote-control/source。core.sshCommand で ~/.ssh/gitea_rc_ed25519 を使う）を trunk へ
+# fast-forward してから rc-update.sh を呼ぶ。fetch に失敗したら1行出して手元の版で続け、fast-forward できない
+# （分かれた履歴）ときと、取り込めても手元の変更・手元だけのコミットで origin/trunk と中身が違うとき（git diff が
+# 差を返す）は配らずに1行出す。root・sudo は使わない（ユーザーユニット）。
+[Unit]
+Description=issue-desk remote-control の配布（Ubuntu の PC）
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+Environment=GIT_TERMINAL_PROMPT=0
+ExecStart=/bin/sh -c 'git -C %h/.issue-desk/remote-control/source fetch --quiet origin trunk || echo "[rc-update-failed] 正本の fetch に失敗したため、手元の版で続けます"; if git -C %h/.issue-desk/remote-control/source merge --ff-only --quiet origin/trunk && git -C %h/.issue-desk/remote-control/source diff --quiet origin/trunk; then exec /bin/sh %h/.issue-desk/remote-control/source/deploy/clients/remote-control/rc-update.sh; fi; echo "[rc-update-failed] 正本を trunk へ fast-forward できないため、配りません"'

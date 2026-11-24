@@ -1,0 +1,825 @@
+{
+  'paths':
+    {
+      '/api/issues':
+        {
+          'post':
+            {
+              'operationId': 'post_api_issues',
+              'summary': '受付AIの相談を始め起票を依頼',
+              'description': '調査専用Issueと自動監視由来の新規起票は禁止。保存済みの該当相談も再開・確定を拒否し、読取時はfilingRefusalに理由を返す。履歴は削除しない。不正なdespitePendingは永続受領前に400で拒否し、受領記録・下書き・AIを作らない。認証・対象権限・最低限の入力検査後、本文・送り手・指定値・再開状態を既存SQLiteへ永続保存して202を返す。保存失敗は成功にしない。外部照合と受付AIは応答後に既存の送り手/プロジェクト単位の直列化で開始する。providerはcodex/claudeを明示する。receiptIdとrequestIdは入力idと同じで、従来の応答idも予定の下書きIDを保つ。draftIdは初回発言の保存前はnull、保存後は下書きID。同じ送り手・同じID・同じ本文と指定値の再送は同じ受領。別内容へのID流用は409で外部処理を開始しない。他所有者の対応は公開しない。GET /api/drafts/{id}で受付IDを読むと、receiptStateでaccepted/processing/waiting/completed/rejected/failed/unknownを区別できる。受付済みは起票成功ではない。受領後のpending_similar_draft等はGETのerror/errorCodeに理由と既存相談への案内を保存する。この拒否では受付AIを呼ばず下書きも作らない。despitePendingによる別依頼の開始は新しい送信IDで一致するdraftと理由を指定する。候補は所有者別に見える範囲のduplicateHintsへ渡し、候補があっても一律に409で拒否せず、題名だけで停止しない。notDuplicateは照合の省略ではなく互換記録用。保存済み受領は起動時復旧で初回発言を照合して再開し、通常回答・hold確定・投稿結果不明の既存保証を保つ。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '202':
+                    {
+                      'description': '本文・送り手・指定値の永続受領済み。起票成功を意味しない。受領後の拒否や下書きへの対応は受付IDのGETで確認する。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409':
+                    {
+                      '$ref': '#/components/responses/Error409',
+                      'description': 'HTTP409は永続受領前の送信ID衝突でcode=send_id_conflictを返す。似た処理中下書きによる内部拒否code=pending_similar_draftは受領後に受付IDのGETへerrorCodeとして保存し、POSTは202のまま。理由には下書きID・状態・最終活動時刻と待つ方法、--despite-pending <ID> --reason <理由>の案内を含む。この拒否では相談や新しい下書きは作られない。IDが一致するdespitePendingを指定すれば通過できるが、元の受領の指定値は変更できないため新しい送信IDで別依頼として送る。',
+                    },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string', 'format': 'uuid' },
+                                  'project': { 'type': 'string' },
+                                  'consultationProvider':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['codex', 'claude'],
+                                      'default': 'codex',
+                                      'description': '相談元のAI。実装のproviderとは独立して保存する。',
+                                    },
+                                  'provider': { 'type': 'string', 'enum': ['codex', 'claude'] },
+                                  'text': { 'type': 'string' },
+                                  'readEvidence': {"type": "object", "description": "起票側が読んだ範囲と出典付き事実。JSON全体は65536 bytes以下。再送時は同じ値が必要。", "required": ["version", "documents", "facts"], "properties": {"version": {"type": "integer", "enum": [1]}, "documents": {"type": "array", "maxItems": 16, "items": {"type": "object", "required": ["id", "project", "path", "revision", "start", "end", "text"], "properties": {"id": {"type": "string", "minLength": 1}, "project": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "start": {"type": "integer", "minimum": 1}, "end": {"type": "integer", "minimum": 1}, "text": {"type": "string", "minLength": 1}}}}, "facts": {"type": "array", "maxItems": 64, "items": {"type": "object", "required": ["statement", "documents"], "properties": {"statement": {"type": "string", "minLength": 1}, "documents": {"type": "array", "minItems": 1, "items": {"type": "string"}}}}}}},
+                                  'priority': { 'type': 'string', 'enum': ['high', 'normal'] },
+                                  'priorityReason': { 'type': 'string' },
+                                  'tier':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['light', 'standard', 'heavy'],
+                                      'description': '受付の相談の難易度（light: 低、standard: 中、heavy: 高）。必須。依頼元が依頼の難しさで判断して必ず付け、受付はその難易度のモデル・推論レベルで相談する。受付は難易度を自分で判定しない。無い・空なら400（code=TIER_REQUIRED、依頼元が付ける・古いcreate-issue.tsなら更新するよう案内）、3値以外も400。',
+                                    },
+                                  'implementationTier': { 'type': 'string', 'enum': ['light', 'standard', 'heavy'] },
+                                  'hold':
+                                    {
+                                      'type': 'boolean',
+                                      'description': '相談だけのモード。trueなら、受付AIが起票できると判断しても自動で起票せず、下書きを確定待ち（status=draft、ready=true）にとどめる。確定はPOST /api/drafts/{id}/submit。falseか省略は従来どおり、true・false以外は400。同じidの再送でholdが違えば使用済みとして409。',
+                                    },
+                                  'notDuplicate': { 'type': 'string', 'minLength': 1, 'maxLength': 500 },
+                                  'despitePending':
+                                    {
+                                      'type': 'object',
+                                      'description': '同じ送り手の似た処理中下書きによる受領後拒否を承知して別依頼を始めるときだけ指定する。draftは受付IDのGETでerrorCode=pending_similar_draftとともに案内された一致下書きID、reasonは前後の空白を除いて1〜500文字。不正な指定は受領前に400。IDが一致しなければ受領後拒否のまま。新しい送信IDで指定して通過後、新しい下書きにdraft・trim済みreason・サーバー時刻atを記録する。',
+                                      'properties':
+                                        {
+                                          'draft': { 'type': 'string', 'minLength': 1 },
+                                          'reason': { 'type': 'string', 'minLength': 1, 'maxLength': 500 },
+                                        },
+                                      'required': ['draft', 'reason'],
+                                    },
+                                },
+                              'additionalProperties': true,
+                              'required': ['id', 'project', 'text', 'tier'],
+                            },
+                        },
+                    },
+                },
+            },
+          'get':
+            {
+              'operationId': 'get_api_issues',
+              'summary': 'Issue一覧',
+              'description': 'server/internal/issueapi/read.go の row が作る行。画面のみ後続案を確認、トークン/一時キーは読取。保留・失敗・停止ジョブは未了承認をpendingFinalApprovals（id・headSha・scope・reason・fingerprint・target・operation・condition）、計画の読取不能をfinalApprovalsUnavailableとして返す。具体的な質問、実装回数・使用量の上限判断、削除・権限ファイルの承認待ちと現在のレビューのuserJudgmentsはrequiresUser=trueを返す。質問の記録が欠けた保留は未確認と表示し、自動操作を拒否する。判断根拠や自動再開条件のない保留は停止中に分類する。詳細のsummary表示でも保持する。これらは表示用であり操作の認可には使わない。配列では欠けた行を示せないため、候補のリポジトリを1つでも読めなければ一覧全体を503にし、理由に読めなかったリポジトリを書く（読めた候補だけの一覧はGET /api/issues/searchのunreadProjects・incompleteで取る）。scope=activeは画面の対応中の範囲（GET /api/list?tabs=activeと同じ絞り込み）のIssueだけを返す。開いたIssueはすべて残す。閉じたIssueは、表示状態がrunning・publishing・scope_waiting・releasing・deployingのもの、継続待ちのもの、受入条件の確認が未了のもの、同じ範囲に残る相談（引き継ぎと分割の子を除く）が起票結果・調査Issueとして記録したものとその相談から起票したもの、処理中のクローズ依頼の対象だけを残す。残した行の内容は全件と同じ。省略時は全件を返し、active以外の値は400。scope=activeでも候補のリポジトリを1つでも読めなければ503。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            { 'schema': { 'type': 'array', 'items': { '$ref': '#/components/schemas/IssueRow' } } },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503', 'description': '共有DB・構成の読み書きができない、または候補のリポジトリを読めず一覧がそろわない（理由に読めなかったリポジトリを書く）。' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'scope',
+                    'in': 'query',
+                    'schema': { 'type': 'string', 'enum': ['active'] },
+                    'description': '一覧の範囲。activeは画面の対応中の範囲だけを返す。省略時は全件。',
+                  },
+                ],
+            },
+        },
+      '/api/issue':
+        {
+          'get':
+            {
+              'operationId': 'get_api_issue',
+              'summary': 'Issue詳細',
+              'description': 'verifyMerge=trueは閉じた依頼の対象PRまたは記録済み直接PRの実マージを確認し、一致時だけmergeEvidence（repo・pr・mergeCommitSha）を通常詳細へ添える。通常詳細のdependencyWaitsは未解決の依存辺ごとのproject・number・startedAt・unknownを返す。開始時刻が不明な辺はstartedAtがnull、unknownがtrue。待ち辺がなければ空配列。summaryと一覧・検索には含めない。通常詳細とsummaryには受付管理のfinalApprovalTransfers（id・fromHead・toHead・diffFingerprint・at）を表示用に返す。履歴がない場合は空配列または省略し、操作の認可には使わない。画面セッションと運用代行を許したPC別トークンの詳細には未了の最終承認pendingFinalApprovals（id・headSha・scope・reason・fingerprint・target・operation・condition）を返す。不正な計画はfinalApprovalsUnavailableを返す。保留・失敗・停止ジョブでは一覧・summaryも未了承認のID・SHA・理由・指紋を保持する。deskまたはproject+number。併記は400。閉じたIssueでジョブがmergedでない場合、ジョブのPRをGiteaで読み、取得できたmerged真偽をpr.mergedに付ける。PRが読めない場合は付けず、openまたはmergedのジョブでは追加取得しない。詳細のcloseReason.routeは直接PRの{repo, pr}（省略可能）。view=summaryは画面向けの軽量応答（server/internal/issueapi/summary.go）で、すべての認証方式に適用し、全文・全会話・実行履歴・表示に使わない技術情報を載せず、現在の質問(latestAsk)・状況・操作(actions)・識別子(project, number, desk, intakeId, closedAt)・URLは残す。省略時は従来の詳細。詳細のworkerExecutionはjobのviewの値を未知のキーも含めそのまま返し、値がない場合は項目を省略する。詳細のresultには保存済みのleaseExpiredCount・lastHost・lastStageとlastExecutionError（kind・at・stage・reasonと、有効なintakeHttpStatus・intakeCode・giteaHttpStatus）を含め、HTTP状態は100〜599の3桁の数字の文字列のみ、intakeCodeはrequest_failed・turn_lost・contract_mismatchのみを返し、その他の値や文字列以外は省略する。intakeHttpStatusとintakeCodeはkindがapi_rejectedのときだけ返す。intakeCodeはWorkerで未知のコードからrequest_failedに置換された場合があり、元のコードを復元できるとは限らない。既存の文字列は秘匿処理と長さ制限を行う。通常詳細とsummaryのdispatchRecord.eventsにはlease_expiredのat・generation・toと、受付が断った報告report_rejectedのat・host・code・status（HTTP状態）・reportKind・count・lastAt・message（伏せ字のうえ300文字まで）も含め、種類を合わせて最大20件を新しい順に返す。report_rejectedは断りの種類ごとに1件で、同じ種類の再発は回数と時刻を更新する。report_rejectedは20件の上限に数えずに必ず含め、更新後のatの位置に並べる。lastExecutionErrorは許可された項目が一つもなければ省略する。これらの診断項目とlease_expired・report_rejectedは一覧行には追加しない。summary以外のview値は400。PC別トークンのsummaryにはactionsを含めない。shownBodyがbodyと同一ならshownBodyを省略し、利用側はbodyを使う。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Issue' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [{"name": "verifyMerge", "in": "query", "schema": {"type": "boolean"}, "description": "通常詳細に実PRで確認したマージ根拠を追加する。"},
+                  { 'name': 'project', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'number', 'in': 'query', 'schema': { 'type': 'integer' } },
+                  { 'name': 'desk', 'in': 'query', 'schema': { 'type': 'integer' } },
+                  { 'name': 'view', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['summary'] } },
+                ],
+            },
+        },
+      '/api/issues/search':
+        {
+          'get':
+            {
+              'operationId': 'get_api_issues_search',
+              'summary': 'Issueを検索',
+              'description': 'state=open|closed、statusはカンマ区切り（waitingは待ち状態を展開）、sort=created|updated|closed(既定updated)。closedは終了日時順でnullは昇順・降順とも最後、order=asc|desc(既定desc)。limitは1〜100（省略時100）、pageは正整数。hasMoreは次ページの有無、totalは全一致件数。countOnly=1はtotalだけを返す。検索行にはdispatchRecordとexecutionSettingsを含めず詳細で取得する。priority=high|normal|auto、prioritySource=user|ai、countOnly=0|1。mine=1はトークン接続だけでhostと併記不可。qは題名の部分一致。createdFrom/createdTo・closedFrom/closedTo・updatedFrom/updatedToは作成/終了/更新日時の省略可能な範囲で他条件とAND。範囲指定時は該当の日時が無い行・解釈できない行を除外、fromを含みtoを含まない。時差付きISO 8601か日本時間のYYYY-MM-DDTHH:MM、時差なしは日本時間。日付だけ・存在しない日時・解釈不能・fromがto以後は読取前に400。終了日時が無い行・解釈不能な行は終了日時の範囲から除外。行のclosedAtはGiteaのclosed_at（開いている行・値なしはnull）。候補のリポジトリの一部を読めなかったときは、読めた候補の行を返し、unreadProjectsに読めなかったリポジトリと理由を返す（countOnlyも同じ）。projectを指定しないときはincomplete=trueも返し、行・件数がそろっていないことを示す。incomplete=trueの結果を全件として扱わない（重複照合では未確認にする）。projectを指定したときはそのリポジトリを読めていれば行はそろっている（incompleteは付けない）。指定したリポジトリ自体・すべての候補を読めないときは従来どおりエラー。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {"oneOf":[{"type":"object","properties":{"total":{"type":"integer","minimum":0},"issues":{"type":"array","items":{"$ref":"#/components/schemas/IssueRow"}},"hasMore":{"type":"boolean"},"incomplete":{"type":"boolean","const":true,"description":"project未指定で読めなかった候補があり、行・件数がそろっていない。"},"unreadProjects":{"type":"array","minItems":1,"items":{"$ref":"#/components/schemas/UnreadProject"}}},"required":["total","issues","hasMore"],"additionalProperties":true},{"type":"object","properties":{"total":{"type":"integer","minimum":0},"incomplete":{"type":"boolean","const":true,"description":"project未指定で読めなかった候補があり、行・件数がそろっていない。"},"unreadProjects":{"type":"array","minItems":1,"items":{"$ref":"#/components/schemas/UnreadProject"}}},"required":["total"],"not":{"required":["issues"]},"additionalProperties":true}]},
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'project', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'host', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'state', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['open', 'closed'] } },
+                  { 'name': 'status', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'q', 'in': 'query', 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'createdFrom',
+                    'in': 'query',
+                    'description': '時差付きISO 8601または日本時間のYYYY-MM-DDTHH:MM。fromを含みtoを含まない。',
+                    'schema': { 'type': 'string' },
+                  },
+                  {
+                    'name': 'createdTo',
+                    'in': 'query',
+                    'description': '時差付きISO 8601または日本時間のYYYY-MM-DDTHH:MM。fromを含みtoを含まない。',
+                    'schema': { 'type': 'string' },
+                  },
+                  {
+                    'name': 'closedFrom',
+                    'in': 'query',
+                    'description': '時差付きISO 8601または日本時間のYYYY-MM-DDTHH:MM。fromを含みtoを含まない。',
+                    'schema': { 'type': 'string' },
+                  },
+                  {
+                    'name': 'closedTo',
+                    'in': 'query',
+                    'description': '時差付きISO 8601または日本時間のYYYY-MM-DDTHH:MM。fromを含みtoを含まない。',
+                    'schema': { 'type': 'string' },
+                  },
+                  {
+                    'name': 'updatedFrom',
+                    'in': 'query',
+                    'description': '時差付きISO 8601または日本時間のYYYY-MM-DDTHH:MM。fromを含みtoを含まない。',
+                    'schema': { 'type': 'string' },
+                  },
+                  {
+                    'name': 'updatedTo',
+                    'in': 'query',
+                    'description': '時差付きISO 8601または日本時間のYYYY-MM-DDTHH:MM。fromを含みtoを含まない。',
+                    'schema': { 'type': 'string' },
+                  },
+                  { 'name': 'sort', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['created', 'updated', 'closed'], 'default': 'updated' } },
+                  { 'name': 'order', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['asc', 'desc'], 'default': 'desc' } },
+                  { 'name': 'limit', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'maximum': 100, 'default': 100 } },
+                  { 'name': 'priority', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['high', 'normal', 'auto'] } },
+                  { 'name': 'prioritySource', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['user', 'ai'] } },
+                  { 'name': 'countOnly', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['0', '1'] } },
+                  { 'name': 'page', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'maximum': 90071992547409, 'default': 1 } },
+                  { 'name': 'mine', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['1'] } },
+                ],
+            },
+        },
+      '/api/issues/close':
+        {
+          'post':
+            {
+              'operationId': 'post_api_issues_close',
+              'summary': 'Issueのクローズを依頼',
+              'description': 'トークンは受付AIによる確認依頼（reviewingなら202）。受付交代の段1で資料取得・AI枠待ち・認証確認中なら、新しいAIを開始せずreviewingを保持し、次の起動時に再開する。利用者による解除は不要。forceはfalse/省略だけ。画面・一時キーはcloseIssueへ渡す別の処理。reasonの列挙は server/internal/issueapi/close.go の closeReason、descriptionは理由の根拠。別PC担当には運用代行の許可も必要。送信を始めたまま結果の記録が無い操作（返信・再試行・優先度など）は、その依頼への操作を今まさに送っている間だけ409で閉じない。失敗や再起動で残っているだけなら閉じ、成功扱いにせず、クローズ依頼のunresolvedActions（id・action・posted）と終了コメントに残す。読み取れなければunresolvedActionsUnknown=trueを残す。',
+              'x-issue-desk-delegate': '別PCの担当',
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/CloseRequest' } } },
+                    },
+                  '202':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/CloseRequest' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string', 'format': 'uuid' },
+                                  'project': { 'type': 'string' },
+                                  'number': { 'type': 'integer' },
+                                  'reason':
+                                    { 'type': 'string', 'enum': ['voluntary', 'resolved', 'duplicate', 'other_route'] },
+                                  'description': { 'type': 'string' },
+                                  'comment': { 'type': 'string' },
+                                  'route': { 'type': 'string', 'description': 'other_route の直接PR。owner/repo#番号。' },
+                                  'force': { 'type': 'boolean' },
+                                },
+                              'additionalProperties': true,
+                              'required': ['id', 'project', 'number', 'reason', 'description'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/drafts':
+        {
+          'get':
+            {
+              'operationId': 'get_api_drafts',
+              'summary': '全相談の一覧',
+              'description': '処理と状態による可否は参照先の実装を正本とする。既定の一覧は各認証方式に共通のDraftViewを返す。view=summaryは保存されたid・project・unassigned・status・title・shownTitle・createdAt・updatedAtだけを返し、保存されていない項目は省略する。summaryは投影読取時点の結果で、選択後の再読取・再判定はしない。既定応答のServer-Timingヘッダには全件読取（draft_read）、アクセスと絞り込み（draft_filter）、ページ切り出し（draft_page）、選択行の全文取得・JSONデコード・再判定・進捗コピー（draft_full）、表示項目の組み立て（draft_view）の所要時間をミリ秒で含む。運用代行を許可されたPC別トークン（pcToken）では、プロジェクト未定または許可済みプロジェクトの相談だけを返す。一時キー（cliKey）は従来どおり全相談を返す。既定応答のtotalとhasMoreは一覧の選択時点の値で、選択後に削除または権限・絞り込み条件が変わった行はitemsから除くため、itemsがページの予定件数より少ないことがある。',
+              'parameters': [
+                { 'name': 'view', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['', 'summary'] }, 'description': 'summaryを指定すると保存済みの一覧項目のみ返す。省略または空文字は既定応答。その他の非空値は400。' },
+                { 'name': 'project', 'in': 'query', 'schema': { 'type': 'string' }, 'description': 'プロジェクトで絞り込む。' },
+                { 'name': 'status', 'in': 'query', 'schema': { 'type': 'string' }, 'description': 'カンマ区切りの状態で絞り込む。' },
+                { 'name': 'excludeStatus', 'in': 'query', 'schema': { 'type': 'string' }, 'description': 'カンマ区切りの状態を除外する。statusと併用でき、除外が優先される。' },
+                { 'name': 'page', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'default': 1 } },
+                { 'name': 'limit', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 100 } }
+              ],
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            { 'schema': { 'type': 'object', 'required': ['items', 'total', 'page', 'limit', 'hasMore'], 'properties': { 'items': { 'type': 'array', 'items': { 'anyOf': [ { '$ref': '#/components/schemas/Draft' }, { 'type': 'object', 'description': 'view=summaryの項目。保存されていない項目は省略。', 'additionalProperties': false, 'properties': { 'id': {}, 'project': {}, 'unassigned': {}, 'status': {}, 'title': {}, 'shownTitle': {}, 'createdAt': {}, 'updatedAt': {} } } ] } }, 'total': { 'type': 'integer', 'minimum': 0 }, 'page': { 'type': 'integer', 'minimum': 1 }, 'limit': { 'type': 'integer', 'minimum': 1, 'maximum': 200 }, 'hasMore': { 'type': 'boolean' } } } },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+          'post':
+            {
+              'operationId': 'post_api_drafts',
+              'summary': '画面の相談を作成',
+              'description': '保管済みの起票先は409 repository_archivedで拒否する。保管状態を照会できないときは作成を続ける。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '201':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string', 'format': 'uuid' },
+                                  'project': { 'type': 'string' },
+                                  'consultationProvider':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['codex', 'claude'],
+                                      'default': 'codex',
+                                      'description': '相談元のAI。実装のproviderとは独立して保存する。',
+                                    },
+                                  'provider': { 'type': 'string', 'enum': ['codex', 'claude'] },
+                                  'text': { 'type': 'string' },
+                                  'priority': { 'type': 'string', 'enum': ['high', 'normal'] },
+                                  'priorityReason': { 'type': 'string' },
+                                  'tier':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['light', 'standard', 'heavy'],
+                                      'description': '受付の相談の難易度（light: 低、standard: 中、heavy: 高）。必須。依頼元が依頼の難しさで判断して必ず付け、受付はその難易度のモデル・推論レベルで相談する。受付は難易度を自分で判定しない。無い・空なら400（code=TIER_REQUIRED、依頼元が付ける・古いcreate-issue.tsなら更新するよう案内）、3値以外も400。',
+                                    },
+                                  'implementationTier': { 'type': 'string', 'enum': ['light', 'standard', 'heavy'] },
+                                  'hold':
+                                    {
+                                      'type': 'boolean',
+                                      'description': '相談だけのモード。trueなら、受付AIが起票できると判断しても自動で起票せず、下書きを確定待ち（status=draft、ready=true）にとどめる。確定はPOST /api/drafts/{id}/submit。falseか省略は従来どおり、true・false以外は400。同じidの再送でholdが違えば使用済みとして409。',
+                                    },
+                                },
+                              'required': ['tier'],
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/drafts/{id}':
+        {
+          'get':
+            {
+              'operationId': 'get_api_drafts_id',
+              'summary': '相談の結果を読む',
+              'description': '下書きIDではTODOからの再開後も現在の相談を読み、拒否・過去の受領で会話や結果を置き換えない。初回発言の別受付IDではその受領を個別に読む。受付IDと下書きIDが同じ場合は初回発言の保存途中か、現在の発言と一致するときだけ受領情報を添える。相談作成前から受領状況とdraftIdの対応を返す。receiptStateはaccepted/processing/waiting/completed/rejected/failed/unknown。従来のid/status/messages/questions/ready/revision/error/issue等を保ち、引き渡し前のstatusはthinking（拒否/失敗はerror）。GETは保存の参照だけでAI呼出し・再キュー・Gitea投稿を起こさない。通常トークンは自分の受領だけ、運用代行は既存の所有境界に従う。失効と対象権限は毎回確認する。受領のない既存下書きは従来経路で読む。停止中のstallCauseはexplicit（明示停止）またはtimeout（時間切れ）。旧形式はerrorから読取時に判定し、判定不能・未知値は省略する。再開時に原因を消し、停止履歴は保持する。view=summaryは同じ受領の分岐と権限検査で読み、応答待ちの判定に使う項目（id・project・unassigned・status・revision・title・shownTitle・createdAt・updatedAt・ready・hold・questions・error・errorCode・issue・issues・parentSplit・splitChildren・finishedWithoutIssue、受領情報のaccepted・receiptId・requestId・draftId・receiptState、consultationBudgetはstoppedだけ）とviewの値summaryだけを返す（Draftの一部の項目だけを持つ形）。各項目の形は既定応答と同じで、保存されていない項目は省略し、messages・actions・url・familyProgressは返さない。その他の非空のviewは400。',
+              'x-issue-desk-delegate': '他の所有者',
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  { 'name': 'view', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['', 'summary'] }, 'description': 'summaryを指定すると応答待ちの判定に使う項目だけを返す。省略または空文字は既定応答。その他の非空値は400。' },
+                ],
+            },
+          'delete':
+            {
+              'operationId': 'delete_api_drafts_id',
+              'summary': '相談を破棄',
+              'description': '分割の親は親子に起票結果・調査Issueが無く、全子が読めて送信を試みた印が無く、子がsubmitting・submitted・submit_unknownでなく、親がsubmitting・submitted・auto_ready・thinkingでなくターンが終了しているとき、子を先に親を最後に家族全員を破棄する（親のsubmit_unknownも対象）。分割の子の個別操作は409。その他の状態による可否は参照先の実装を正本とする。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'reason',
+                    'in': 'query',
+                    'schema': { 'type': 'string', 'minLength': 1, 'maxLength': 500 },
+                    'description': '運用代行トークンのDELETEだけ。前後の空白を除き、改行・制御文字を空白にする。文字列以外・空・500文字超は400。',
+                  },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+            },
+        },
+      '/api/drafts/{id}/chat': { '$ref': './52-draft-operations.yaml#/paths/~1api~1drafts~1{id}~1chat' },
+      '/api/drafts/{id}/edit': { '$ref': './52-draft-operations.yaml#/paths/~1api~1drafts~1{id}~1edit' },
+      '/api/drafts/{id}/submit': { '$ref': './52-draft-operations.yaml#/paths/~1api~1drafts~1{id}~1submit' },
+      '/api/drafts/{id}/finish': { '$ref': './52-draft-operations.yaml#/paths/~1api~1drafts~1{id}~1finish' },
+      '/api/drafts/{id}/priority':
+        {
+          'post':
+            {
+              'operationId': 'post_api_drafts_id_priority',
+              'summary': '相談のpriority',
+              'description': 'chatは同じid/messageIdで照合。通常のトークンは自分の相談だけ。他人のchatは運用代行が必要。finishは運用代行を許したトークンだけ。トークンでは編集・priorityは403。proxy-undoは運用代行を許したトークンが利用者の承認の発言（statement）と指示の日時（instructionAt）を添えたときだけ受け付け、proxyUndosに発言・日時・経路・送信元PCを記録する。状態の可否はactionsで確かめる。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties': { 'priority': { 'type': 'string', 'enum': ['high', 'normal', 'auto'] } },
+                              'additionalProperties': true,
+                              'required': ['priority'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/drafts/{id}/todo':
+        {
+          'post':
+            {
+              'operationId': 'post_api_drafts_id_todo',
+              'summary': '相談のtodo',
+              'description': 'chatは同じid/messageIdで照合。通常のトークンは自分の相談だけ。他人のchatは運用代行が必要。finishは運用代行を許したトークンだけ。トークンでは編集・priorityは403。proxy-undoは運用代行を許したトークンが利用者の承認の発言（statement）と指示の日時（instructionAt）を添えたときだけ受け付け、proxyUndosに発言・日時・経路・送信元PCを記録する。状態の可否はactionsで確かめる。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Todo' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'reason':
+                                    {
+                                      'type': 'string',
+                                      'minLength': 1,
+                                      'maxLength': 500,
+                                      'description': '運用代行トークンだけ。前後の空白を除き、改行・制御文字を空白にする。文字列以外・空・500文字超は400。',
+                                    },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/draft-withdrawals':
+        {
+          'get':
+            {
+              'operationId': 'get_api_draft_withdrawals',
+              'summary': '相談を手放した記録を読む',
+              'description': '運用の代行を許したPC別トークンだけ。許していないトークンは403。日本時間で終了日を含む1〜92日、省略時は直近7日。時刻の古い順でrecordsを返す。本文・質疑・回答・画像・エラー文は保存しない。記録はこの変更後の操作だけ。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'parameters':
+                [
+                  { 'name': 'from', 'in': 'query', 'schema': { 'type': 'string', 'format': 'date' } },
+                  { 'name': 'to', 'in': 'query', 'schema': { 'type': 'string', 'format': 'date' } },
+                  {
+                    'name': 'project',
+                    'in': 'query',
+                    'schema': { 'type': 'string' },
+                    'description': 'owner/repoで絞る。',
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'recordsはdraft・project・title（空ならnull）・operation（discard/todo）・at・createdAt・via（screen/key/token/intake/unknown）・tokenName・reason・parentを持つ。usedはrows（その下書きの操作時刻以前の受付使用量行数）・weighted（usageWeightsによる既知の合計、既知が無ければnull）・missing（重み付きの量が不明の行数）。使用量DBが読めなくても200で各usedはnull、応答全体のreasonに秘密を伏せた理由を返す。正常時の応答全体のreasonはnull。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'records':
+                                        {
+                                          'type': 'array',
+                                          'items': {"type":"object","properties":{"draft":{"type":"string"},"operation":{"type":"string"},"at":{"type":"string"},"via":{"type":"string"},"project":{"type":["string","null"]},"title":{"type":["string","null"]},"createdAt":{"type":["string","null"]},"tokenName":{"type":["string","null"]},"reason":{"type":["string","null"]},"parent":{"type":["string","null"]},"used":{"type":["object","null"],"properties":{"rows":{"type":"integer"},"weighted":{"type":["number","null"]},"missing":{"type":"integer"}},"required":["rows","weighted","missing"]}},"required":["draft","operation","at","via","project","title","createdAt","tokenName","reason","parent","used"],"additionalProperties":true},
+                                        },
+                                      'reason': { 'type': ['string', 'null'] },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                },
+            },
+        },
+      '/api/topic-links':
+        {
+          'get':
+            {
+              'operationId': 'get_api_topic_links',
+              'summary': '同じ題材の相談のまとまりを読む',
+              'description': '運用の代行を許したPC別トークンだけ。許していないトークンは403、GET以外は405。下書きのtopicLinksを推移的にまとめ、2件以上のまとまりを重み付きの量の多い順に返す。外した結び付きは数えない。期間は量の集計だけに使い、時差付きISO 8601・省略時は直近24時間・最長7日（使用量の異常のAPIと同じ）。不正は400。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'parameters':
+                [
+                  { 'name': 'from', 'in': 'query', 'schema': { 'type': 'string', 'format': 'date-time' } },
+                  { 'name': 'to', 'in': 'query', 'schema': { 'type': 'string', 'format': 'date-time' } },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'groupsの各件はid（最小のメンバーID）・counts（members・drafts・todos・finished・missing=受付に無いID）・links・filed（起票または調査起票した相談がある）・finished（起票せず終えた相談がある）・outcomes（結末ごとの件数。TODOはtodo）・desks（起票の共通番号）・weighted（期間内の重み付きの量の合計。量の行が無ければnull、0にしない）・missing（重み付きの量が不明の行数）・members（id・state・outcome・weighted）。使用量を読めなくても200で量はnull、reasonに秘密を伏せた理由を返す（正常時null）。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'from': { 'type': 'string' },
+                                      'to': { 'type': 'string' },
+                                      'groups':
+                                        {
+                                          'type': 'array',
+                                          'items': { 'type': 'object', 'additionalProperties': true },
+                                        },
+                                      'reason': { 'type': ['string', 'null'] },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                },
+            },
+        },
+      '/api/drafts/{id}/topic-links/remove':
+        {
+          'post':
+            {
+              'operationId': 'post_api_drafts_id_topic_links_remove',
+              'summary': '誤った同じ題材の結び付きを外す',
+              'description': '運用の代行を許したPC別トークンだけ。許していないトークンは403。bodyのwithで外す相手のID（向きは問わない）を指定する。外した組は以後の手がかり・まとまりに数えない。同じ指定の再送は成功（冪等）で、ログは最初の1回だけ残す。相談・TODOのどちらも無いidは404、withが不正なら400。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { 'type': 'object', 'required': ['with'], 'properties': { 'with': { 'type': 'string' } } },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'id・with・removed（true）。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                },
+            },
+        },
+      '/api/drafts/{id}/proxy-undo':
+        {
+          'post':
+            {
+              'operationId': 'post_api_drafts_id_proxy_undo',
+              'summary': '相談のproxy-undo',
+              'description': 'chatは同じid/messageIdで照合。通常のトークンは自分の相談だけ。他人のchatは運用代行が必要。finishは運用代行を許したトークンだけ。トークンでは編集・priorityは403。proxy-undoは運用代行を許したトークンが利用者の承認の発言（statement）と指示の日時（instructionAt）を添えたときだけ受け付け、proxyUndosに発言・日時・経路・送信元PCを記録する。状態の可否はactionsで確かめる。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': false,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーは必須。PC別トークンでは送らなくてよい。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'messageId': { 'type': 'string' },
+                                  'statement':
+                                    {
+                                      'type': 'string',
+                                      'minLength': 8,
+                                      'maxLength': 2000,
+                                      'description': 'PC別トークンでは必須。利用者がチャットでこの代理回答の取消を承認した発言そのまま（issue-desk-issue-control Skillの代理回答取消手順）。画面では使わない。',
+                                    },
+                                  'instructionAt':
+                                    {
+                                      'type': 'string',
+                                      'description': 'PC別トークンでは必須。利用者がチャットでこの取消を承認した日時（UTCオフセット付きISO 8601（秒まで。例 2026-11-11T11:58:00+09:00）、未来でなく7日以内）。画面では使わない。',
+                                    },
+                                },
+                              'additionalProperties': true,
+                              'required': ['messageId'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

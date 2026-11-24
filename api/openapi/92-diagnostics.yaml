@@ -1,0 +1,863 @@
+{
+  "paths": {
+    "/api/diagnostics/db": {
+      "get": {
+        "operationId": "get_api_diagnostics_db",
+        "summary": "受付診断: db",
+        "description": "読み取り専用の受付診断。認証、認可の後にGETを処理する。",
+        "x-issue-desk-delegate": true,
+        "security": [
+          {
+            "pcToken": []
+          },
+          {
+            "cliKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "診断結果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "color",
+                    "instanceId",
+                    "startedAt",
+                    "pid",
+                    "queries",
+                    "connections",
+                    "maxConnections"
+                  ],
+                  "properties": {
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "blue",
+                        "green",
+                        "unknown"
+                      ]
+                    },
+                    "instanceId": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "pid": {
+                      "type": "integer"
+                    },
+                    "queries": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "state",
+                          "seconds",
+                          "waitType"
+                        ],
+                        "properties": {
+                          "state": {
+                            "type": "string"
+                          },
+                          "seconds": {
+                            "type": "number",
+                            "description": "実行時間（秒）。"
+                          },
+                          "waitType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "待機種別。不明ならnull。"
+                          },
+                          "query": {
+                            "type": "string",
+                            "description": "正規化後のSQL。最大256バイトでトークン境界まで。権限不足、判別不能、診断接続のstandard_conforming_stringsがon以外、または通常文字列にバックスラッシュがあるときは省略。観測先の接続設定は取得できない。"
+                          }
+                        }
+                      },
+                      "description": "現在のDBのactive接続とstateが見えない接続の標本（最大100件）。権限不足ではidle接続もunknownとして含まれる。該当なしは空配列。"
+                    },
+                    "connections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "state",
+                          "count"
+                        ],
+                        "properties": {
+                          "state": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      },
+                      "description": "該当なしは空配列。"
+                    },
+                    "maxConnections": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未認証または資格情報が無効。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "画面セッション、または運用代行を許可していないPCトークンなどは拒否。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "認可後、GET以外は拒否。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DB診断情報の読取に失敗。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/cpu": {
+      "get": {
+        "operationId": "get_api_diagnostics_cpu",
+        "summary": "受付診断: cpu",
+        "description": "読み取り専用の受付診断。認証、認可の後にGETを処理する。 上位件数はlimitで指定し既定30件、最大100件。要求取消しで接続が切れた場合は応答せず、取得枠を解放する。",
+        "x-issue-desk-delegate": true,
+        "security": [
+          {
+            "pcToken": []
+          },
+          {
+            "cliKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "seconds",
+            "in": "query",
+            "required": false,
+            "description": "取得秒数。1回だけ指定でき、重複指定は拒否。",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 30,
+              "default": 10
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "上位件数。1回だけ指定でき、重複指定は拒否。",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "診断結果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "color",
+                    "instanceId",
+                    "startedAt",
+                    "seconds",
+                    "totalSamples",
+                    "self",
+                    "cumulative"
+                  ],
+                  "properties": {
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "blue",
+                        "green",
+                        "unknown"
+                      ]
+                    },
+                    "instanceId": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "seconds": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 30,
+                      "description": "取得時間（秒）。"
+                    },
+                    "totalSamples": {
+                      "type": "integer",
+                      "description": "CPUサンプル数。"
+                    },
+                    "self": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "function"
+                        ],
+                        "properties": {
+                          "function": {
+                            "type": "string"
+                          },
+                          "file": {
+                            "type": "string",
+                            "description": "取得できた場合のソースファイルと行番号。"
+                          },
+                          "selfNanoseconds": {
+                            "type": "integer",
+                            "description": "自身のCPU時間（ナノ秒）。0なら省略。"
+                          },
+                          "cumulativeNanoseconds": {
+                            "type": "integer",
+                            "description": "累積CPU時間（ナノ秒）。0なら省略。"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "description": "省略可能。CPUでは現行処理は設定しない。"
+                          }
+                        }
+                      },
+                      "description": "該当なしは空配列。"
+                    },
+                    "cumulative": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "function"
+                        ],
+                        "properties": {
+                          "function": {
+                            "type": "string"
+                          },
+                          "file": {
+                            "type": "string",
+                            "description": "取得できた場合のソースファイルと行番号。"
+                          },
+                          "selfNanoseconds": {
+                            "type": "integer",
+                            "description": "自身のCPU時間（ナノ秒）。0なら省略。"
+                          },
+                          "cumulativeNanoseconds": {
+                            "type": "integer",
+                            "description": "累積CPU時間（ナノ秒）。0なら省略。"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "description": "省略可能。CPUでは現行処理は設定しない。"
+                          }
+                        }
+                      },
+                      "description": "該当なしは空配列。"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "秒数または上位件数の値・指定回数が不正。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未認証または資格情報が無効。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "画面セッション、または運用代行を許可していないPCトークンなどは拒否。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "認可後、GET以外は拒否。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CPUプロファイル取得中、または取得開始に失敗。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CPUプロファイルの解析に失敗。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/goroutines": {
+      "get": {
+        "operationId": "get_api_diagnostics_goroutines",
+        "summary": "受付診断: goroutines",
+        "description": "読み取り専用の受付診断。認証、認可の後にGETを処理する。 上位件数はlimitで指定し既定30件、最大100件。",
+        "x-issue-desk-delegate": true,
+        "security": [
+          {
+            "pcToken": []
+          },
+          {
+            "cliKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "診断結果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "color",
+                    "instanceId",
+                    "startedAt",
+                    "total",
+                    "functions"
+                  ],
+                  "properties": {
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "blue",
+                        "green",
+                        "unknown"
+                      ]
+                    },
+                    "instanceId": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "goroutine総数。"
+                    },
+                    "functions": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "function"
+                        ],
+                        "properties": {
+                          "function": {
+                            "type": "string"
+                          },
+                          "file": {
+                            "type": "string",
+                            "description": "関数の定義位置。設定される。"
+                          },
+                          "selfNanoseconds": {
+                            "type": "integer",
+                            "description": "CPU時間（ナノ秒）。goroutinesでは現行処理は設定しない。"
+                          },
+                          "cumulativeNanoseconds": {
+                            "type": "integer",
+                            "description": "CPU時間（ナノ秒）。goroutinesでは現行処理は設定しない。"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "description": "goroutine数。0なら省略。"
+                          }
+                        }
+                      },
+                      "description": "該当なしは空配列。"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "上位件数の値または指定回数が不正。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未認証または資格情報が無効。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "画面セッション、または運用代行を許可していないPCトークンなどは拒否。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "認可後、GET以外は拒否。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "goroutineの取得または解析に失敗。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "上位件数。1回だけ指定でき、重複指定は拒否。",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          }
+        ]
+      }
+    },
+    "/api/diagnostics/db-query": {
+      "post": {
+        "operationId": "post_api_diagnostics_db_query",
+        "summary": "許可付きDB参照",
+        "description": "期限付きdb-readの許可を実行時に共有DBで再確認する。SQL検査後、対象の検索パスをpg_catalog優先に設定したREAD ONLYトランザクションで1文のSELECTを実行する。statement_timeoutは5秒、lock_timeoutは500ms。同時実行は全対象で1件。認証済みの実行・拒否をactor・許可ID・対象・SQL全文・HTTP結果でadmin_auditに記録し、結果の値は保存しない。65536バイトを超えるSQLは実行せず、監査には先頭65536バイト以内とsqlBytes（元のバイト数）・sqlSha256（全文のSHA-256）を残す。",
+        "security": [
+          {
+            "pcToken": []
+          },
+          {
+            "cliKey": []
+          }
+        ],
+        "x-issue-desk-delegate": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "target",
+                  "sql"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "type": "string",
+                    "enum": [
+                      "shared",
+                      "app"
+                    ]
+                  },
+                  "sql": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 65536,
+                    "description": "UTF-8で65536バイト以下。SELECTまたはWITHから始まる1文のみ。資格情報・システム・対象外スキーマ・副作用のある関数を拒否。"
+                  },
+                  "maxRows": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000,
+                    "default": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "照会結果。JSON本文は改行を含め262144バイト以下。行または本文上限による省略はtruncatedで示す。値をテキストにした大きさが1行で262144バイトを超える行はDB側で値を返さず、その行の手前で打ち切ってtruncated.bytesをtrueにする。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "columns",
+                    "rows",
+                    "truncated"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "type"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "PostgreSQLのスカラー型名。composite・record・bytea・未知の型は拒否。"
+                          }
+                        }
+                      }
+                    },
+                    "rows": {
+                      "type": "array",
+                      "maxItems": 1000,
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "description": "columnsと同じ順序。重複列名も保持する。numeric・JSONなどドライバーがbytesで返す値は文字列。空結果は空配列。"
+                    },
+                    "truncated": {
+                      "type": "object",
+                      "required": [
+                        "rows",
+                        "bytes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "rows": {
+                          "type": "boolean"
+                        },
+                        "bytes": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "入力・SQL・結果の列名または型・列数（1〜1600）を拒否。PostgreSQLが照会の内容を理由に返すエラー（構文・名前・データ・行数・未対応の機能・大きさの上限・読取専用・ロック上限・メモリ不足）も含む。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未認証または資格情報が無効。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "画面セッション、運用代行なしのPCトークン、または対象に有効な期限付きdb-readの許可がない。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "別のDB照会を実行中。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DB接続または監査保存が利用不能、またはDB内部のエラー。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "5秒のstatement_timeout、または接続待ちを含む6秒の要求上限を超過。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/activity": {
+      "get": {
+        "operationId": "get_api_diagnostics_activity",
+        "summary": "受付診断: activity",
+        "description": "読み取り専用の受付診断。認証、認可の後にGETを処理する。",
+        "x-issue-desk-delegate": true,
+        "security": [
+          {
+            "pcToken": []
+          },
+          {
+            "cliKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "診断結果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "color",
+                    "instanceId",
+                    "startedAt",
+                    "hours"
+                  ],
+                  "properties": {
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "blue",
+                        "green",
+                        "unknown"
+                      ]
+                    },
+                    "instanceId": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "hours": {
+                      "type": "array",
+                      "maxItems": 24,
+                      "description": "直近24時間。各時間の行は最大1000件。経過時間はミリ秒。",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "start",
+                          "rows"
+                        ],
+                        "properties": {
+                          "start": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "rows": {
+                            "type": "array",
+                            "maxItems": 1000,
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "kind",
+                                "name",
+                                "count",
+                                "failures",
+                                "totalMilliseconds",
+                                "maxMilliseconds"
+                              ],
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "periodic",
+                                    "http"
+                                  ]
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "method": {
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "type": "string"
+                                },
+                                "credential": {
+                                  "type": "string",
+                                  "enum": [
+                                    "pc",
+                                    "cli",
+                                    "session",
+                                    "none"
+                                  ]
+                                },
+                                "count": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "failures": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "totalMilliseconds": {
+                                  "type": "number",
+                                  "minimum": 0
+                                },
+                                "maxMilliseconds": {
+                                  "type": "number",
+                                  "minimum": 0
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未認証または資格情報が無効。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "画面セッション、または運用代行を許可していないPCトークンなどは拒否。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "認可後、GET以外は拒否。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

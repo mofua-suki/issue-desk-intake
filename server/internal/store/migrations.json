@@ -1,0 +1,207 @@
+[
+  {
+    "version": 1,
+    "name": "baseline",
+    "sql": ""
+  },
+  {
+    "version": 2,
+    "name": "usage_rows",
+    "sql": "CREATE TABLE usage_rows (key text PRIMARY KEY, seq bigserial NOT NULL UNIQUE, at timestamptz NOT NULL, host text NOT NULL, source text, repo text, issue integer, step text, provider text, model text, json text NOT NULL, sender text NOT NULL);\nCREATE INDEX usage_rows_at ON usage_rows (at);\nCREATE INDEX usage_rows_repo_step ON usage_rows (repo, step);\nCREATE INDEX usage_rows_repo_issue ON usage_rows (repo, issue, at);\nCREATE TABLE usage_limit_rows (key text PRIMARY KEY, at timestamptz NOT NULL, host text NOT NULL, source text, provider text, \"limit\" text, json text NOT NULL, sender text NOT NULL);\nCREATE INDEX usage_limit_rows_at ON usage_limit_rows (at);\nCREATE TABLE usage_import_positions (file text PRIMARY KEY, position bigint NOT NULL, updated_at timestamptz NOT NULL);"
+  },
+  {
+    "version": 3,
+    "name": "settings",
+    "sql": "CREATE TABLE settings (key text PRIMARY KEY, value jsonb NOT NULL, expires_at timestamptz, updated_at timestamptz NOT NULL DEFAULT now(), updated_by text NOT NULL DEFAULT '');"
+  },
+  {
+    "version": 4,
+    "name": "requests",
+    "sql": "CREATE TABLE requests (id text PRIMARY KEY, kind text NOT NULL CHECK (kind IN ('pr_create', 'merge_manual')), repo text NOT NULL, payload jsonb NOT NULL, sender text NOT NULL, status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'claimed', 'done')), claimed_by text, claimed_at timestamptz, result jsonb, created_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz);\nCREATE INDEX requests_queue ON requests (kind, status, repo, created_at);"
+  },
+  {
+    "version": 5,
+    "name": "job_commands",
+    "sql": "CREATE TABLE job_commands (id text PRIMARY KEY, seq bigserial NOT NULL UNIQUE, repo text NOT NULL, issue integer NOT NULL, kind text NOT NULL, payload jsonb NOT NULL DEFAULT '{}'::jsonb, target_host text NOT NULL, status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'acked', 'done', 'failed')), created_at timestamptz NOT NULL DEFAULT now(), acked_at timestamptz, result jsonb);\nCREATE INDEX job_commands_open ON job_commands (target_host, seq) WHERE status IN ('queued', 'acked');\nCREATE INDEX job_commands_issue ON job_commands (repo, issue);"
+  },
+  {
+    "version": 6,
+    "name": "hosts_notices",
+    "sql": "CREATE TABLE hosts (host text PRIMARY KEY, revision text, cli_versions jsonb, load jsonb, busy boolean NOT NULL DEFAULT false, implementing integer, publishing integer, heartbeat_at timestamptz NOT NULL, capabilities jsonb);\nCREATE TABLE notices (id bigserial PRIMARY KEY, host text NOT NULL, kind text NOT NULL, data jsonb NOT NULL, at timestamptz NOT NULL DEFAULT now());\nCREATE INDEX notices_at ON notices (at);"
+  },
+  {
+    "version": 7,
+    "name": "jobs",
+    "sql": "CREATE TABLE jobs (id bigserial PRIMARY KEY, repo text NOT NULL, issue integer NOT NULL CHECK (issue > 0), title text NOT NULL DEFAULT '', kind text NOT NULL DEFAULT 'normal' CHECK (kind IN ('normal', 'followup', 'investigation', 'stall_fix')), priority smallint NOT NULL DEFAULT 0 CHECK (priority IN (0, 1)), filed_at timestamptz NOT NULL DEFAULT now(), scope text[] NOT NULL DEFAULT ARRAY['*'], scope_source text NOT NULL DEFAULT 'estimated' CHECK (scope_source IN ('declared', 'estimated', 'widened')), provider text, tier text, status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'running', 'held', 'failed', 'stopped', 'merged', 'closed')), hold_reason text CHECK (hold_reason IN ('review_held', 'question', 'deletions', 'scope_wait')), generation integer NOT NULL DEFAULT 0, branch text, pr integer, head_sha text, lease_host text, lease_epoch integer NOT NULL DEFAULT 0, lease_expires_at timestamptz, progress_at timestamptz, view jsonb NOT NULL DEFAULT '{}'::jsonb, result jsonb, updated_at timestamptz NOT NULL DEFAULT now(), UNIQUE (repo, issue), CHECK ((status = 'held') = (hold_reason IS NOT NULL)));\nCREATE INDEX jobs_queue ON jobs (repo, priority DESC, filed_at) WHERE status = 'queued';\nCREATE INDEX jobs_running ON jobs (lease_host) WHERE status = 'running';\nCREATE TABLE job_deps (job_id bigint NOT NULL REFERENCES jobs (id) ON DELETE CASCADE, depends_on bigint NOT NULL REFERENCES jobs (id) ON DELETE CASCADE, PRIMARY KEY (job_id, depends_on), CHECK (job_id <> depends_on));\nCREATE INDEX job_deps_depends_on ON job_deps (depends_on);\nCREATE TABLE merge_turns (repo text PRIMARY KEY, holder_host text, job_id bigint REFERENCES jobs (id) ON DELETE SET NULL, request_id text, epoch integer NOT NULL DEFAULT 0, expires_at timestamptz);\nCREATE TABLE job_events (seq bigserial PRIMARY KEY, job_id bigint NOT NULL REFERENCES jobs (id) ON DELETE CASCADE, host text, kind text NOT NULL, at timestamptz NOT NULL DEFAULT now(), data jsonb NOT NULL DEFAULT '{}'::jsonb);\nCREATE INDEX job_events_job ON job_events (job_id, seq);\nCREATE TABLE repo_notes (id bigserial PRIMARY KEY, repo text NOT NULL, kind text NOT NULL CHECK (kind IN ('finding', 'followup', 'improvement')), job_id bigint REFERENCES jobs (id) ON DELETE SET NULL, at timestamptz NOT NULL DEFAULT now(), data jsonb NOT NULL);\nCREATE INDEX repo_notes_repo ON repo_notes (repo, kind, at);\nALTER TABLE hosts ADD COLUMN drain jsonb, ADD COLUMN checks jsonb, ADD COLUMN ready boolean NOT NULL DEFAULT false, ADD COLUMN image_revision text, ADD COLUMN capacity integer;"
+  },
+  {
+    "version": 8,
+    "name": "client_releases",
+    "sql": "CREATE TABLE releases (host text NOT NULL, flavor text NOT NULL CHECK (flavor IN ('', '-python')), registry text NOT NULL, tag text NOT NULL, digest text NOT NULL, revision text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (host, flavor));\nCREATE TABLE host_image_tokens (host text PRIMARY KEY, hash text NOT NULL UNIQUE, issued_at timestamptz NOT NULL DEFAULT now());\nCREATE TABLE host_image_results (host text NOT NULL, tag text NOT NULL, flavor text NOT NULL, digest text NOT NULL, status text NOT NULL CHECK (status IN ('success', 'failed')), at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (host, tag, flavor));"
+  },
+  {
+    "version": 9,
+    "name": "app_deployments",
+    "sql": "CREATE TABLE app_deploy_heads (repo text PRIMARY KEY, commit_sha text NOT NULL, deploy_host text NOT NULL);\nCREATE TABLE app_deployments (id bigserial PRIMARY KEY, repo text NOT NULL, commit_sha text NOT NULL CHECK (commit_sha ~ '^[a-f0-9]{40}$'), deploy_host text NOT NULL, status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','running','deployed','rolled_back','failed')), result jsonb, created_at timestamptz NOT NULL DEFAULT now(), started_at timestamptz, finished_at timestamptz, UNIQUE (repo, commit_sha));\nCREATE INDEX app_deployments_queue ON app_deployments (deploy_host, status, id);"
+  },
+  {
+    "version": 10,
+    "name": "repo_note_processing",
+    "sql": "CREATE TABLE repo_note_processing (repo text PRIMARY KEY, attempt_date text, notes jsonb, improvement_cursor bigint NOT NULL DEFAULT 0);"
+  },
+  {
+    "version": 11,
+    "name": "live_checks",
+    "sql": "CREATE TABLE live_checks (id bigserial PRIMARY KEY, job_id bigint NOT NULL REFERENCES jobs(id), generation integer NOT NULL, repo text NOT NULL, commit_sha text NOT NULL, host text NOT NULL, config jsonb NOT NULL, status text NOT NULL DEFAULT 'queued' CHECK(status IN ('queued','running','done')), result jsonb, cause text, failures_in_row integer NOT NULL DEFAULT 0, created_at timestamptz NOT NULL DEFAULT now(), started_at timestamptz, finished_at timestamptz, UNIQUE(job_id,generation));\nCREATE INDEX live_checks_host ON live_checks(host,status,id);"
+  },
+  {
+    "version": 12,
+    "name": "main_full_test_requests",
+    "sql": "CREATE TABLE main_test_requests (id text PRIMARY KEY, kind text NOT NULL CHECK (kind = 'full_test'), repo text NOT NULL, payload jsonb NOT NULL, sender text NOT NULL, status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'claimed', 'done')), claimed_by text, claimed_at timestamptz, result jsonb, created_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz); CREATE INDEX main_test_requests_queue ON main_test_requests (status, repo, created_at);"
+  },
+  {
+    "version": 13,
+    "name": "client_release_kinds",
+    "sql": "ALTER TABLE releases ADD COLUMN kind text NOT NULL DEFAULT 'align' CHECK (kind IN ('align','soon','lazy'));\nCREATE TABLE client_release_history (host text NOT NULL, flavor text NOT NULL, revision text NOT NULL, base_revision text, kind text NOT NULL CHECK (kind IN ('align','soon','lazy')), changed_files jsonb, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (host, flavor, revision));\nINSERT INTO client_release_history (host, flavor, revision, kind) SELECT host, flavor, revision, 'align' FROM releases;"
+  },
+  {
+    "version": 14,
+    "name": "merge_turn_waiters",
+    "sql": "ALTER TABLE merge_turns ADD COLUMN waiters jsonb NOT NULL DEFAULT '{}'::jsonb;"
+  },
+  {
+    "version": 15,
+    "name": "hostd_docker",
+    "sql": "ALTER TABLE hosts ADD COLUMN hostd_docker jsonb;"
+  },
+  {
+    "version": 16,
+    "name": "hostd_health",
+    "sql": "ALTER TABLE hosts ADD COLUMN hostd_health jsonb;"
+  },
+  {
+    "version": 17,
+    "name": "ssh_tickets",
+    "sql": "CREATE TABLE ssh_tickets (id text PRIMARY KEY, host text NOT NULL, operation text NOT NULL, reason text NOT NULL, evidence text NOT NULL, emergency boolean NOT NULL, status text NOT NULL DEFAULT 'requested' CHECK (status IN ('requested','approved','denied','issued','reported','expired')), requester text NOT NULL, requested_token text, requested_at timestamptz NOT NULL, approver text, decided_at timestamptz, issued_at timestamptz, expires_at timestamptz, reported_at timestamptz, exit_code integer, summary text); CREATE INDEX ssh_tickets_status ON ssh_tickets (status, requested_at);"
+  },
+  {
+    "version": 18,
+    "name": "ssh_ticket_result",
+    "sql": "ALTER TABLE ssh_tickets ADD COLUMN connection_result text CHECK (connection_result IN ('connected','failed'));"
+  },
+  {
+    "version": 19,
+    "name": "pr_close_requests",
+    "sql": "CREATE TABLE pr_close_requests (id text PRIMARY KEY, kind text NOT NULL CHECK (kind = 'pr_close'), repo text NOT NULL, payload jsonb NOT NULL, sender text NOT NULL, status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'claimed', 'done')), claimed_by text, claimed_at timestamptz, result jsonb, created_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz);\nCREATE INDEX pr_close_requests_queue ON pr_close_requests (kind, status, repo, created_at);"
+  },
+  {
+    "version": 20,
+    "name": "hostd_chat",
+    "sql": "ALTER TABLE hosts ADD COLUMN hostd_chat jsonb;"
+  },
+  {
+    "version": 21,
+    "name": "permission_grants",
+    "sql": "CREATE TABLE permission_grants (id text PRIMARY KEY, kind text NOT NULL, target text NOT NULL, ttl_seconds integer, expires_at timestamptz, evidence_quote text NOT NULL, evidence_stated_at timestamptz NOT NULL, created_by text NOT NULL, created_at timestamptz NOT NULL, revoked_at timestamptz, revoked_by text, applied_at timestamptz);\nCREATE INDEX permission_grants_target ON permission_grants (kind, target);"
+  },
+  {
+    "version": 22,
+    "name": "intake_hold",
+    "sql": "ALTER TABLE hosts ADD COLUMN intake_hold jsonb;"
+  },
+  {
+    "version": 23,
+    "name": "polling_kit",
+    "sql": "ALTER TABLE hosts ADD COLUMN polling_kit jsonb;"
+  },
+  {
+    "version": 24,
+    "name": "release_rollouts",
+    "sql": "CREATE TABLE release_rollouts (id bigserial PRIMARY KEY, host text NOT NULL CHECK(host='*'), flavor text NOT NULL, revision text NOT NULL, canary text NOT NULL, status text NOT NULL CHECK(status IN ('canary','passed','failed','superseded')), previous jsonb NOT NULL, success_cycles integer NOT NULL DEFAULT 0, last_cycle_id text, started_at timestamptz NOT NULL, decided_at timestamptz, reason text, rollback_command_id text); CREATE INDEX release_rollouts_latest ON release_rollouts(host,flavor,id);"
+  },
+  {
+    "version": 25,
+    "name": "fixed_test_usage",
+    "sql": "CREATE TABLE fixed_test_usage (key text PRIMARY KEY, at timestamptz NOT NULL, host text NOT NULL, repo text NOT NULL, scope text NOT NULL, json text NOT NULL, sender text NOT NULL); CREATE INDEX fixed_test_usage_at ON fixed_test_usage (at);"
+  },
+  {
+    "version": 26,
+    "name": "runner_log_lines",
+    "sql": "CREATE TABLE runner_log_lines (key text PRIMARY KEY, at timestamptz NOT NULL, host text NOT NULL, line text NOT NULL, sender text NOT NULL); CREATE INDEX runner_log_lines_at ON runner_log_lines(at);"
+  },
+  {
+    "version": 27,
+    "name": "host_load_samples",
+    "sql": "CREATE TABLE host_load_samples (host text NOT NULL, received_at timestamptz NOT NULL, load jsonb); CREATE INDEX host_load_samples_host_time ON host_load_samples (host, received_at);"
+  },
+  {
+    "version": 28,
+    "name": "app_reader_syncs",
+    "sql": "CREATE TABLE app_reader_syncs (host text NOT NULL, repo text NOT NULL, commit_sha text NOT NULL, status text NOT NULL CHECK(status IN ('synced','skipped','rolled_back','failed')), result jsonb NOT NULL, reported_at timestamptz NOT NULL, PRIMARY KEY (host, repo));"
+  },
+  {
+    "version": 29,
+    "name": "host_ssh_revoke_old_grants",
+    "sql": "UPDATE permission_grants SET revoked_at = now(), revoked_by = 'migration:host-ssh' WHERE kind = 'ssh-repair' AND revoked_at IS NULL;"
+  },
+  {
+    "version": 30,
+    "name": "repair_job_result_arrays",
+    "sql": "UPDATE jobs SET result = (SELECT element FROM jsonb_array_elements(result) WITH ORDINALITY AS items(element, position) WHERE jsonb_typeof(element) = 'object' ORDER BY position DESC LIMIT 1) WHERE jsonb_typeof(result) = 'array';"
+  },
+  {
+    "version": 31,
+    "name": "jobs_result_object_only",
+    "sql": "UPDATE jobs SET result = NULL WHERE jsonb_typeof(result) NOT IN ('object', 'null');\nALTER TABLE jobs ADD CONSTRAINT jobs_result_object_only CHECK (result IS NULL OR jsonb_typeof(result) IN ('object', 'null'));"
+  },
+  {
+    "version": 32,
+    "name": "stop_check_records",
+    "sql": "CREATE TABLE stop_check_records (id uuid PRIMARY KEY, check_id text NOT NULL, result text NOT NULL CHECK (result IN ('block', 'warn')), occurred_at timestamptz NOT NULL, project text NOT NULL, host text NOT NULL, received_at timestamptz NOT NULL DEFAULT now());\nCREATE INDEX stop_check_records_check_time ON stop_check_records (check_id, occurred_at);"
+  },
+  {
+    "version": 33,
+    "name": "host_image_history",
+    "sql": "CREATE TABLE host_image_history (id bigserial PRIMARY KEY, host text NOT NULL, tag text NOT NULL, flavor text NOT NULL, digest text NOT NULL, status text NOT NULL CHECK (status IN ('success', 'failed')), stage text, reason text, detail text, self_check_failed jsonb, from_tag text, started_at timestamptz, received_at timestamptz NOT NULL DEFAULT now());\nCREATE INDEX host_image_history_host_received_at ON host_image_history (host, received_at);"
+  },
+  {
+    "version": 34,
+    "name": "job_list_changes",
+    "sql": "-- Collect only when jobs.Store enables transaction-local publication.\nCREATE FUNCTION capture_job_list_change() RETURNS trigger LANGUAGE plpgsql AS $$\nDECLARE\n  changes text := current_setting('issue_desk.job_changes', true);\n  target_id bigint;\n  target jsonb;\nBEGIN\n  IF changes IS NULL OR changes = '' THEN\n    RETURN NULL;\n  END IF;\n  IF TG_TABLE_NAME = 'jobs' THEN\n    IF TG_OP = 'UPDATE' AND\n      ROW(NEW.repo, NEW.issue, NEW.title, NEW.kind, NEW.priority, NEW.filed_at,\n          NEW.scope, NEW.scope_source, NEW.provider, NEW.tier, NEW.status,\n          NEW.hold_reason, NEW.generation, NEW.branch, NEW.pr, NEW.head_sha,\n          NEW.lease_host, NEW.view - 'progress', NULLIF(NEW.result, 'null'::jsonb))\n      IS NOT DISTINCT FROM\n      ROW(OLD.repo, OLD.issue, OLD.title, OLD.kind, OLD.priority, OLD.filed_at,\n          OLD.scope, OLD.scope_source, OLD.provider, OLD.tier, OLD.status,\n          OLD.hold_reason, OLD.generation, OLD.branch, OLD.pr, OLD.head_sha,\n          OLD.lease_host, OLD.view - 'progress', NULLIF(OLD.result, 'null'::jsonb)) THEN\n      RETURN NULL;\n    END IF;\n    IF TG_OP = 'DELETE' THEN\n      target_id := OLD.id;\n      target := jsonb_build_object('project', OLD.repo, 'number', OLD.issue);\n    ELSE\n      target_id := NEW.id;\n      target := jsonb_build_object('project', NEW.repo, 'number', NEW.issue);\n    END IF;\n  ELSE\n    IF TG_TABLE_NAME = 'job_events' THEN\n      -- These events contribute to issueapi.dispatchProjection in list rows.\n      IF NEW.kind NOT IN ('dispatch_skip','scope_reserved','handed_back','leased','requeued') THEN\n        RETURN NULL;\n      END IF;\n      IF TG_OP = 'UPDATE' AND NEW IS NOT DISTINCT FROM OLD THEN\n        RETURN NULL;\n      END IF;\n    END IF;\n    IF TG_OP = 'DELETE' THEN target_id := OLD.job_id;\n    ELSE target_id := NEW.job_id;\n    END IF;\n    SELECT jsonb_build_object('project', repo, 'number', issue) INTO target FROM jobs WHERE id=target_id;\n  END IF;\n  IF target IS NOT NULL THEN\n    PERFORM set_config('issue_desk.job_changes',\n      (changes::jsonb || jsonb_build_object(target_id::text, target))::text, true);\n  END IF;\n  RETURN NULL;\nEND;\n$$;\nCREATE TRIGGER jobs_list_change AFTER INSERT OR UPDATE OR DELETE ON jobs FOR EACH ROW EXECUTE FUNCTION capture_job_list_change();\nCREATE TRIGGER job_deps_list_change AFTER INSERT OR DELETE ON job_deps FOR EACH ROW EXECUTE FUNCTION capture_job_list_change();\nCREATE TRIGGER job_events_list_change AFTER INSERT OR UPDATE ON job_events FOR EACH ROW EXECUTE FUNCTION capture_job_list_change();"
+  },
+  {
+    "version": 35,
+    "name": "jobs_repo_search_indexes",
+    "sql": "CREATE INDEX jobs_repo_issue_lower ON jobs (lower(repo), issue);\nCREATE INDEX jobs_repo_status_open ON jobs (lower(repo), status) WHERE status NOT IN ('merged', 'closed');"
+  },
+  {
+    "version": 36,
+    "name": "dependency_wait_started",
+    "sql": "ALTER TABLE job_deps ADD COLUMN wait_started_at timestamptz, ADD COLUMN wait_unknown boolean NOT NULL DEFAULT false;\nALTER TABLE job_deps ADD CONSTRAINT job_deps_wait_consistent CHECK (NOT (wait_unknown AND wait_started_at IS NOT NULL));\nCREATE FUNCTION dependency_waiting(edge_job bigint, edge_predecessor bigint) RETURNS boolean LANGUAGE sql VOLATILE AS $$\n SELECT COALESCE((SELECT j.status='queued' AND NOT (COALESCE((p.status='merged' OR (p.status='closed' AND (\n (jsonb_typeof(j.view->'acceptanceTransferWait'->'ownedTargets')='object' AND (j.view->'acceptanceTransferWait'->'ownedTargets') ? p.id::text)\n OR (jsonb_typeof(j.view->'dependencyMerges'->(p.id::text))='object'\n AND jsonb_typeof(j.view->'dependencyMerges'->(p.id::text)->'pr')='number'\n AND (j.view->'dependencyMerges'->(p.id::text)->>'pr') ~ '^[1-9][0-9]*$'\n AND jsonb_typeof(j.view->'dependencyMerges'->(p.id::text)->'mergeCommit')='string'\n AND (j.view->'dependencyMerges'->(p.id::text)->>'mergeCommit') ~ '^[a-f0-9]{40}$')\n OR (jsonb_typeof(j.view->'dependencyRelations'->(p.id::text))='object'\n AND j.view->'dependencyRelations'->(p.id::text)->>'relation'='unrelated'\n AND jsonb_typeof(j.view->'dependencyRelations'->(p.id::text)->'evidence')='string'\n AND btrim(j.view->'dependencyRelations'->(p.id::text)->>'evidence')<>'')))), false)) FROM jobs j JOIN jobs p ON p.id=edge_predecessor WHERE j.id=edge_job), false)\n$$;\nUPDATE job_deps d SET wait_unknown=true WHERE dependency_waiting(d.job_id,d.depends_on);\nCREATE FUNCTION dependency_wait_edge() RETURNS trigger LANGUAGE plpgsql AS $$\nBEGIN\n PERFORM id FROM jobs WHERE id IN (NEW.job_id, NEW.depends_on) ORDER BY id FOR SHARE;\n IF dependency_waiting(NEW.job_id,NEW.depends_on) THEN\n   NEW.wait_started_at := clock_timestamp(); NEW.wait_unknown := false;\n END IF;\n RETURN NEW;\nEND $$;\nCREATE TRIGGER dependency_wait_edge_insert BEFORE INSERT ON job_deps FOR EACH ROW EXECUTE FUNCTION dependency_wait_edge();\nCREATE FUNCTION dependency_wait_job() RETURNS trigger LANGUAGE plpgsql AS $$\nBEGIN\n UPDATE job_deps d SET\n   wait_started_at = CASE WHEN dependency_waiting(d.job_id,d.depends_on) THEN COALESCE(d.wait_started_at, CASE WHEN NOT d.wait_unknown THEN clock_timestamp() END) ELSE NULL END,\n   wait_unknown = CASE WHEN dependency_waiting(d.job_id,d.depends_on) THEN d.wait_unknown ELSE false END\n WHERE d.job_id=NEW.id OR d.depends_on=NEW.id;\n RETURN NULL;\nEND $$;\nCREATE TRIGGER dependency_wait_job_update AFTER UPDATE OF status, view ON jobs FOR EACH ROW\n WHEN (OLD.status IS DISTINCT FROM NEW.status OR OLD.view IS DISTINCT FROM NEW.view)\n EXECUTE FUNCTION dependency_wait_job();"
+  },
+  {
+    "version": 37,
+    "name": "dependency_wait_reviews",
+    "sql": "{{dependency_readiness}}\nCREATE OR REPLACE FUNCTION dependency_waiting(edge_job bigint, edge_predecessor bigint) RETURNS boolean LANGUAGE sql VOLATILE AS $$\n SELECT COALESCE((SELECT j.status='queued' AND NOT dependency_pair_ready(p,j) FROM jobs j JOIN jobs p ON p.id=edge_predecessor WHERE j.id=edge_job), false)\n$$;\nUPDATE job_deps d SET wait_unknown=true WHERE d.wait_started_at IS NULL AND NOT d.wait_unknown AND dependency_waiting(d.job_id,d.depends_on);\nUPDATE job_deps d SET wait_started_at=NULL, wait_unknown=false WHERE (d.wait_started_at IS NOT NULL OR d.wait_unknown) AND NOT dependency_waiting(d.job_id,d.depends_on);"
+  },
+  {
+    "version": 38,
+    "name": "shared_dependency_readiness",
+    "sql": "{{dependency_readiness}}\nCREATE OR REPLACE FUNCTION dependency_waiting(edge_job bigint, edge_predecessor bigint) RETURNS boolean LANGUAGE sql VOLATILE AS $$\n SELECT COALESCE((SELECT j.status='queued' AND NOT dependency_pair_ready(p,j) FROM jobs j JOIN jobs p ON p.id=edge_predecessor WHERE j.id=edge_job), false)\n$$;\nUPDATE job_deps d SET wait_unknown=true WHERE d.wait_started_at IS NULL AND NOT d.wait_unknown AND dependency_waiting(d.job_id,d.depends_on);\nUPDATE job_deps d SET wait_started_at=NULL, wait_unknown=false WHERE (d.wait_started_at IS NOT NULL OR d.wait_unknown) AND NOT dependency_waiting(d.job_id,d.depends_on);"
+  },
+  {
+    "version": 39,
+    "name": "native_test_requests",
+    "sql": "CREATE TABLE native_test_requests (id text PRIMARY KEY, kind text NOT NULL CHECK (kind='native_test'), repo text NOT NULL, payload jsonb NOT NULL, sender text NOT NULL, status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','claimed','done')), claimed_by text, claimed_at timestamptz, result jsonb, created_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz); CREATE INDEX native_test_requests_queue ON native_test_requests (status, repo, created_at);"
+  },
+  {
+    "version": 40,
+    "name": "server_takeovers",
+    "sql": "CREATE TABLE server_takeovers (id bigserial PRIMARY KEY, revision text NOT NULL CHECK (revision ~ $$^[0-9a-f]{40}$$), at timestamptz NOT NULL DEFAULT now()); CREATE INDEX server_takeovers_at ON server_takeovers (at, id);"
+  },
+  {
+    "version": 41,
+    "name": "verified_merge_after_failed_report",
+    "sql": "{{dependency_readiness}}"
+  }
+]

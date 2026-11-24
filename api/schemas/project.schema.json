@@ -1,0 +1,117 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reply", "ready", "questions", "project", "splitIssues"],
+  "properties": {
+    "reply": {
+      "type": "string"
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "technology",
+        "placement",
+        "testCommand",
+        "setupCommand",
+        "autoMerge",
+        "autoDeploy"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "technology": {
+          "type": "string",
+          "enum": ["node", "python"]
+        },
+        "placement": {
+          "type": "string",
+          "enum": ["a9max", "nas"]
+        },
+        "testCommand": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "setupCommand": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "autoMerge": {
+          "type": "boolean"
+        },
+        "autoDeploy": {
+          "type": "boolean"
+        }
+      }
+    },
+    "splitIssues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["project", "title", "purpose", "acceptance", "dependsOn", "changeScope"],
+        "properties": {
+          "project": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "acceptance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "changeScope": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["known", "paths", "reason"],
+            "properties": {
+              "known": {
+                "type": "boolean"
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

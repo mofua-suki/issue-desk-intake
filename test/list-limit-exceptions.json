@@ -1,0 +1,110 @@
+[
+  {
+    "path": "/api/diagnostics/db",
+    "reason": "単一受付のDB診断。queriesは最大100件、connectionsは接続状態ごとの集計で件数上限は設けていない。limitによる調整は実装していない。"
+  },
+  {
+    "path": "/api/diagnostics/activity",
+    "reason": "直近24時間の集計で、各時間の行は最大1000件。limitによる調整は実装していない。"
+  },
+  {
+    "path": "/api/ops-watch/archive",
+    "reason": "removedAtから30×24時間以内を返すが、不正な日時は保持されるため件数の上限ではない。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/cpu-profiles",
+    "reason": "仕様は最新5件以内とする。"
+  },
+  {
+    "path": "/api/provider-disables",
+    "reason": "対象の実行先は /api/provider-disables/{provider} のenumでcodex・claudeの2つ。"
+  },
+  {
+    "path": "/api/model-overrides",
+    "reason": "固定された工程規則とモデルの一覧で、新規の切り替えは409で拒否する。"
+  },
+  {
+    "path": "/api/draft-withdrawals",
+    "reason": "期間は1〜92日、既定7日。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/topic-links",
+    "reason": "既定24時間・最長7日の期間は量の集計だけに使い、まとまりの件数は絞らない。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/attention/alerts",
+    "reason": "要対応は全件の把握が目的で、案4（共通番号4501）の絞り込みはproject・kind。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/permission-grants",
+    "reason": "許可の付与一覧。status・kindで絞るが件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/v1/usage/summary",
+    "reason": "使用量の要約でsummariesは仕様上3件固定。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/v1/ops/usage-anomalies",
+    "reason": "期間内の使用量の異常集計を返す。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/v1/hosts/{host}/reader-next",
+    "reason": "PCのリポジトリごとの最新配備コミットを返す。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/issue",
+    "reason": "単一Issueの詳細に配列の項目を含む。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/proposals/dismissal",
+    "reason": "単一の未採用記録の詳細に受入条件の配列を含む。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/list",
+    "reason": "画面の依頼一覧の全体または差分を返す。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/tokens",
+    "reason": "PCトークンの許可一覧。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/hosts",
+    "reason": "仕様の一覧または終了記録。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/stalls/alerts",
+    "reason": "仕様の一覧または終了記録。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/full-test/alerts",
+    "reason": "仕様の一覧または終了記録。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/usage-review/alerts",
+    "reason": "仕様の一覧または終了記録。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/desk-cleanup/archive",
+    "reason": "仕様の一覧または終了記録。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/ssh-tickets",
+    "reason": "仕様の一覧または終了記録。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/issues",
+    "reason": "仕様の一覧または終了記録。件数は未測定で、次の見直し候補は件数の測定。"
+  },
+  {
+    "path": "/api/v1/jobs/{id}",
+    "reason": "単一ジョブの詳細。eventsは直近100件だが、dependsOnはそのジョブの依存を全件返し件数上限はない。依存件数は未測定。"
+  },
+  {
+    "path": "/api/drafts/{id}",
+    "reason": "単一相談の保存済み内容を返し、messages・questionsなどの配列を含む。配列はページ分割されず、件数は未測定。"
+  },
+  {
+    "path": "/api/todos/{id}",
+    "reason": "単一TODOの保存済み内容を返し、images・actionsなどの配列を含む。配列はページ分割されず、件数は未測定。"
+  }
+]

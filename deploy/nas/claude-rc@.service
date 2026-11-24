@@ -1,0 +1,19 @@
+# 正本は issue-desk の deploy/nas/claude-rc@.service。NAS 更新が配るので手で変えない。
+# 許可一覧の正本は deploy/nas/remote-control-settings.json（docs/chat-deploy.md）。`claude remote-control` は --settings を
+# 受け付けない（2.1.299 で Unknown argument）ので起動行には付けない。起動行は test/nas-remote-control-update.test.ts が確かめる。
+[Unit]
+Description=Claude Code remote-control (%i)
+
+[Service]
+Type=simple
+WorkingDirectory=%h/rc/%i
+UMask=0077
+ExecStartPre=/usr/bin/mkdir -p -m 0700 %h/.local/state/claude-rc/%i
+ExecStartPre=/usr/bin/find %h/.local/state/claude-rc/%i -maxdepth 1 -type f -name *.log -mtime +7 -delete
+ExecStart=%h/.local/bin/claude remote-control --name %i --permission-mode auto --debug-file %h/.local/state/claude-rc/%i/${INVOCATION_ID}.log
+StandardOutput=null
+StandardError=null
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

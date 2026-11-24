@@ -1,0 +1,7 @@
+#!/bin/sh
+# 既にある枝への切り替えは Git の版によって reference-transaction で止められないので、知らせるだけにする。
+# 次の update.sh が trunk へ戻す。
+[ "${ISSUE_DESK_DEPLOY_UPDATE:-}" != 1 ] || exit 0
+[ "$(git symbolic-ref --short -q HEAD || true)" = trunk ] && exit 0
+echo 'このチェックアウトはNASの配布用です。trunk 以外にしても、次の更新で trunk へ戻します。別の場所へ clone して作業してください。' >&2
+exit 0

@@ -1,0 +1,15 @@
+#!/bin/sh
+# NASの配置先ではコミット・枝の作成・履歴の変更を断る。ここを進めてよいのは update.sh だけ。
+# 配置先が trunk から外れると、受付とWorkerの配布が止まるため。deploy/nas/update-checkout-guard.sh が置く。
+input=$(cat)
+[ "${1:-}" = prepared ] || exit 0
+[ "${ISSUE_DESK_DEPLOY_UPDATE:-}" != 1 ] || exit 0
+printf '%s\n' "$input" | while read -r _old _new ref; do
+  case "$ref" in
+    HEAD|refs/heads/*) exit 1 ;;
+  esac
+done || {
+  echo 'このチェックアウトはNASの配布用です。ここでは commit・枝の作成・履歴の変更をしません。別の場所へ clone して作業してください（配布が止まります）。' >&2
+  exit 1
+}
+exit 0

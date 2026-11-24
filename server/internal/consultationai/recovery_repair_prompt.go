@@ -1,0 +1,6 @@
+package consultationai
+
+const recoveryRepairInstructions = `
+job_recoveryだけではrepairも選べます。有事の期限切れではrepairは禁止です。repairは原因解消済みのretryと異なり、受入条件の範囲内で具体的な未修正の実装不具合・レビュー指摘を実装担当へ戻します。resolved=false、requiresUser=falseとし、textに修正内容と検証方法を具体的に書いてください。
+repairのevidenceはJSON文字列で、5項目だけを返します。kindはimplementationまたはreview、causeはdetail.causeそのまま、scopeはacceptance、sourceはjobResult.error・jobResult.reason・jobResult.summary・jobResult.review・jobResult.previousReviewのうち実際に読んだ1つ、quoteはその保存済み原因・指摘の8文字以上の原文引用です。レビューの全文はコントローラーが付けます。
+環境不足・基点由来・原因未確認の失敗を実装担当へ送り直しません。本人の判断、破壊的変更、レビューの省略、受入条件や事前承認の前提変更が必要ならnotifyへ戻し、何が変わったかを具体化します。既存の承認・実装回数・使用量上限を事前の計画やAI判断で代替しません。同じ原因の修復送信も1回までです。`

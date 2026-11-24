@@ -1,0 +1,167 @@
+{
+  'paths':
+    {
+      '/api/v1/hosts/{host}':
+        {
+          'put':
+            {
+              'operationId': 'put_api_v1_hosts_host',
+              'summary': '自分のheartbeatを送る',
+              'description': 'hostは送り手と同じ。全項目省略可。busy/readyの既定false、他はnull。loadはcpuPercent/freeMemoryMB/freeDiskMB/gpuPercent/usedVramMB/freeVramMB/loadAverage1mの0以上の有限数と、logicalCpuCountの1以上の安全な整数。欠測は項目省略、全欠測はnull。旧6項目のみ・load省略・nullも受け付ける。不正値・未知キーは400で保存しない。MBは1024²バイト。capabilities 4096文字、checks 16384文字のJSON。capabilities.workerTokenKindは実際に読み込んだアカウントのdedicated判定によるworker/legacy。分類不明の旧版は省略し、トークン値・パス・ログイン名は追加送信しない。cliVersionsは{cli,current,expected,at}配列。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'host': {},
+                                      'heartbeatAt': {},
+                                      'drain': {},
+                                      'ready': {},
+                                      'settingsVersion': {},
+                                      'configVersion': {},
+                                    },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'revision': { 'type': ['string', 'null'], 'pattern': '^[0-9a-f]{40}$' },
+                                  'cliVersions':
+                                    {
+                                      'type': ['array', 'null'],
+                                      'items': { 'type': 'object', 'additionalProperties': true },
+                                    },
+                                  'load': { 'type': ['object', 'null'] },
+                                  'busy': { 'type': 'boolean' },
+                                  'implementing': { 'type': ['integer', 'null'], 'minimum': 0 },
+                                  'publishing': { 'type': ['integer', 'null'], 'minimum': 0 },
+                                  'capabilities': { 'type': ['object', 'null'] },
+                                  'ready': { 'type': 'boolean' },
+                                  'checks': { 'type': ['object', 'null'] },
+                                  'imageRevision': { 'type': ['string', 'null'], 'maxLength': 100 },
+                                  'intakeHold':
+                                    {
+                                      'type': ['object', 'null'],
+                                      'additionalProperties': false,
+                                      'required': ['reasons'],
+                                      'properties':
+                                        {
+                                          'reasons':
+                                            {
+                                              'type': 'array',
+                                              'maxItems': 8,
+                                              'items':
+                                                {
+                                                  'oneOf':
+                                                    [
+                                                      {
+                                                        'type': 'object',
+                                                        'additionalProperties': false,
+                                                        'required': ['kind', 'since', 'detail'],
+                                                        'properties':
+                                                          {
+                                                            'kind':
+                                                              {
+                                                                'enum':
+                                                                  [
+                                                                    'swap_wait',
+                                                                    'codex_unavailable',
+                                                                    'environment_hold',
+                                                                    'color_standby',
+                                                                    'scan_not_ready',
+                                                                  ],
+                                                              },
+                                                            'since':
+                                                              {
+                                                                'type': 'string',
+                                                                'format': 'date-time',
+                                                                'maxLength': 40,
+                                                              },
+                                                            'detail': { 'type': 'string', 'maxLength': 200 },
+                                                          },
+                                                      },
+                                                      {
+                                                        'type': 'object',
+                                                        'additionalProperties': false,
+                                                        'required':
+                                                          [
+                                                            'kind',
+                                                            'since',
+                                                            'detail',
+                                                            'provider',
+                                                            'until',
+                                                            'source',
+                                                            'limitKind',
+                                                          ],
+                                                        'properties':
+                                                          {
+                                                            'kind': { 'const': 'usage_limit' },
+                                                            'since':
+                                                              {
+                                                                'type': 'string',
+                                                                'format': 'date-time',
+                                                                'maxLength': 40,
+                                                              },
+                                                            'detail': { 'type': 'string', 'maxLength': 200 },
+                                                            'provider':
+                                                              { 'type': 'string', 'minLength': 1, 'maxLength': 50 },
+                                                            'until':
+                                                              {
+                                                                'type': 'string',
+                                                                'format': 'date-time',
+                                                                'maxLength': 40,
+                                                              },
+                                                            'source':
+                                                              { 'type': 'string', 'minLength': 1, 'maxLength': 50 },
+                                                            'limitKind':
+                                                              { 'enum': ['five_hour', 'seven_day', 'unknown'] },
+                                                          },
+                                                      },
+                                                    ],
+                                                },
+                                            },
+                                        },
+                                    },
+                                  'capacity': { 'type': ['integer', 'null'], 'minimum': 0, 'maximum': 8 },
+                                },
+                              'additionalProperties': false,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

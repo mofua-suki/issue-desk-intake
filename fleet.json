@@ -1,0 +1,1106 @@
+{
+  "version": 1,
+  "defaults": {},
+  "hosts": {
+    "nas": {
+      "opsWatch": {
+        "intervalMinutes": 60,
+        "standby": true
+      },
+      "giteaUrl": "http://192.168.0.10:3000",
+      "gitUser": "mofua-suki",
+      "allowedUsers": [
+        "mofua-suki"
+      ],
+      "repositories": [
+        {
+          "name": "mofua-suki/sample-scraper",
+          "displayName": "sample-scraper",
+          "description": "NASでの画像収集。既存の取得範囲・停止条件を確認して開発する。",
+          "testCommand": [
+            "{node}",
+            "--test",
+            "--test-skip-pattern=^(fixed HTML extracts photo ownership|headed browser enables sandboxing)",
+            "test/**/*.test.ts"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/demo-image-culling",
+          "displayName": "demo-image-culling",
+          "description": "NAS（UGREEN DXP480T Plus、Core i5-1235U・メモリー31GiB・内蔵GPU Intel Iris Xe、UGOS Pro の Docker）で動かす収集画像の選別システム。sample-scraper が受け入れ用の置き場 /home/user/PhotosInbox に保存した画像を SigLIP2 で判定する。WD tagger はGPU/CPUに対応する。",
+          "autoMerge": true,
+          "autoDeploy": false,
+          "testCommand": [
+            "{node}",
+            "--test",
+            "test/*.test.ts"
+          ]
+        },
+        {
+          "name": "mofua-suki/issue-desk-intake",
+          "displayName": "issue-desk-intake",
+          "description": "NASのServerとClient",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        }
+      ],
+      "jobTimeoutSeconds": 3600,
+      "testTimeoutSeconds": 300,
+      "runtimeDir": "/state/runtime",
+      "tokenFile": "/state/private/gitea-token",
+      "workerTokenFile": "/state/private/worker-token",
+      "intakeAccount": "issue-desk-intake",
+      "webhook": {
+        "port": 8790,
+        "bind": "0.0.0.0",
+        "tokenFile": "/state/private/webhook-token"
+      },
+      "codex": "/opt/agent-tools/bin/codex",
+      "node": "/usr/local/bin/node",
+      "pnpm": "/opt/agent-tools/bin/pnpm",
+      "git": "/usr/bin/git",
+      "model": "gpt-6.2-sol",
+      "claudeModel": "opus",
+      "codexEquivalents": {
+        "fable": "gpt-6.2-astra",
+        "opus": "gpt-6.2-sol",
+        "sonnet": "gpt-6-luna",
+        "haiku": "gpt-6-luna"
+      },
+      "implementation": {
+        "tiers": {
+          "light": {
+            "model": "gpt-6-luna",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "standard": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "heavy": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "opus",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      "review": {
+        "provider": "claude",
+        "claudeModel": "opus"
+      },
+      "usageWeights": {
+        "default": {
+          "input": 1,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25,
+          "output": 5
+        },
+        "providers": {}
+      },
+      "priority": {
+        "provider": "claude",
+        "claudeModel": "haiku",
+        "highRatio": {
+          "min": 0.2,
+          "max": 0.3
+        }
+      },
+      "stallWatch": {
+        "idleMinutes": 60,
+        "claimMinutes": 30,
+        "repeatedFailures": 3,
+        "blockedRatio": 50,
+        "blockedMin": 3
+      },
+      "antigravity": {
+        "command": "/opt/agent-tools/bin/agy",
+        "settingsFile": "/home/node/.gemini/antigravity-cli/settings.json",
+        "model": "gemini-3.8-flash-high"
+      },
+      "environment": {
+        "platform": "linux",
+        "gcc": null,
+        "cgo": null,
+        "race": null,
+        "docker": null,
+        "realDevice": null,
+        "liveMeasurement": null,
+        "network": null
+      }
+    },
+    "gt12": {
+      "giteaUrl": "http://192.168.0.10:3000",
+      "gitUser": "mofua-suki",
+      "allowedUsers": [
+        "mofua-suki"
+      ],
+      "repositories": [
+        {
+          "name": "mofua-suki/sample-scraper",
+          "displayName": "sample-scraper",
+          "description": "NASでの画像収集。既存の取得範囲・停止条件を確認して開発する。",
+          "testCommand": [
+            "{node}",
+            "--test",
+            "--test-skip-pattern=^(fixed HTML extracts photo ownership|headed browser enables sandboxing)",
+            "test/**/*.test.ts"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/issue-desk-worker",
+          "displayName": "issue-desk-worker",
+          "description": "各PCのWorkerとhostd",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/issue-desk-intake",
+          "displayName": "issue-desk-intake",
+          "description": "NASのServerとClient",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "testTimeoutSeconds": 1800,
+          "testTimeoutReview": {
+            "reviewBy": "2026-12-12",
+            "reason": "固定テストは合格時でも568〜632秒かかり、PCの混雑時に期限900秒を超えて打ち切られるため。所要時間を縮めるか恒久の値を決めるまでの一時的な値"
+          },
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/sample-expense-server",
+          "displayName": "sample-expense-server",
+          "description": "精算アプリのサーバー（Kotlin・Ktor・Gradle、JDK 25）。ユーザーを検索してグループを作り、立て替えの精算を登録し、グループ全員の同意で精算を閉じる。",
+          "testCommand": [
+            "gradle",
+            "--no-daemon",
+            "test"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/sample-expense-client",
+          "nativeTestHost": "macbook-pro-test",
+          "displayName": "sample-expense-client",
+          "description": "精算アプリのクライアント（Flutter、Android と iOS（iPhone・iPad）。iOS はMacBook Proでシミュレーター向けビルドとシミュレーター上のテストを検証）。sample-expense-server のAPIを使い、グループの作成・精算の登録・全員の同意による精算の締めを操作する。",
+          "testCommand": [
+            "flutter",
+            "test"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/alarm-checklist",
+          "nativeTestHost": "macbook-pro-test",
+          "displayName": "alarm-checklist",
+          "description": "iPhone向けFlutterアラーム管理アプリ",
+          "testCommand": [
+            "{node}",
+            "--test",
+            "test/ios-environment.test.mjs"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/image-review-client",
+          "displayName": "image-review-client",
+          "description": "IPS・IGSの評価・選別画面をまとめる、iPhone/iPad向けのSPA（PWA、TypeScript）。IPS・IGSのAPIを使う。",
+          "testCommand": [
+            "{node}",
+            "--test",
+            "test/**/*.test.ts"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "games/game-laboratory",
+          "displayName": "game-laboratory",
+          "description": "ブラウザで遊ぶゲームの試作置き場（HTMLとJavaScript、ビルドなし）。games/<ゲーム名>/ ごとに1本のゲームを置き、スマホのブラウザで遊べる形にする。",
+          "testCommand": [
+            "{node}",
+            "--test",
+            "test/_*.test.mjs"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        }
+      ],
+      "jobTimeoutSeconds": 3600,
+      "testTimeoutSeconds": 900,
+      "runtimeDir": "/state/runtime",
+      "tokenFile": "/state/private/gitea-token",
+      "workerTokenFile": "/state/private/worker-token",
+      "intakeAccount": "issue-desk-intake",
+      "webhook": {
+        "port": 8790,
+        "bind": "0.0.0.0",
+        "managed": true
+      },
+      "codex": "/opt/agent-tools/bin/codex",
+      "node": "/usr/local/bin/node",
+      "pnpm": "/opt/agent-tools/bin/pnpm",
+      "git": "/usr/bin/git",
+      "python": "/usr/local/bin/python3.12",
+      "model": "gpt-6.2-sol",
+      "claudeModel": "opus",
+      "codexEquivalents": {
+        "fable": "gpt-6.2-astra",
+        "opus": "gpt-6.2-sol",
+        "sonnet": "gpt-6-luna",
+        "haiku": "gpt-6-luna"
+      },
+      "implementation": {
+        "tiers": {
+          "light": {
+            "model": "gpt-6-luna",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "standard": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "heavy": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "opus",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      "review": {
+        "provider": "claude",
+        "claudeModel": "opus"
+      },
+      "usageWeights": {
+        "default": {
+          "input": 1,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25,
+          "output": 5
+        },
+        "providers": {}
+      },
+      "priority": {
+        "provider": "claude",
+        "claudeModel": "haiku",
+        "highRatio": {
+          "min": 0.2,
+          "max": 0.3
+        }
+      },
+      "stallWatch": {
+        "idleMinutes": 60,
+        "claimMinutes": 30,
+        "repeatedFailures": 3,
+        "blockedRatio": 50,
+        "blockedMin": 3
+      },
+      "antigravity": {
+        "command": "/opt/agent-tools/bin/agy",
+        "settingsFile": "/home/node/.gemini/antigravity-cli/settings.json",
+        "model": "gemini-3.8-flash-high"
+      },
+      "environment": {
+        "platform": "linux",
+        "gcc": null,
+        "cgo": null,
+        "race": null,
+        "docker": null,
+        "realDevice": null,
+        "liveMeasurement": null,
+        "network": null
+      }
+    },
+    "a9max": {
+      "giteaUrl": "http://192.168.0.10:3000",
+      "publicUrl": "http://192.168.0.10:3000",
+      "gitUser": "mofua-suki",
+      "allowedUsers": [
+        "mofua-suki"
+      ],
+      "repositories": [
+        {
+          "name": "mofua-suki/demo-image-rating",
+          "displayName": "demo-image-rating",
+          "description": "ローカル画像の分類と好みの学習・選別。",
+          "autoMerge": true,
+          "autoDeploy": false,
+          "testCommand": [
+            ".venv/bin/python",
+            "-m",
+            "pytest",
+            "-q",
+            "--durations=10"
+          ],
+          "testTimeoutSeconds": 2700,
+          "testTimeoutReview": {
+            "reviewBy": "2026-11-17",
+            "reason": "共通番号2475 の所要時間の測定を見てテストを速くするまでの一時的な値"
+          },
+          "setupCommand": [
+            "{python}",
+            "scripts/setup_test_env.py"
+          ],
+          "registeredAt": "2026-10-11T06:39:00+09:00"
+        },
+        {
+          "name": "mofua-suki/demo-image-generator",
+          "displayName": "demo-image-generator",
+          "description": "demo-image-rating が学習した画像の好みを元に画像を生成するシステム。",
+          "autoMerge": true,
+          "autoDeploy": false,
+          "testCommand": [
+            ".venv/bin/python",
+            "-m",
+            "pytest",
+            "-q"
+          ],
+          "setupCommand": [
+            "{python}",
+            "scripts/setup_test_env.py"
+          ],
+          "registeredAt": "2026-10-11T06:39:00+09:00"
+        },
+        {
+          "name": "mofua-suki/issue-desk-worker",
+          "displayName": "issue-desk-worker",
+          "description": "各PCのWorkerとhostd",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/issue-desk-intake",
+          "displayName": "issue-desk-intake",
+          "description": "NASのServerとClient",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "testTimeoutSeconds": 1800,
+          "testTimeoutReview": {
+            "reviewBy": "2026-12-12",
+            "reason": "固定テストは合格時でも568〜632秒かかり、PCの混雑時に期限900秒を超えて打ち切られるため。所要時間を縮めるか恒久の値を決めるまでの一時的な値"
+          },
+          "autoMerge": true,
+          "autoDeploy": false
+        }
+      ],
+      "jobTimeoutSeconds": 3600,
+      "testTimeoutSeconds": 900,
+      "runtimeDir": "/state/runtime",
+      "tokenFile": "/state/private/gitea-token",
+      "workerTokenFile": "/state/private/worker-token",
+      "intakeAccount": "issue-desk-intake",
+      "webhook": {
+        "port": 8790,
+        "bind": "0.0.0.0",
+        "managed": true
+      },
+      "codex": "/opt/agent-tools/bin/codex",
+      "node": "/usr/local/bin/node",
+      "pnpm": "/opt/agent-tools/bin/pnpm",
+      "git": "/usr/bin/git",
+      "python": "/usr/local/bin/python3.12",
+      "pythonFormatter": "/opt/pyfmt/bin/python",
+      "model": "gpt-6.2-sol",
+      "claudeModel": "opus",
+      "codexEquivalents": {
+        "fable": "gpt-6.2-astra",
+        "opus": "gpt-6.2-sol",
+        "sonnet": "gpt-6-luna",
+        "haiku": "gpt-6-luna"
+      },
+      "implementation": {
+        "tiers": {
+          "light": {
+            "model": "gpt-6-luna",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "standard": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "heavy": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "opus",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      "review": {
+        "provider": "claude",
+        "claudeModel": "opus"
+      },
+      "usageWeights": {
+        "default": {
+          "input": 1,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25,
+          "output": 5
+        },
+        "providers": {}
+      },
+      "priority": {
+        "provider": "claude",
+        "claudeModel": "haiku",
+        "highRatio": {
+          "min": 0.2,
+          "max": 0.3
+        }
+      },
+      "stallWatch": {
+        "idleMinutes": 60,
+        "claimMinutes": 30,
+        "repeatedFailures": 3,
+        "blockedRatio": 50,
+        "blockedMin": 3
+      },
+      "opsWatch": {
+        "intervalMinutes": 60
+      },
+      "antigravity": {
+        "command": "/opt/agent-tools/bin/agy",
+        "settingsFile": "/home/node/.gemini/antigravity-cli/settings.json",
+        "model": "gemini-3.8-flash-high"
+      },
+      "environment": {
+        "platform": "linux",
+        "gcc": null,
+        "cgo": null,
+        "race": null,
+        "docker": null,
+        "realDevice": null,
+        "liveMeasurement": null,
+        "network": null
+      }
+    },
+    "x1-pro1": {
+      "giteaUrl": "http://192.168.0.10:3000",
+      "publicUrl": "http://192.168.0.10:3000",
+      "gitUser": "mofua-suki",
+      "allowedUsers": [
+        "mofua-suki"
+      ],
+      "repositories": [
+        {
+          "name": "mofua-suki/demo-image-rating",
+          "displayName": "demo-image-rating",
+          "description": "ローカル画像の分類と好みの学習・選別。",
+          "autoMerge": true,
+          "autoDeploy": false,
+          "testCommand": [
+            ".venv/bin/python",
+            "-m",
+            "pytest",
+            "-q",
+            "--durations=10"
+          ],
+          "testTimeoutSeconds": 2700,
+          "testTimeoutReview": {
+            "reviewBy": "2026-11-17",
+            "reason": "共通番号2475 の所要時間の測定を見てテストを速くするまでの一時的な値"
+          },
+          "setupCommand": [
+            "{python}",
+            "scripts/setup_test_env.py"
+          ],
+          "registeredAt": "2026-10-11T06:39:00+09:00"
+        },
+        {
+          "name": "mofua-suki/demo-image-generator",
+          "displayName": "demo-image-generator",
+          "description": "demo-image-rating が学習した画像の好みを元に画像を生成するシステム。",
+          "autoMerge": true,
+          "autoDeploy": false,
+          "testCommand": [
+            ".venv/bin/python",
+            "-m",
+            "pytest",
+            "-q"
+          ],
+          "setupCommand": [
+            "{python}",
+            "scripts/setup_test_env.py"
+          ],
+          "registeredAt": "2026-10-11T06:39:00+09:00"
+        },
+        {
+          "name": "mofua-suki/issue-desk-worker",
+          "displayName": "issue-desk-worker",
+          "description": "各PCのWorkerとhostd",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/issue-desk-intake",
+          "displayName": "issue-desk-intake",
+          "description": "NASのServerとClient",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "testTimeoutSeconds": 1800,
+          "testTimeoutReview": {
+            "reviewBy": "2026-12-12",
+            "reason": "固定テストは合格時でも568〜632秒かかり、PCの混雑時に期限900秒を超えて打ち切られるため。所要時間を縮めるか恒久の値を決めるまでの一時的な値"
+          },
+          "autoMerge": true,
+          "autoDeploy": false
+        }
+      ],
+      "jobTimeoutSeconds": 3600,
+      "testTimeoutSeconds": 900,
+      "runtimeDir": "/state/runtime",
+      "tokenFile": "/state/private/gitea-token",
+      "workerTokenFile": "/state/private/worker-token",
+      "intakeAccount": "issue-desk-intake",
+      "webhook": {
+        "port": 8790,
+        "bind": "0.0.0.0",
+        "managed": true
+      },
+      "codex": "/opt/agent-tools/bin/codex",
+      "node": "/usr/local/bin/node",
+      "pnpm": "/opt/agent-tools/bin/pnpm",
+      "git": "/usr/bin/git",
+      "python": "/usr/local/bin/python3.12",
+      "pythonFormatter": "/opt/pyfmt/bin/python",
+      "model": "gpt-6.2-sol",
+      "claudeModel": "opus",
+      "codexEquivalents": {
+        "fable": "gpt-6.2-astra",
+        "opus": "gpt-6.2-sol",
+        "sonnet": "gpt-6-luna",
+        "haiku": "gpt-6-luna"
+      },
+      "implementation": {
+        "tiers": {
+          "light": {
+            "model": "gpt-6-luna",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "standard": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "heavy": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "opus",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      "review": {
+        "provider": "claude",
+        "claudeModel": "opus"
+      },
+      "usageWeights": {
+        "default": {
+          "input": 1,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25,
+          "output": 5
+        },
+        "providers": {}
+      },
+      "priority": {
+        "provider": "claude",
+        "claudeModel": "haiku",
+        "highRatio": {
+          "min": 0.2,
+          "max": 0.3
+        }
+      },
+      "stallWatch": {
+        "idleMinutes": 60,
+        "claimMinutes": 30,
+        "repeatedFailures": 3,
+        "blockedRatio": 50,
+        "blockedMin": 3
+      },
+      "antigravity": {
+        "command": "/opt/agent-tools/bin/agy",
+        "settingsFile": "/home/node/.gemini/antigravity-cli/settings.json",
+        "model": "gemini-3.8-flash-high"
+      },
+      "environment": {
+        "platform": "linux",
+        "gcc": null,
+        "cgo": null,
+        "race": null,
+        "docker": null,
+        "realDevice": null,
+        "liveMeasurement": null,
+        "network": null
+      }
+    },
+    "x1-pro2": {
+      "giteaUrl": "http://192.168.0.10:3000",
+      "publicUrl": "http://192.168.0.10:3000",
+      "gitUser": "mofua-suki",
+      "allowedUsers": [
+        "mofua-suki"
+      ],
+      "repositories": [
+        {
+          "name": "mofua-suki/demo-image-rating",
+          "displayName": "demo-image-rating",
+          "description": "ローカル画像の分類と好みの学習・選別。",
+          "autoMerge": true,
+          "autoDeploy": false,
+          "testCommand": [
+            ".venv/bin/python",
+            "-m",
+            "pytest",
+            "-q",
+            "--durations=10"
+          ],
+          "testTimeoutSeconds": 2700,
+          "testTimeoutReview": {
+            "reviewBy": "2026-11-17",
+            "reason": "共通番号2475 の所要時間の測定を見てテストを速くするまでの一時的な値"
+          },
+          "setupCommand": [
+            "{python}",
+            "scripts/setup_test_env.py"
+          ],
+          "registeredAt": "2026-10-11T06:39:00+09:00"
+        },
+        {
+          "name": "mofua-suki/demo-image-generator",
+          "displayName": "demo-image-generator",
+          "description": "demo-image-rating が学習した画像の好みを元に画像を生成するシステム。",
+          "autoMerge": true,
+          "autoDeploy": false,
+          "testCommand": [
+            ".venv/bin/python",
+            "-m",
+            "pytest",
+            "-q"
+          ],
+          "setupCommand": [
+            "{python}",
+            "scripts/setup_test_env.py"
+          ],
+          "registeredAt": "2026-10-11T06:39:00+09:00"
+        },
+        {
+          "name": "mofua-suki/issue-desk-worker",
+          "displayName": "issue-desk-worker",
+          "description": "各PCのWorkerとhostd",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/issue-desk-intake",
+          "displayName": "issue-desk-intake",
+          "description": "NASのServerとClient",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "testTimeoutSeconds": 1800,
+          "testTimeoutReview": {
+            "reviewBy": "2026-12-12",
+            "reason": "固定テストは合格時でも568〜632秒かかり、PCの混雑時に期限900秒を超えて打ち切られるため。所要時間を縮めるか恒久の値を決めるまでの一時的な値"
+          },
+          "autoMerge": true,
+          "autoDeploy": false
+        }
+      ],
+      "jobTimeoutSeconds": 3600,
+      "testTimeoutSeconds": 900,
+      "runtimeDir": "/state/runtime",
+      "tokenFile": "/state/private/gitea-token",
+      "workerTokenFile": "/state/private/worker-token",
+      "intakeAccount": "issue-desk-intake",
+      "webhook": {
+        "port": 8790,
+        "bind": "0.0.0.0",
+        "managed": true
+      },
+      "codex": "/opt/agent-tools/bin/codex",
+      "node": "/usr/local/bin/node",
+      "pnpm": "/opt/agent-tools/bin/pnpm",
+      "git": "/usr/bin/git",
+      "python": "/usr/local/bin/python3.12",
+      "pythonFormatter": "/opt/pyfmt/bin/python",
+      "model": "gpt-6.2-sol",
+      "claudeModel": "opus",
+      "codexEquivalents": {
+        "fable": "gpt-6.2-astra",
+        "opus": "gpt-6.2-sol",
+        "sonnet": "gpt-6-luna",
+        "haiku": "gpt-6-luna"
+      },
+      "implementation": {
+        "tiers": {
+          "light": {
+            "model": "gpt-6-luna",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "standard": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "heavy": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "opus",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      "review": {
+        "provider": "claude",
+        "claudeModel": "opus"
+      },
+      "usageWeights": {
+        "default": {
+          "input": 1,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25,
+          "output": 5
+        },
+        "providers": {}
+      },
+      "priority": {
+        "provider": "claude",
+        "claudeModel": "haiku",
+        "highRatio": {
+          "min": 0.2,
+          "max": 0.3
+        }
+      },
+      "stallWatch": {
+        "idleMinutes": 60,
+        "claimMinutes": 30,
+        "repeatedFailures": 3,
+        "blockedRatio": 50,
+        "blockedMin": 3
+      },
+      "antigravity": {
+        "command": "/opt/agent-tools/bin/agy",
+        "settingsFile": "/home/node/.gemini/antigravity-cli/settings.json",
+        "model": "gemini-3.8-flash-high"
+      },
+      "environment": {
+        "platform": "linux",
+        "gcc": null,
+        "cgo": null,
+        "race": null,
+        "docker": null,
+        "realDevice": null,
+        "liveMeasurement": null,
+        "network": null
+      }
+    },
+    "nab-9s": {
+      "giteaUrl": "http://192.168.0.10:3000",
+      "gitUser": "mofua-suki",
+      "allowedUsers": [
+        "mofua-suki"
+      ],
+      "repositories": [
+        {
+          "name": "mofua-suki/sample-scraper",
+          "displayName": "sample-scraper",
+          "description": "NASでの画像収集。既存の取得範囲・停止条件を確認して開発する。",
+          "testCommand": [
+            "{node}",
+            "--test",
+            "--test-skip-pattern=^(fixed HTML extracts photo ownership|headed browser enables sandboxing)",
+            "test/**/*.test.ts"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/issue-desk-worker",
+          "displayName": "issue-desk-worker",
+          "description": "各PCのWorkerとhostd",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/issue-desk-intake",
+          "displayName": "issue-desk-intake",
+          "description": "NASのServerとClient",
+          "testCommand": [
+            "sh",
+            "scripts/verify.sh"
+          ],
+          "testTimeoutSeconds": 1800,
+          "testTimeoutReview": {
+            "reviewBy": "2026-12-12",
+            "reason": "固定テストは合格時でも568〜632秒かかり、PCの混雑時に期限900秒を超えて打ち切られるため。所要時間を縮めるか恒久の値を決めるまでの一時的な値"
+          },
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/sample-expense-server",
+          "displayName": "sample-expense-server",
+          "description": "精算アプリのサーバー（Kotlin・Ktor・Gradle、JDK 25）。ユーザーを検索してグループを作り、立て替えの精算を登録し、グループ全員の同意で精算を閉じる。",
+          "testCommand": [
+            "gradle",
+            "--no-daemon",
+            "test"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/sample-expense-client",
+          "nativeTestHost": "macbook-pro-test",
+          "displayName": "sample-expense-client",
+          "description": "精算アプリのクライアント（Flutter、Android と iOS（iPhone・iPad）。iOS はMacBook Proでシミュレーター向けビルドとシミュレーター上のテストを検証）。sample-expense-server のAPIを使い、グループの作成・精算の登録・全員の同意による精算の締めを操作する。",
+          "testCommand": [
+            "flutter",
+            "test"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/alarm-checklist",
+          "nativeTestHost": "macbook-pro-test",
+          "displayName": "alarm-checklist",
+          "description": "iPhone向けFlutterアラーム管理アプリ",
+          "testCommand": [
+            "{node}",
+            "--test",
+            "test/ios-environment.test.mjs"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "mofua-suki/image-review-client",
+          "displayName": "image-review-client",
+          "description": "IPS・IGSの評価・選別画面をまとめる、iPhone/iPad向けのSPA（PWA、TypeScript）。IPS・IGSのAPIを使う。",
+          "testCommand": [
+            "{node}",
+            "--test",
+            "test/**/*.test.ts"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        },
+        {
+          "name": "games/game-laboratory",
+          "displayName": "game-laboratory",
+          "description": "ブラウザで遊ぶゲームの試作置き場（HTMLとJavaScript、ビルドなし）。games/<ゲーム名>/ ごとに1本のゲームを置き、スマホのブラウザで遊べる形にする。",
+          "testCommand": [
+            "{node}",
+            "--test",
+            "test/_*.test.mjs"
+          ],
+          "autoMerge": true,
+          "autoDeploy": false
+        }
+      ],
+      "jobTimeoutSeconds": 3600,
+      "testTimeoutSeconds": 900,
+      "runtimeDir": "/state/runtime",
+      "tokenFile": "/state/private/gitea-token",
+      "workerTokenFile": "/state/private/worker-token",
+      "intakeAccount": "issue-desk-intake",
+      "webhook": {
+        "port": 8790,
+        "bind": "0.0.0.0",
+        "managed": true
+      },
+      "codex": "/opt/agent-tools/bin/codex",
+      "node": "/usr/local/bin/node",
+      "pnpm": "/opt/agent-tools/bin/pnpm",
+      "git": "/usr/bin/git",
+      "python": "/usr/local/bin/python3.12",
+      "model": "gpt-6.2-sol",
+      "claudeModel": "opus",
+      "codexEquivalents": {
+        "fable": "gpt-6.2-astra",
+        "opus": "gpt-6.2-sol",
+        "sonnet": "gpt-6-luna",
+        "haiku": "gpt-6-luna"
+      },
+      "implementation": {
+        "tiers": {
+          "light": {
+            "model": "gpt-6-luna",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "standard": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "sonnet",
+            "reasoningEffort": "medium"
+          },
+          "heavy": {
+            "model": "gpt-6.2-sol",
+            "claudeModel": "opus",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      "review": {
+        "provider": "claude",
+        "claudeModel": "opus"
+      },
+      "usageWeights": {
+        "default": {
+          "input": 1,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25,
+          "output": 5
+        },
+        "providers": {}
+      },
+      "priority": {
+        "provider": "claude",
+        "claudeModel": "haiku",
+        "highRatio": {
+          "min": 0.2,
+          "max": 0.3
+        }
+      },
+      "stallWatch": {
+        "idleMinutes": 60,
+        "claimMinutes": 30,
+        "repeatedFailures": 3,
+        "blockedRatio": 50,
+        "blockedMin": 3
+      },
+      "antigravity": {
+        "command": "/opt/agent-tools/bin/agy",
+        "settingsFile": "/home/node/.gemini/antigravity-cli/settings.json",
+        "model": "gemini-3.8-flash-high"
+      },
+      "environment": {
+        "platform": "linux",
+        "gcc": null,
+        "cgo": null,
+        "race": null,
+        "docker": null,
+        "realDevice": null,
+        "liveMeasurement": null,
+        "network": null
+      }
+    },
+    "macbook-pro-test": {
+      "giteaUrl": "http://192.168.0.10:3000",
+      "gitUser": "mofua-suki",
+      "git": "/usr/bin/git",
+      "runtimeDir": "/Users/user/.issue-desk/apple/runtime",
+      "workerTokenFile": "/Users/user/.issue-desk/apple/private/gitea-token",
+      "jobTimeoutSeconds": 3600,
+      "testTimeoutSeconds": 1800,
+      "environment": {
+        "platform": "darwin",
+        "realDevice": null,
+        "liveMeasurement": null,
+        "network": null
+      },
+      "repositories": [
+        {
+          "name": "mofua-suki/sample-expense-client",
+          "nativeTestHost": "macbook-pro-test",
+          "nativeNetwork": true,
+          "nativeToolRoots": [
+            "/Users/user/development/flutter"
+          ],
+          "testCommand": [
+            "sh",
+            "scripts/verify-apple.sh",
+            "ios"
+          ]
+        },
+        {
+          "name": "mofua-suki/alarm-checklist",
+          "nativeTestHost": "macbook-pro-test",
+          "nativeNetwork": true,
+          "nativeToolRoots": [
+            "/Users/user/development/flutter"
+          ],
+          "testCommand": [
+            "sh",
+            "scripts/verify-apple.sh",
+            "ios"
+          ]
+        }
+      ]
+    },
+    "macbook-air-test": {
+      "giteaUrl": "http://192.168.0.10:3000",
+      "gitUser": "mofua-suki",
+      "git": "/usr/bin/git",
+      "runtimeDir": "/Users/user/.issue-desk/apple/runtime",
+      "workerTokenFile": "/Users/user/.issue-desk/apple/private/gitea-token",
+      "jobTimeoutSeconds": 3600,
+      "testTimeoutSeconds": 1800,
+      "environment": {
+        "platform": "darwin",
+        "realDevice": null,
+        "liveMeasurement": null,
+        "network": null
+      },
+      "repositories": [
+        {
+          "name": "mofua-suki/sample-expense-client",
+          "nativeTestHost": "macbook-air-test",
+          "nativeNetwork": true,
+          "nativeToolRoots": [
+            "/Users/user/development/flutter"
+          ],
+          "testCommand": [
+            "sh",
+            "scripts/verify-apple.sh",
+            "ios"
+          ]
+        }
+      ]
+    }
+  }
+}

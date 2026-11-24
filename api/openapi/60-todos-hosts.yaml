@@ -1,0 +1,867 @@
+{
+  'paths':
+    {
+      '/api/todos':
+        {
+          'post':
+            {
+              'operationId': 'post_api_todos',
+              'summary': 'TODOを作成',
+              'description': '本文保存は作成の後saveへ送る。トークンでは画像を付けられない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '201':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Todo' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string' },
+                                  'project': { 'type': 'string' },
+                                  'consultationProvider':
+                                    { 'type': 'string', 'enum': ['codex', 'claude'], 'default': 'codex' },
+                                  'provider': { 'type': 'string', 'enum': ['codex', 'claude'] },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+          'get':
+            {
+              'operationId': 'get_api_todos',
+              'summary': 'TODO一覧',
+              'description': '許可されたTODOをprojectで絞り、ページ単位で返す。totalはアクセス可能な行だけを数える。',
+              'parameters': [
+                { 'name': 'project', 'in': 'query', 'schema': { 'type': 'string' } },
+                { 'name': 'page', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'default': 1 } },
+                { 'name': 'limit', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 100 } }
+              ],
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            { 'schema': { 'type': 'object', 'required': ['items', 'total', 'page', 'limit', 'hasMore'], 'properties': { 'items': { 'type': 'array', 'items': { '$ref': '#/components/schemas/Todo' } }, 'total': { 'type': 'integer', 'minimum': 0 }, 'page': { 'type': 'integer', 'minimum': 1 }, 'limit': { 'type': 'integer', 'minimum': 1, 'maximum': 200 }, 'hasMore': { 'type': 'boolean' } } } },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/todos/{id}':
+        {
+          'get':
+            {
+              'operationId': 'get_api_todos_id',
+              'summary': 'TODO詳細',
+              'description': '処理と状態による可否は参照先の実装を正本とする。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Todo' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/todos/{id}/save':
+        {
+          'post':
+            {
+              'operationId': 'post_api_todos_id_save',
+              'summary': 'TODOのsave',
+              'description': 'saveは同じ送信IDで照合、revisionが違えば409。トークンは自分のTODOを保存でき、代行許可があれば所有者を問わない。画像は既存のものを引き継ぐ。一時キーもimages省略時は既存を維持。',
+              'x-issue-desk-delegate': '他の所有者',
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Todo' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string' },
+                                  'revision': { 'type': 'integer' },
+                                  'text': { 'type': 'string' },
+                                  'images': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'consultationProvider':
+                                    { 'type': 'string', 'enum': ['codex', 'claude'], 'default': 'codex' },
+                                  'provider':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['codex', 'claude'],
+                                      'description': '相談を始めるときの実行先。省略時は保存済みの実行先を維持。スクリプトは渡せない（変更は受付画面のTODOタブ）。',
+                                    },
+                                  'check':
+                                    {
+                                      'type': ['object', 'null'],
+                                      'properties':
+                                        {
+                                          'problem': { 'type': 'string', 'minLength': 1, 'maxLength': 2000 },
+                                          'resolved': { 'type': 'string', 'minLength': 1, 'maxLength': 2000 },
+                                          'methods':
+                                            {
+                                              'type': 'array',
+                                              'maxItems': 10,
+                                              'items': { 'type': 'string', 'minLength': 1, 'maxLength': 300 },
+                                              'description': '1行1件。ファイルあり/なし: 相対パス、文字あり/なし: 相対パス :: 語（200文字以内）、Issue完了/未完了: 共通番号N、コマンド: 文（記録だけ）。パスの..・絶対パス・ワイルドカードは禁止。',
+                                            },
+                                        },
+                                      'required': ['problem', 'resolved', 'methods'],
+                                      'description': '省略時は維持。nullで条件を消す。不正値は400で何も保存しない。',
+                                    },
+                                  'dueAt':
+                                    {
+                                      'type': 'string',
+                                      'format': 'date-time',
+                                      'pattern': 'Z$',
+                                      'description': 'ISO 8601 UTC。指定時は保存時刻から1〜30日先。初回の本文保存で省略すると7日後。以後省略時は維持。',
+                                    },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/todos/{id}/start':
+        {
+          'post':
+            {
+              'operationId': 'post_api_todos_id_start',
+              'summary': 'TODOのstart',
+              'description': 'TODOを同じIDの下書きへ永続保存して202を返す。重複照合とAIは非同期。同一ID再送は既存の相談を返す。下書きのtopicCheck.stateはpending（照合待ち）、complete（取得範囲の照合完了）、incomplete（上限・時間切れ・失敗）。incompleteは重複なしを意味しない。GET /api/drafts/{id}で確認できる。revisionが違えば409。保管済みの起票先は409 repository_archivedで拒否し、保管状態を照会できない場合は開始を続ける。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '202':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string' },
+                                  'revision': { 'type': 'integer' },
+                                  'provider': { 'type': 'string', 'enum': ['codex', 'claude'] },
+                                  'consultationProvider':
+                                    { 'type': 'string', 'enum': ['codex', 'claude'], 'default': 'codex' },
+                                  'tier':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['light', 'standard', 'heavy'],
+                                      'description': '始める相談の難易度（light: 低、standard: 中、heavy: 高）。必須。依頼元（画面では利用者）が依頼の難しさで判断して付ける。無い・空なら400（code=TIER_REQUIRED）、3値以外も400。',
+                                    },
+                                },
+                              'required': ['tier'],
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/todos/{id}/remove':
+        {
+          'post':
+            {
+              'operationId': 'post_api_todos_id_remove',
+              'summary': 'TODOのremove',
+              'description': 'saveは同じ送信IDで照合、revisionが違えば409。トークンは自分のTODOを保存でき、代行許可があれば所有者を問わない。画像は既存のものを引き継ぐ。一時キーもimages省略時は既存を維持。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'revision': { 'type': 'integer' },
+                                  'instructionAt':
+                                    {
+                                      'type': 'string',
+                                      'description': 'UTCオフセット付きISO 8601の指示日時。運用代行のトークンでは必須。',
+                                    },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/close-requests':
+        {
+          'get':
+            {
+              'operationId': 'get_api_close_requests',
+              'summary': 'クローズ依頼の一覧',
+              'description': '処理中（reviewing、confirm、closing）の依頼をprojectとstatusで絞り、ページ単位で返す。運用代行を許さないPCトークンは403。',
+              'parameters': [
+                { 'name': 'project', 'in': 'query', 'schema': { 'type': 'string' } },
+                { 'name': 'status', 'in': 'query', 'schema': { 'type': 'string' } },
+                { 'name': 'page', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'default': 1 } },
+                { 'name': 'limit', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 100 } }
+              ],
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            { 'schema': { 'type': 'object', 'required': ['items', 'total', 'page', 'limit', 'hasMore'], 'properties': { 'items': { 'type': 'array', 'items': { '$ref': '#/components/schemas/CloseRequest' } }, 'total': { 'type': 'integer', 'minimum': 0 }, 'page': { 'type': 'integer', 'minimum': 1 }, 'limit': { 'type': 'integer', 'minimum': 1, 'maximum': 200 }, 'hasMore': { 'type': 'boolean' } } } },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/close-requests/{id}':
+        {
+          'get':
+            {
+              'operationId': 'get_api_close_requests_id',
+              'summary': 'クローズ依頼の結果',
+              'description': '通常のトークンは自分の依頼だけ。代行は他人の依頼もactions/fingerprint付きで読める。',
+              'x-issue-desk-delegate': '他の所有者',
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/CloseRequest' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/close-requests/{id}/close':
+        {
+          'post':
+            {
+              'operationId': 'post_api_close_requests_id_close',
+              'summary': 'クローズ依頼の判断: close',
+              'description': 'closeには表示中のfingerprintを送る。条件が変われば確認待ちへ戻る。判断はscreenまたはdelegateとして記録。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/CloseRequest' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties': { 'fingerprint': { 'type': ['string', 'null'] } },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/close-requests/{id}/keep':
+        {
+          'post':
+            {
+              'operationId': 'post_api_close_requests_id_keep',
+              'summary': 'クローズ依頼の判断: keep',
+              'description': 'closeには表示中のfingerprintを送る。条件が変われば確認待ちへ戻る。判断はscreenまたはdelegateとして記録。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/CloseRequest' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties': { 'fingerprint': { 'type': ['string', 'null'] } },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/comment':
+        {
+          "get": {"operationId": "get_api_comment", "summary": "非同期返信の送信結果を照会", "security": [{"screenSession": []}, {"cliKey": []}, {"pcToken": []}], "parameters": [{"name": "id", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "accepted=trueと送信ID・project・number・status（queued/done/failed）。doneはresult、failedはerror/errorCodeを返す。PCは自分の送信だけ読める。", "content": {"application/json": {"schema": {"type": "object", "required": ["accepted", "id", "project", "number", "status", "updatedAt"], "properties": {"accepted": {"type": "boolean", "const": true}, "id": {"type": "string", "format": "uuid"}, "project": {"type": "string"}, "number": {"type": "integer", "minimum": 1}, "status": {"type": "string", "enum": ["queued", "done", "failed"]}, "result": {"type": ["object", "null"], "additionalProperties": true}, "error": {"type": ["string", "null"]}, "errorCode": {"type": ["string", "null"]}, "updatedAt": {"type": "string"}}, "additionalProperties": true}}}}, "400": {"$ref": "#/components/responses/Error400"}, "401": {"$ref": "#/components/responses/Error401"}, "403": {"$ref": "#/components/responses/Error403"}, "404": {"$ref": "#/components/responses/Error404"}}},
+          'post':
+            {
+              'operationId': 'post_api_comment',
+              'summary': 'Issueに返信・再試行・優先度・停止・再開・権限変更の承認',
+              'description': 'async=trueかつaction=replyでは返信を永続化して202（accepted=true・id=送信ID・project・number・status=queued/done/failed）を返す。投稿と実装の再開はバックグラウンドで行い、GET /api/comment?id=<送信ID>でdoneかつresultを確認する。同ID・同本文・同じ送り手の再送は同じ結果を返し、異なる本文や送り手は409。トークンの失効と運用代行を実行前に再確認する。queuedは再起動時と1分周期で再開する。確定した未送信の拒否はfailedとerror/errorCodeから確認する。投稿済みまたは結果不明の失敗はqueuedを維持し、同じ送信IDで照合する。async省略時は旧利用側との互換の同期応答。最終承認（action=approve-final）は画面セッション（同一Origin・CSRF）か運用代行を許したPC別トークンから送る。id（発言ID）、approvalId、head、statement（発言原文）、Issue詳細のpendingFinalApprovals.fingerprintをapprovalFingerprintに指定し、現在の計画・範囲とSHAを照合して記録する。トークンのstatementは利用者のチャットの承認の発言（見せた質問文と記号の回答。issue-desk-issue-control Skillの最終承認手順）で、8文字以上・定型語だけでなく、approvalId（英数字・_・-の続きでない完全な語）とheadの40桁を含まなければ400（別の承認・別のheadへの流用を防ぐ）。トークンはinstructionAt（利用者がチャットで答えた日時）も必須で、欠ける・形式違い・未来・7日より前は400。記録には発言・指示の日時（instructionAt）・via（screen/token）・送信元PC（pc）を残す。同じidの同じ承認・発言・経路の送り直しは、記録後にheadが進んでいても記録を重ねず200（approvalFingerprintは照合しない）。一時キー・代行未許可のトークンは403。トークンはretry/reply/priority/stop/resume/approve-permissions/approve-deletions/approve-final/record-checkだけ。runはトークンで403。削除の承認（action=approve-deletions）: 画面はsha、運用代行トークンはheadとstatement（利用者の発言そのまま）とinstructionAt（指示の日時。必須）を送り、監査記録に指示の日時を残す。対象が保留のdeletionApproval.headと違えば409。権限変更の承認（action=approve-permissions）: 入力はhead（承認する対象の40桁のコミット。Issue詳細のpermissionApproval.head）とstatement（利用者の承認発言。空・8文字未満・「承認します」などの定型語だけは400）。表示はIssue画面の「権限の変更を承認してマージ」で、actionsにapprove_permissionsがあるとき（permissionApprovalで完全な対象を照合できた権限保留）だけ出る。認証は、画面は有効なセッション・同一Origin・CSRF、トークンは運用の代行を許したPC別トークンだけで、instructionAt（指示の日時）が必須（送信元PC名・発言・指示の日時を監査記録に残す）。一時キー・代行未許可のトークンは403で、AuthorizationとX-Desk-Keyなどを混在させても画面の認証へは回らない。headが現在の保留対象と違う・照合不能・権限保留でない状態は409（画面を読み込み直して対象を確認する。入力を変えて送り直せる）。監査コメントの投稿が完了していない記録は503（retryable=same-request。同じidと内容で再送すると続きから投稿し、二重に記録しない）。成功するとジョブを実行待ちに戻し、実装世代・実装回数を増やさず実装AIも起動せず、承認したコミットのまま固定テストと独立レビューから再開する。承認はそのコミットと完全な権限ファイル集合だけに効き、変われば再び保留になる。他の保留理由（削除など）は残る。priority=highはreason必須。同じidで照合。応答のretryable/safeToChangeに従い再送。実際の可否はIssueのactionsで確認。fromBaseはretryだけに指定でき、画像と併用不可。トークンの返信に操作コマンドを入れない。再実装がimplementationRunLimit（既定4回、初回含む）に達したら409で実装の回数の上限（N回）に達しました。原因を確かめてから受付画面で判断してくださいと断り、要対応へ一度だけ記録する。画面セッションの人の再試行は上限を超えて通し、トークン・一時キー・自動は承認なしでは断る。期限付きのimplementation-limit-retry許可を使う場合は、運用代行トークンからimplementationLimitRetry=trueを指定する。実装回数の上限判定に達したfailedのretry（retestを含む）か、DB上heldかつholdReason=review_heldのreplyの修正指示に限り、原因と直し方を含むtextを必要とし、fromBase・autoRetest・画像・overLimitStatementとは併用できない。プロジェクト・許可の期限・取消をジョブ更新と同じトランザクションで確認し、待機中の期限切れも拒否する。1依頼につき許可の更新・再発行をまたいで累計2回までとし、許可ID・許可登録時の利用者発言の引用・text・通過回数をoverLimitApprovalsに記録する。retestと併用でき、上限未満では許可を消費しない。上限を超えて再検証を開始する場合はその再試行で1回を消費する。従来の個別承認overLimitStatementも指定可能で、利用者がチャットで指示した日時instructionAtを必須とし（欠ける・形式違い・未来・7日より前は400、overLimitStatementの無い指定も400）、overLimitApprovalsに記録する。その発言は8文字以上・定型語だけ不可・対象の共通番号かGitea番号を数字列として含む必要がある。同じ発言（NFKC・空白除去・大文字小文字の正規化）は再利用不可。画面・一時キーからの指定、fromBase・autoRetest・画像との併用は400、使用済みや状態違いは409で変更前に断る。上限未満は承認を消費せず記録しない。指示なしの再レビュー・公開再開は通す。累計使用量が未知の場合、運用代行トークンのretryに空白以外のtext（理由）があれば量の未知判定を通し、job_eventsのcontrolのunknownUsageRetryにtext・未知の判定文reason・by・atを保存する。理由なし・一時キー・自動経路は断る。実装回数の上限と既知の量の超過は従来どおり判定する。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '202': { 'description': '非同期返信を受付済み。GETで送信IDの結果を確認する。', 'content': { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } } },
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503':
+                    {
+                      'description': '権限変更の監査コメント投稿が未完了、または受付交代中の画像付き追加指示がAI枠取得時に中断された。retryable=same-request。交代後に同じidと内容で再送する。',
+                    },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'async': { 'type': 'boolean', 'description': '返信ではtrueを指定して受理と結果照会を分ける。' },
+                                  'id': { 'type': 'string' },
+                                  'project': { 'type': 'string' },
+                                  'number': { 'type': 'integer' },
+                                  'action':
+                                    {
+                                      'type': 'string',
+                                      'enum':
+                                        [
+                                          'retry',
+                                          'reply',
+                                          'priority',
+                                          'stop',
+                                          'resume',
+                                          'approve-deletions',
+                                          'approve-permissions',
+                                          'approve-final',
+                                          'record-check',
+                                          'run',
+                                        ],
+                                    },
+                                  'executionCheck': {'type':'object','description':'record-check専用。既存の運用代行トークンまたはCLIから、実装の再開や承認と分離して外部確認・訂正報告を記録する。実装モデルの完了申告は不可。計画・世代・SHA・観測時刻・出典を照合する。同じ送信IDと内容は一度だけ保存。報告条件は受付が訂正を投稿して実在する投稿へ結び付ける。','required':['id','requirement','planSHA','head','generation','status','source','observedAt','detail'],'additionalProperties':false,'properties':{'id':{'type':'string'},'requirement':{'type':'string'},'planSHA':{'type':'string'},'head':{'type':'string'},'generation':{'type':'integer'},'status':{'type':'string','enum':['passed','failed']},'source':{'type':'string','maxLength':2000},'observedAt':{'type':'string','format':'date-time'},'detail':{'type':'string','maxLength':8000}}},
+                                  'approvalFingerprint': { 'type': 'string', 'description': '表示した未了承認のfingerprint。' },
+                                  'approvalId': { 'type': 'string', 'description': 'approve-finalの完了計画の承認ID。' },
+                                  'head':
+                                    {
+                                      'type': 'string',
+                                      'pattern': '^[a-f0-9]{40}$',
+                                      'description': 'approve-permissions・approve-deletions（トークン）。承認する保留の対象コミット。',
+                                    },
+                                  'statement':
+                                    {
+                                      'type': 'string',
+                                      'description': '利用者の承認発言の原文。approve-finalは空でなく8000文字以内（トークンはapprovalIdとheadを含む8文字以上の発言）。approve-permissions・approve-deletions（トークン）は8文字以上で定型語だけは断る。',
+                                    },
+                                  'text':
+                                    {
+                                      'type': 'string',
+                                      'description': 'retry/reply/resumeの追加指示だけ8000文字以内。超過時は実際の文字数と上限を含む400を返し、投稿・ジョブ変更・送信IDの消費を行わない。この上限は他のactionには適用しない。',
+                                    },
+                                  'value': { 'type': 'string', 'enum': ['high', 'normal', 'auto'] },
+                                  'reason': { 'type': 'string' },
+                                  'images': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'overLimitStatement':
+                                    {
+                                      'type': 'string',
+                                      'description': '利用者が対象依頼の再試行を明示的に承認した実際の発言。運用代行トークン専用。上限超過のfailedのretryか、DB上heldかつholdReason=review_heldのreplyの修正指示だけで1回消費する。',
+                                    },
+                                  'instructionAt':
+                                    {
+                                      'type': 'string',
+                                      'description': '利用者がチャットで承認・指示した日時（UTCオフセット付きISO 8601（秒まで。例 2026-11-11T11:58:00+09:00）、未来でなく7日以内）。トークンのapprove-final・approve-permissions・approve-deletionsと、overLimitStatementを付けたretry/replyでは必須（欠けると400）。overLimitStatementの無いretry/replyなど、それ以外の操作に付けると400（approve-*の画面送信では使わず、付けても無視する）。記録・監査記録に残す。AIは会話にある利用者の発言の時刻を渡す。',
+                                    },
+                                  'implementationLimitRetry':
+                                    {
+                                      'type': 'boolean',
+                                      'description': '期限付きプロジェクト許可を使用するfailedのretryか、DB上heldかつholdReason=review_heldのreplyの修正指示。運用代行トークン専用。text必須。retestとは併用可能。overLimitStatement・fromBase・autoRetest・画像と併用不可。',
+                                    },
+                                  'fromBase': { 'type': 'boolean' },
+                                  'retest':
+                                    {
+                                      'type': 'boolean',
+                                      'default': false,
+                                      'description': 'retryだけ。failed・調査以外・固定テストだけの完全な失敗一覧または固定テストの時間切れの証拠・質問なし・再検証を妨げる未確認事項なしの場合に再検証する。未確認事項はunverifiedKindsで判定し、fixed_test_by_controllerだけはtestsにnot_runがあれば除外する。other、種類の欠落・不正、種類数不一致、not_runのないfixed_test_by_controllerは妨げる。拒否は409で理由を返す。fromBaseと画像は併用不可。成果の所有元・公開証拠・不正artifactの存在は保持し、継続先の配布情報だけを外す。fromBaseによる明示的な初期状態へのリセットとは区別する。合格は実装回数に数えず、競合・不合格は同じ世代で実装へ切り替える。上限判定は再実装と同じ。',
+                                    },
+                                  'autoRetest':
+                                    {
+                                      'type': 'boolean',
+                                      'default': false,
+                                      'description': 'retryだけ。自動の再試行が送る。受付がジョブを読む同じトランザクションで再検証の条件（failed・調査以外・完全な失敗一覧か固定テストの時間切れの証拠・質問なし・blockingUnverifiedが空）を判定し、満たせば再検証、満たさなければ従来の再試行にする。再検証では成果の所有元・公開証拠・不正artifactの存在を保持し、継続先の配布情報だけを外す。未確認事項はunverifiedKindsで判定し、fixed_test_by_controllerだけはtestsにnot_runがあれば除外する。other、種類の欠落・不正、種類数不一致、not_runのないfixed_test_by_controllerは妨げる。条件を満たさず手動再検証を拒否するときは409で理由を返す。fromBase・retest・画像は併用不可。',
+                                    },
+                                  'messageId': { 'type': 'string' },
+                                },
+                              'additionalProperties': true,
+                              'required': ['id', 'project', 'number', 'action'],
+                              'allOf':
+                                [
+                                  {
+                                    'if':
+                                      {
+                                        'properties':
+                                          { 'action': { 'type': 'string', 'enum': ['retry', 'reply', 'resume'] } },
+                                        'required': ['action'],
+                                      },
+                                    'then': { 'properties': { 'text': { 'maxLength': 8000 } } },
+                                  },
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/handover':
+        {
+          'post':
+            {
+              'operationId': 'post_api_handover',
+              'summary': '担当PCを引き継ぐ',
+              'description': '利用者の指示または運用規則の条件でだけ操作。開いていて着手前のIssue、担当表のPC。送信IDの照合あり。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string' },
+                                  'project': { 'type': 'string' },
+                                  'number': { 'type': 'integer' },
+                                  'host': { 'type': 'string' },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/hosts/{host}/drain':
+        {
+          'post':
+            {
+              'operationId': 'post_api_hosts_host_drain',
+              'summary': 'PCの引き取りを止める・戻す',
+              'description': '画面用の停止印。indefinite=trueは無期限でuntilとの同時指定不可。until省略・nullは既定150分。v1のPUTと経路/処理が異なる。PC別トークンに代行許可は不要。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties': { 'reason': { 'type': 'string' }, 'until': { 'type': ['string', 'null'] }, 'indefinite': { 'type': 'boolean' } },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+          'delete':
+            {
+              'operationId': 'delete_api_hosts_host_drain',
+              'summary': 'PCの引き取りを止める・戻す',
+              'description': '画面用の停止印。v1のPUTと経路/処理が異なる。PC別トークンに代行許可は不要。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+            },
+        },
+      '/api/hosts/{host}/hostd-command':
+        {
+          'get':
+            {
+              'operationId': 'get_api_hosts_host_hostd_command',
+              'summary': 'hostdへの版の指示の状態を読む',
+              'description': '未実行の指示(command。有効期限切れはnull)・固定中の印(pin)・直近の結果(result)を保存先から読み直す。受付画面と運用の代行を許したPC別トークンだけ。一時キー・許していないPC別トークンは403、PCの行が無ければ404。 hostd のコマンド内容は種類ごとに変わるため、共通の固定応答型は定義しない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+          'post':
+            {
+              'operationId': 'post_api_hosts_host_hostd_command',
+              'summary': 'hostdへ指示(install・rollback・pin・follow)を発行する',
+              'description': '受付と同じPC上のスクリプトも、有効な許可(hostd-repairの<PC名>:retry-failed-image)がある場合だけinstallを発行できる(許可が無い・install以外は403)。installは同じ版の失敗の記録を消し、hostdが次の周期で再試行できるようにする。受付画面の利用者と運用の代行を許したPC別トークンだけ(hostd専用トークン・一時キー・許していないPC別トークンは発行できない)。本文は{id(32桁小文字16進),kind,tag?,ttlSeconds?(60〜86400、既定3600)}。install・pinのtagは発行履歴に登録済みの版(sha12と任意の-python)だけで、未登録・形違いは400で保存しない。rollbackのtagはprevious(既定)かlast-good、followにtagは付けない。1台につき有効な未実行の指示は1件で、別のidは409。同じidの同じ内容は冪等(created=false)、内容が違えば409。PCの行が無ければ404。保存はhosts.hostd_healthのcommands項目(issue-desk-worker/docs/client-hostd-commands.md)。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '発行の結果(created・command・pin・result)。',
+                      'content':
+                        { 'application/json': { 'schema': { 'type': 'object', 'additionalProperties': true } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'additionalProperties': false,
+                              'required': ['id', 'kind'],
+                              'properties':
+                                {
+                                  'id': { 'type': 'string', 'pattern': '^[0-9a-f]{32}$' },
+                                  'kind': { 'type': 'string', 'enum': ['install', 'rollback', 'pin', 'follow'] },
+                                  'tag': { 'type': 'string' },
+                                  'ttlSeconds': { 'type': 'integer', 'minimum': 60, 'maximum': 86400 },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

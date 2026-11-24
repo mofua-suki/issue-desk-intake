@@ -1,0 +1,6 @@
+{
+  "usage-per-issue": "Bash(sh ~/Workspace/issue-desk-worker/deploy/nas/intake.sh exec -T /usr/local/bin/intake admin --config /state/config.local.json --application-dir /app usage-per-issue report --from *)",
+  "docker-inspect": "Bash(docker inspect --format={{.State}} *)",
+  "docker-stats": "Bash(docker stats --no-stream *)",
+  "docker-compose-ps": "Bash(docker compose -f ~/Workspace/issue-desk-worker/deploy/nas/compose.yaml --profile intake ps *)"
+}

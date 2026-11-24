@@ -1,0 +1,237 @@
+{
+  'paths':
+    {
+      '/api/drafts/{id}/chat':
+        {
+          'post':
+            {
+              'operationId': 'post_api_drafts_id_chat',
+              'summary': '相談のchat',
+              'description': '外部照合が必要な画面/一時キーの初回発言は、検査後に本文・送り手・指定値・再開状態を永続受領してから202を返す。受付IDは別に発行し、idは従来の下書きID、requestIdは送信id（未指定ならmessageId）、draftIdはこの発言保存前はnull。保存失敗時は成功を返さない。同じ送信IDの別内容・指定値は409（code=send_id_conflict）。受付IDもGET /api/drafts/{id}で読める。受領後に既存処理へ渡し、後続回答・retryは従来の同期保存を保つ。相談の呼び出し上限で停止中（consultationBudget.stopped）は返信・retry・同じ送信IDの再送とも409で断り、発言を追加しない。利用者が受付画面の要対応から続行を選ぶか、チャットでの利用者の承認の発言を添えて運用代行のトークンで続行を送る（POST /api/attention/consultation-budget/{draftId}/continue）。chatは同じid/messageIdで照合。通常のトークンは自分の相談だけ。他人のchatは運用代行が必要。finishは運用代行を許したトークンだけ。トークンでは編集・priorityは403。proxy-undoは運用代行を許したトークンが利用者の承認の発言（statement）と指示の日時（instructionAt）を添えたときだけ受け付け、proxyUndosに発言・日時・経路・送信元PCを記録する。状態の可否はactionsで確かめる。受付画面・一時キーの経路では、利用者の発言がまだ無い下書きへの最初の発言（retryでない）に限り、受付AIを呼ぶ前に同じプロジェクトの開いている依頼・相談中の下書き・TODOを比較する。停止候補と弱い手がかりをduplicateHintsとして相談の文脈へ渡し、候補があっても409で拒否せず、発言と受付AIのターンを開始する。運用の代行を許していない場合は所有者別に見える範囲の候補だけを渡す。notDuplicateは候補確認を省略せず、互換記録用として理由を同じ下書きへ記録する（前後の空白を除き1〜500文字。空白だけ・500文字超・文字列以外は400）。2件目以降の発言・retry・トークン接続のchatでは候補確認をしない。 expectedRevisionは任意の0以上の安全整数。不正値は400。新しい回答の保存時に現在のrevisionと異なれば409で会話・質問の再読を求める。同一id/messageId・本文・画像の再送は版照合より先に照合し重複保存しない。retryは版照合しない。省略した旧クライアントは従来どおり受理する。',
+              'x-issue-desk-delegate': '他の所有者',
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '202':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'id': { 'type': 'string' },
+                                  'messageId': { 'type': 'string' },
+                                  'text': { 'type': 'string' },
+                                  'approvalFingerprint': { 'type': 'string', 'description': '運用代行PCが了承する提示対象の指紋。' },
+                                  'statement': { 'type': 'string', 'description': '組の変更または除外例外の了承を運用代行PCから送る場合の利用者の承認発言。' },
+                                  'instructionAt': { 'type': 'string', 'description': 'その発言の日時（UTCオフセット付き）。' },
+                                  'expectedRevision': { 'type': 'integer', 'minimum': 0, 'maximum': 9007199254740991, 'description': '回答時に読んだ会話・質問の版。画面からの組の変更または除外例外への了承では必須。' },
+                                  'retry': { 'type': 'boolean' },
+                                  'notDuplicate': { 'type': 'string', 'minLength': 1, 'maxLength': 500 },
+                                  'tier':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['light', 'standard', 'heavy'],
+                                      'description': '相談の途中の難易度の変更（light: 低、standard: 中、heavy: 高。省略可、3値以外は400）。新しい発言・retryのとき次のターンからその難易度のモデル・推論レベルで動く。同じ難易度・intake.tiersが無い（level=fixed）ときは変えない。廃止前の始めの判定待ちの記録（pending）は外す。tier.historyに{from,to,reason,at,source:user}を追記し、最上位のsource・reason・decidedAtは出発点のまま。同じid/messageIdの再送・断る状態では変えない。画面・一時キー・トークン接続（自分の相談）で使える。',
+                                    },
+                                },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/drafts/{id}/edit':
+        {
+          'post':
+            {
+              'operationId': 'post_api_drafts_id_edit',
+              'summary': '相談のedit',
+              'description': 'chatは同じid/messageIdで照合。通常のトークンは自分の相談だけ。他人のchatは運用代行が必要。finishは運用代行を許したトークンだけ。トークンでは編集・priorityは403。proxy-undoは運用代行を許したトークンが利用者の承認の発言（statement）と指示の日時（instructionAt）を添えたときだけ受け付け、proxyUndosに発言・日時・経路・送信元PCを記録する。状態の可否はactionsで確かめる。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'revision': { 'type': 'integer' },
+                                  'title': { 'type': 'string' },
+                                  'body': { 'type': 'string' },
+                                  'consultationProvider':
+                                    {
+                                      'type': 'string',
+                                      'enum': ['codex', 'claude'],
+                                      'default': 'codex',
+                                      'description': '相談元のAI。実装のproviderとは独立して保存する。',
+                                    },
+                                  'provider': { 'type': 'string', 'enum': ['codex', 'claude'] },
+                                },
+                              'additionalProperties': true,
+                              'required': ['revision', 'title', 'body'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/drafts/{id}/submit':
+        {
+          'post':
+            {
+              'operationId': 'post_api_drafts_id_submit',
+              'summary': '相談のsubmit',
+              'description': '認証・持ち主・hold・revision・操作の可否を検査し、起票の意図を保存してHTTP 202を返す（accepted=true・id=下書きID・status=auto_ready）。AI照合・Gitea投稿は応答内で行わず、受理直後にEngineの寿命管理で処理し、既存の起票再開周期（1分）または再起動時にも回収する。同じ確定元revisionの再送は同じ意図を返し二重起票しない。GET /api/drafts/{id} を照会し、submittedかつissue/issuesがあることを完了条件とする。以下の起票時の拒否・失敗はGETでerror/errorCodeから確認する。Issue作成が確定HTTP 423で拒否されたときだけ保管状態を照会する。保管済みならsubmit_errorとrepositoryStops（宛先・理由・案内・日時）を同時に保存し409 repository_archivedを返す。表示エラーを消しても同じ宛先への新規作成を止め、登録済みの別プロジェクト選択または終了を案内する。別の宛先には停止を適用しない。非保管423は502 repository_locked、保管状態の欠落・型不正・照会失敗は502 repository_archive_unverifiedとして区別し、保管による停止を保存せず再試行できる。作成済みIssueの回収・結果不明照合・保存済みjob復元は停止検査より先に行う。履歴読取や添付の423は保管判定に使わない。前提不足の補完相談はPOST直前に既存依頼と保存済み照合根拠を再確認する。候補変更・照合未確定・補完相談の分割は409で拒否し、IssueのPOSTとattemptedの確定を行わない。表示した照合相談で既存依頼へ接続するか、不在を再照合して同じ補完相談を再送する。送信済み・結果不明は既存の照合を維持する。受付交代のclosingは外部drainの解除後も新しい起票を抑止する。起票枠取得・AI確認・POST直前で未送信の処理は409となり、submit_errorと中断理由を保存する。交代後の再送または次の起動時のrecoverで続け、送信済みの照合・後片付けは維持する。置き換え指定がある場合、個別取得と後続の依存グラフ用スナップショットの両方で全置き換え元のジョブ状態を検証する。ジョブ未確認・未知状態・running・publishing・implementingなら409で拒否し、置き換えIssueのPOSTは行わない。比較資料のjobStatusには検証済みスナップショットの値を渡す。トークン接続は、自分のトークンで始めた相談のうち hold（相談だけのモード。POST /api/issues の hold=true）の確定待ちだけを確定できる（scripts/create-issue.ts --draft <ID> --submit）。hold でない相談は403、他のトークンの相談は404、revision が違えば409。basisConflicts が残る相談は409 DECISION_BASIS_MISMATCH で確定を拒否する。全件requester_factなら recovery.action=correct_requester_facts とし、判断を取り直さず依頼者が同じ相談へ訂正を返信して再照合する。user_decision・分類欠落・不正・混在ならreconfirm_decisionとし、訂正した事実と判断への影響を示して判断を取り直す。解消後に確定する。運用の代行を許したトークンは従来どおり持ち主・holdを問わず確定できる。起票せずに終えた子（finishedWithoutIssue=true）がいる分割の親の再送は409で断り、残りの子を「終える」へ案内する。chatは同じid/messageIdで照合。通常のトークンは自分の相談だけ。他人のchatは運用代行が必要。finishは運用代行を許したトークンだけ。トークンでは編集・priorityは403。proxy-undoは運用代行を許したトークンが利用者の承認の発言（statement）と指示の日時（instructionAt）を添えたときだけ受け付け、proxyUndosに発言・日時・経路・送信元PCを記録する。状態の可否はactionsで確かめる。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '202':
+                    {
+                      'description': '起票依頼を保存済み。accepted=trueと下書きIDを返す。起票完了ではない。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': true,
+                    'schema': { 'type': 'string' },
+                    'description': '受付の同一Origin。画面のブラウザーまたはローカルスクリプトが送る。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties': { 'revision': { 'type': 'integer' } },
+                              'additionalProperties': true,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/drafts/{id}/finish':
+        {
+          'post':
+            {
+              'operationId': 'post_api_drafts_id_finish',
+              'summary': '起票せずに相談を終える（記録を保持）',
+              'description': '通常の未起票のdraft・intake_waiting・submit_error・error・stalled・investigating・investigation_ready・investigation_errorと実行中を含むthinking・auto_readyをsubmittedにし記録を保持する。終了の保存と起票開始は排他的で、終了の保存が先なら後続のAI保存・自動起票・復旧再開を行わない。submittingの保存が先なら409で拒否し、GET /api/drafts/{id}で起票結果を確認する。起票済みIssueがある場合と通常のsubmit_unknownも409で拒否し、結果不明は対象リポジトリも照合する。調査Issueは保持する。分割家族は処理中・closedを拒否する。全て未起票の家族は親子を終了する。一部起票済みの家族では、issue.numberまたはsubmittedのissues中の有効な起票結果を持つ子を起票済みとして保持し、終了可能な未起票の子を終了する。親のissuesに起票結果をproject付きで集約し、issueを先頭にする。子の個別終了で全子が起票済みか起票せず終了済みになった場合も親を終了する。親子はトランザクションで保存し失敗時は更新しない。起票済みの子・配下・外部Issueは変更しない。運用代行を許したPC別トークンはinstructionAtが必須。UTCオフセット付きRFC3339日時で、未来は400、相談作成より前の指示または作成時刻を確認できない場合は409。画面・一時キーではinstructionAtは任意。200は終了の保存完了を意味し、原文・添付・使用量・了承記録を保持する。保存失敗は成功として返さない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Draft' } } },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  {
+                    'name': 'Origin',
+                    'in': 'header',
+                    'required': false,
+                    'schema': { 'type': 'string' },
+                    'description': '画面・一時キーでは受付の同一Originが必須。PC別トークンでは不要。',
+                  },
+                ],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        { 'schema': { 'type': 'object', 'properties': { 'instructionAt': { 'type': 'string', 'format': 'date-time', 'description': '利用者の終了指示の日時。PC別トークンでは必須。UTCオフセット付きで未来ではなく、相談の作成日時以降。画面・一時キーでは任意。' } }, 'additionalProperties': true } },
+                    },
+                },
+            },
+        },
+    },
+}

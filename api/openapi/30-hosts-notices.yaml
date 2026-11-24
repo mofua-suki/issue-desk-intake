@@ -1,0 +1,848 @@
+{
+  'paths':
+    {
+      '/api/hosts':
+        {
+          'get':
+            {
+              'operationId': 'get_api_hosts',
+              'summary': 'PCの負荷・状態',
+              'description': 'hostsView.currentの値。heartbeat、負荷、drain等を含む。各行のintakeHoldはhosts表の保存値そのままで、未報告・行なしはnull。各行にrevision・busy・hostdHealth(cycle)を持つ（server/internal/hosts/view.go）。欠測・不正値はnullで、busyの欠測をfalseにしない。時刻はUTCのISO文字列で、cycle.atはPCの報告時刻、cycle.receivedAtは受付の受信時刻。不正な保存周期はnull。通常のPC別トークンで読める。構成依存の全項目の型は採録していない。 実効desiredはhost別release、global releaseの順。image.desiredとglobal rolloutの進捗は独立して表示し、読取では判定を更新しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'additionalProperties': true,
+                                  'properties':
+                                    {
+                                      'releaseRollouts':
+                                        {
+                                          'description': 'flavorごとのglobal rolloutの保存済み進捗。PC別releaseの有無とは独立して表示する。判定は通常の保守処理で行い、この読取では更新しない。開始から180分以上の未完了canaryは成功条件より先にtimeoutでfailedとなる。',
+                                          'type': 'array',
+                                          'items':
+                                            {
+                                              'type': 'object',
+                                              'required':
+                                                [
+                                                  'flavor',
+                                                  'stage',
+                                                  'revision',
+                                                  'tag',
+                                                  'canaryHost',
+                                                  'successCycles',
+                                                  'successNeeded',
+                                                  'startedAt',
+                                                  'decidedAt',
+                                                  'reason',
+                                                ],
+                                              'properties':
+                                                {
+                                                  'flavor': { 'type': 'string' },
+                                                  'stage': { 'enum': ['canary', 'passed', 'failed'] },
+                                                  'revision': { 'type': ['string', 'null'] },
+                                                  'tag': { 'type': ['string', 'null'] },
+                                                  'canaryHost': { 'type': ['string', 'null'] },
+                                                  'successCycles': { 'type': ['integer', 'null'] },
+                                                  'successNeeded': { 'type': ['integer', 'null'] },
+                                                  'startedAt': { 'type': ['string', 'null'], 'format': 'date-time' },
+                                                  'decidedAt': { 'type': ['string', 'null'], 'format': 'date-time' },
+                                                  'reason': { 'type': ['string', 'null'] },
+                                                },
+                                            },
+                                        },
+                                      'hosts':
+                                        {
+                                          'type': 'array',
+                                          'items':
+                                            {
+                                              'type': 'object',
+                                              'additionalProperties': true,
+                                              'required':
+                                                [
+                                                  'repositories',
+                                                  'repositoryLoads',
+                                                  'hostLoad',
+                                                  'intakeHold',
+                                                  'rollout',
+                                                  'loadHistory',
+                                                  'overloaded',
+                                                  'heartbeatMetrics',
+                                                ],
+                                              'properties':
+                                                {
+                                                  'executionPlanVersion': { 'type': ['integer', 'null'], 'description': '受入条件の実行分担を処理するWorkerの対応版。未報告はnull。' },
+                                                  'executionCapabilities': { 'type': 'object', 'description': 'Workerが実測した能力。race・gcc・cgo・docker・browser・systemd・windows・networkの値は真偽値かnull。未確認はtrueにしない。', 'additionalProperties': { 'type': ['boolean', 'null'] } },
+                                                  'repositories':
+                                                    {
+                                                      'type': ['array', 'null'],
+                                                      'items': { 'type': 'string' },
+                                                      'description': '担当表の実装担当リポジトリ。順位の昇順、同順位は名前の昇順。空配列は担当表にPCがあり担当なし、nullは担当表にない記録のみのPCで担当不明。旧応答で項目がない場合も不明。',
+                                                    },
+                                                  'hostLoad':
+                                                    { 'type': ['object', 'null'], 'description': '担当外を含むPC全体の有効lease件数。集計失敗時はnull。', 'required': ['implementing', 'publishing'], 'properties': { 'implementing': { 'type': 'integer', 'minimum': 0 }, 'publishing': { 'type': 'integer', 'minimum': 0 } } },
+                                                  'repositoryLoads':
+                                                    {
+                                                      'type': ['array', 'null'],
+                                                      'description': '担当順のリポジトリ別上限と有効leaseの件数。担当なしは空配列、担当表にないPCはnull。集計読取失敗時は件数がnull。',
+                                                      'items': { 'type': 'object', 'required': ['repository', 'max', 'implementing', 'publishing'], 'properties': { 'repository': { 'type': 'string' }, 'max': { 'type': 'integer' }, 'implementing': { 'type': ['integer', 'null'] }, 'publishing': { 'type': ['integer', 'null'] } } },
+                                                    },
+                                                  'heartbeatMetrics':
+                                                    { '$ref': '#/components/schemas/HeartbeatMetrics' },
+                                                  'overloaded':
+                                                    {
+                                                      'type': 'boolean',
+                                                      'description': '新しい実装の配布を負荷で見送る判定。dispatch.loadLimitとdispatch.leaseMinutes、受付の現在時刻、個々の受信標本を配布と共通の関数で評価する。判定不能はfalse。旧APIで項目が欠ける場合は未確認。既存ジョブやlease延長は停止しない。',
+                                                    },
+                                                  'loadHistory':
+                                                    {
+                                                      'type': ['object', 'null'],
+                                                      'description': '受付の受信時刻による直近3時間の閉区間。標本なし・履歴読取失敗はnull。各項目は有効な値だけの最大max・算術平均average・有効標本数count、全欠測の項目はnull。0は有効標本。現在値loadとは別で、送信停止後も読み取り時の窓から期限切れを除外する。overloadedは集計値ではなく個々の標本を使う。',
+                                                      'required':
+                                                        [
+                                                          'cpuPercent',
+                                                          'freeMemoryMB',
+                                                          'freeDiskMB',
+                                                          'loadAverage1m',
+                                                          'logicalCpuCount',
+                                                          'gpuPercent',
+                                                          'usedVramMB',
+                                                          'freeVramMB',
+                                                        ],
+                                                      'propertyNames':
+                                                        {
+                                                          'enum':
+                                                            [
+                                                              'cpuPercent',
+                                                              'freeMemoryMB',
+                                                              'freeDiskMB',
+                                                              'loadAverage1m',
+                                                              'logicalCpuCount',
+                                                              'gpuPercent',
+                                                              'usedVramMB',
+                                                              'freeVramMB',
+                                                            ],
+                                                        },
+                                                      'additionalProperties':
+                                                        {
+                                                          'type': ['object', 'null'],
+                                                          'required': ['max', 'average', 'count'],
+                                                          'additionalProperties': false,
+                                                          'properties':
+                                                            {
+                                                              'max': { 'type': 'number', 'minimum': 0 },
+                                                              'average': { 'type': 'number', 'minimum': 0 },
+                                                              'count': { 'type': 'integer', 'minimum': 1 },
+                                                            },
+                                                        },
+                                                    },
+                                                  'rollout':
+                                                    {
+                                                      'description': 'global rolloutの保存済み進捗。roleはこのPCへのglobal配布に適用される場合のcanary・held・spread。host別releaseが優先する場合や現在のglobal revisionと異なる場合はnullとし、reasonにhost_overrideまたはglobal_revision_changedを付ける。releaseがなければroleはnull、reasonにrelease_missingを付ける。stage・revision・成功周期等はglobalの進捗として残し、全体はreleaseRolloutsでも確認できる。heldだけでPCの実行不能を意味しない。',
+                                                      'type': 'object',
+                                                      'required':
+                                                        [
+                                                          'role',
+                                                          'stage',
+                                                          'revision',
+                                                          'tag',
+                                                          'canaryHost',
+                                                          'successCycles',
+                                                          'successNeeded',
+                                                          'startedAt',
+                                                          'decidedAt',
+                                                          'reason',
+                                                        ],
+                                                      'properties':
+                                                        {
+                                                          'role': { 'enum': ['canary', 'held', 'spread', null] },
+                                                          'stage': { 'enum': ['canary', 'passed', 'failed', 'none'] },
+                                                          'revision': { 'type': ['string', 'null'] },
+                                                          'tag': { 'type': ['string', 'null'] },
+                                                          'canaryHost': { 'type': ['string', 'null'] },
+                                                          'successCycles': { 'type': ['integer', 'null'] },
+                                                          'successNeeded': { 'type': ['integer', 'null'] },
+                                                          'startedAt':
+                                                            { 'type': ['string', 'null'], 'format': 'date-time' },
+                                                          'decidedAt':
+                                                            { 'type': ['string', 'null'], 'format': 'date-time' },
+                                                          'reason': { 'type': ['string', 'null'] },
+                                                        },
+                                                    },
+                                                  'image':
+                                                    {
+                                                      'type': 'object',
+                                                      'description': '共有DBの望む版と結果（Issue #3987）。共有DBが無い・読めないときは省略し、代わりにimageUnavailableを返す。対象PCの行が無いときも省略する。',
+                                                      'required': ['flavor', 'desired', 'failedTags', 'results'],
+                                                      'properties':
+                                                        {
+                                                          'flavor': { 'type': 'string' },
+                                                          'desired':
+                                                            {
+                                                              'description': '実効desired。flavorごとにhost別releaseを優先し、次にglobal releaseを選ぶ。sourceはhostまたはglobalで、desired-imageのdesired.hostが対象PCならhost、*ならglobalに対応する。host別releaseにはglobalの保留・失敗を適用しない。globalのcanary以外への保留中と失敗時はprevious、canary中の検証PCはcanary、それ以外はdesiredをroleに示す。reasonはprevious選択時のstageと失敗理由。表示の読取は判定を更新しない。',
+                                                              'type': ['object', 'null'],
+                                                              'required':
+                                                                ['tag', 'revision', 'source', 'role', 'reason'],
+                                                              'properties':
+                                                                {
+                                                                  'tag': { 'type': 'string' },
+                                                                  'revision': { 'type': 'string' },
+                                                                  'source': { 'enum': ['host', 'global'] },
+                                                                  'role': { 'type': 'string' },
+                                                                  'reason': { 'type': ['string', 'null'] },
+                                                                },
+                                                            },
+                                                          'failedTags':
+                                                            { 'type': 'array', 'items': { 'type': 'string' } },
+                                                          'results':
+                                                            {
+                                                              'type': 'array',
+                                                              'items':
+                                                                {
+                                                                  'type': 'object',
+                                                                  'required': ['tag', 'flavor', 'status', 'at'],
+                                                                  'properties':
+                                                                    {
+                                                                      'tag': { 'type': 'string' },
+                                                                      'flavor': { 'type': 'string' },
+                                                                      'status': { 'type': 'string' },
+                                                                      'at':
+                                                                        {
+                                                                          'type': ['string', 'null'],
+                                                                          'format': 'date-time',
+                                                                        },
+                                                                    },
+                                                                },
+                                                            },
+                                                          'lastFailure':
+                                                            {
+                                                              'type': ['object', 'null'],
+                                                              'description': '直近のイメージ結果（results先頭）がfailedのときの失敗理由。同じhost・tag・flavorの最新failed履歴に理由があればstage・reason・detail・selfCheckFailedを履歴から返し、理由がなければhostdの周期報告と自己検査から作る。failedでない・結果なしはnull。cycleAtは失敗周期の時刻で、該当周期が無ければnull。文字列は伏せ字にして300文字まで、自己検査は最大10件。',
+                                                              'required':
+                                                                [
+                                                                  'tag',
+                                                                  'at',
+                                                                  'stage',
+                                                                  'reason',
+                                                                  'detail',
+                                                                  'cycleAt',
+                                                                  'selfCheckFailed',
+                                                                ],
+                                                              'properties':
+                                                                {
+                                                                  'tag': { 'type': 'string' },
+                                                                  'at':
+                                                                    {
+                                                                      'type': ['string', 'null'],
+                                                                      'format': 'date-time',
+                                                                    },
+                                                                  'stage': { 'type': ['string', 'null'] },
+                                                                  'reason': { 'type': ['string', 'null'] },
+                                                                  'detail': { 'type': ['string', 'null'] },
+                                                                  'cycleAt':
+                                                                    {
+                                                                      'type': ['string', 'null'],
+                                                                      'format': 'date-time',
+                                                                    },
+                                                                  'selfCheckFailed':
+                                                                    {
+                                                                      'type': 'array',
+                                                                      'maxItems': 10,
+                                                                      'items': { 'type': 'string' },
+                                                                    },
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                  'imageUnavailable':
+                                                    {
+                                                      'type': 'string',
+                                                      'description': 'imageを返せない理由。「共有DBがありません」または「共有DBを読めませんでした」。',
+                                                    },
+                                                  'selfCheck':
+                                                    {
+                                                      'type': ['object', 'null'],
+                                                      'description': '監視が起動時に送る自己検査の要約（Issue #3987）。ok=falseの項目だけを最大10件、detailは伏せ字にして200文字まで。checksの無い旧版のPCはnull。',
+                                                      'required': ['at', 'ok', 'settingsVersion', 'failed'],
+                                                      'properties':
+                                                        {
+                                                          'at': { 'type': ['string', 'null'] },
+                                                          'ok': { 'type': 'boolean' },
+                                                          'settingsVersion': { 'type': ['string', 'null'] },
+                                                          'failed':
+                                                            {
+                                                              'type': 'array',
+                                                              'maxItems': 10,
+                                                              'items':
+                                                                {
+                                                                  'type': 'object',
+                                                                  'required': ['name', 'label', 'detail'],
+                                                                  'properties':
+                                                                    {
+                                                                      'name': { 'type': 'string' },
+                                                                      'label': { 'type': 'string' },
+                                                                      'detail': { 'type': 'string' },
+                                                                    },
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                  'intakeHold':
+                                                    {
+                                                      'type': ['object', 'null'],
+                                                      'required': ['reasons'],
+                                                      'properties':
+                                                        {
+                                                          'reasons':
+                                                            {
+                                                              'type': 'array',
+                                                              'items':
+                                                                {
+                                                                  'type': 'object',
+                                                                  'required': ['kind', 'since', 'detail'],
+                                                                  'properties':
+                                                                    {
+                                                                      'kind':
+                                                                        {
+                                                                          'enum':
+                                                                            [
+                                                                              'swap_wait',
+                                                                              'codex_unavailable',
+                                                                              'environment_hold',
+                                                                              'usage_limit',
+                                                                              'color_standby',
+                                                                              'scan_not_ready',
+                                                                            ],
+                                                                        },
+                                                                      'since':
+                                                                        { 'type': 'string', 'format': 'date-time' },
+                                                                      'detail': { 'type': 'string' },
+                                                                      'provider':
+                                                                        { 'enum': ['codex', 'claude', 'antigravity'] },
+                                                                      'until':
+                                                                        { 'type': 'string', 'format': 'date-time' },
+                                                                      'source': { 'type': 'string' },
+                                                                      'limitKind':
+                                                                        {
+                                                                          'enum': ['five_hour', 'seven_day', 'unknown'],
+                                                                        },
+                                                                    },
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+            },
+        },
+      '/api/v1/hosts/{host}/drain':
+        {
+          'put':
+            {
+              'operationId': 'put_api_v1_hosts_host_drain',
+              'summary': '引き取りの停止印を置く・外す',
+              'description': 'PC別トークンは運用代行の許可が必要。hostdは自分のPCだけで更新印を置く。期限内の手動の印を保持してhostdの印を重ね、イメージ更新を進める。応答のdrainはhostd自身の印、manualDrainは期限内の手動の印かnull。PCの行が無ければ409。',
+              'x-issue-desk-delegate': 'pcToken',
+              'security': [{ 'pcToken': [] }, { 'hostdToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'host': {}, 'drain': {}, 'manualDrain': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': false,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'description': 'PC別トークンのPUTではreason必須。hostdのPUTはuntilだけを受け付ける（本文省略は旧版互換）。until省略・nullは既定150分（ISSUE_DESK_DRAIN_DEFAULT_MINUTES）、ISO日時は未来の日時。',
+                              'anyOf':
+                                [
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'reason': { 'type': 'string', 'minLength': 1, 'maxLength': 500 },
+                                        'until': { 'type': ['string', 'null'], 'format': 'date-time' },
+                                      },
+                                    'additionalProperties': false,
+                                    'required': ['reason'],
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties': { 'until': { 'type': ['string', 'null'], 'format': 'date-time' } },
+                                    'additionalProperties': false,
+                                  },
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+          'delete':
+            {
+              'operationId': 'delete_api_v1_hosts_host_drain',
+              'summary': '引き取りの停止印を置く・外す',
+              'description': 'PC別トークンは運用代行の許可が必要。hostdは自分のPCだけで更新印を解除する。期限内の手動の印があればhostdだけを外して手動停止を残し、それ以外はnullにする。PCの行が無ければ409。',
+              'x-issue-desk-delegate': 'pcToken',
+              'security': [{ 'pcToken': [] }, { 'hostdToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'host': {}, 'drain': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/v1/notices':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_notices',
+              'summary': '変化または運用の合図を送る',
+              'description': 'desk-checkout-lockはPC別トークン（運用代行不要）の観測報告。observedAtはUTC観測時刻（受付の60秒後以内）、blockedSinceはロックのmtime（observedAt以前）または不在時null。余分な項目・形違いは400。同じPCの最新観測だけを保存し、過去の報告は無視、同時刻の別状態は409。ops_watchに停止件数1・最終観測時の保持秒数・終了確認と退避後のホスト復旧手順を出し、新しい不在報告だけで消す。応答は{kind:desk-checkout-lock}。ロックの解除や権限の変更は行わない。boot-checkはPC別トークン（運用代行不要）でNASの起動後の点検の失敗を送る。signatureは16進8〜64桁、itemsは1〜30件（各対象名は英数字・_・.・@・:・-の1〜80文字）。同じPC・種類boot-check・小文字化したsignatureは同じIDを返して重ねない。余分な項目・形違い・改行・範囲外は400、保存上限1000件は409で保存しない。保存失敗時は既存行を変えない。ops-watch-noticesに保存し要対応にops_watchとして出す。rc-updateはPC別トークンで送れ、PCごとに最後の1件だけを残し、報告の途絶・無効は要対応に出す。stage-watchのevent=start・heartbeat・result・verifiedは固定形式の運用記録。idは送信ID、operationIdは運用ID（UUID）。同じPC・送信ID・本文は再送しても同じ確認応答{id,operationId}を返す。記録が無ければ同じIDで作成する。別内容・保持PC・対象変更は409、設定外repo・未来60秒超・固定形式違反は400。この段階では受信・保存・再送照合までを提供し、期限・heartbeatの周期照合と対処・画面表示は後続で接続する。結果・終了コード0・通知送達から成功確認を補わない。verifiedはprocess以外の実観測でlastSuccessAt=atが必要。観測経路はイベントごとの事実で運用の識別情報に含めず、processで開始した同じ運用IDへissue-statusまたはentry-healthのverifiedを記録できる。同じ送信IDの観測経路変更は409。 stage-watch（段取りの終了コード・出力の枚数・遅れの異常）もPC別トークン（運用代行不要）で送れ、同じPC・名前・種類・開始時刻は同じIDで重ねず、運用の見張りのお知らせに出す（余分な項目・形違いは400、1000件上限は409）。remote-controlはPC別トークン（運用代行不要）で送れ、同じPC・signatureは同じIDで重ねない。余分な項目・改行は400。通常の合図はissuesを重複除去。ops-watchだけ運用代行の許可が必要。同じIDの別内容は409。ops-watchは任意のcause（200文字以内）とtargets（対象Issueの{repo,number}、最大50件）を受け、同じcauseの確認待ちの通知があれば新しい行を作らずtargetsを合併して既存のIDを返す。format-versionはPC別トークンで送れ、同じrepo・tool・固定版（並べ替え済み）・導入版のお知らせが残っている間は重ねない。本文は版の値だけを厳密に検査し受付が文面を組み立てる。app-healthはPC別トークンで送れ、受付の設定にあるrepoの健康の報告（固定の分類・回数・報告側の時刻・周期）だけを受ける。固定項目以外・範囲外・設定に無いrepo・改行は400で状態を変えず、同じat・categoryの再送は数えない。同じ異常の分類が2回続くか報告が周期の3倍途絶えるとPushで知らせる。相談・Issueは自動起票せず、通知の既処理状態を保持して重ねない（詳細はissue-desk-worker/docs/app-health.md）。',
+              'x-issue-desk-delegate': 'kind=ops-watch',
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema': { 'type': 'object', 'properties': { 'id': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'oneOf':
+                                [
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['desk-checkout-lock'] },
+                                        'observedAt': { 'type': 'string', 'format': 'date-time' },
+                                        'blockedSince': { 'type': ['string', 'null'], 'format': 'date-time' },
+                                      },
+                                    'required': ['kind', 'observedAt', 'blockedSince'],
+                                    'additionalProperties': false,
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['rc-update'] },
+                                        'timer': { 'type': 'string', 'enum': ['enabled', 'disabled'] },
+                                      },
+                                    'required': ['kind', 'timer'],
+                                    'additionalProperties': false,
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['remote-control'] },
+                                        'signature':
+                                          {
+                                            'type': 'string',
+                                            'pattern': '^[a-fA-F0-9]{8,64}$',
+                                            'minLength': 8,
+                                            'maxLength': 64,
+                                          },
+                                        'instances':
+                                          {
+                                            'type': 'array',
+                                            'maxItems': 20,
+                                            'items':
+                                              {
+                                                'type': 'string',
+                                                'pattern': '^[A-Za-z0-9_.@-]{1,64}$',
+                                                'minLength': 1,
+                                                'maxLength': 64,
+                                              },
+                                          },
+                                      },
+                                    'required': ['kind', 'signature', 'instances'],
+                                    'additionalProperties': false,
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['boot-check'] },
+                                        'signature':
+                                          {
+                                            'type': 'string',
+                                            'pattern': '^[a-fA-F0-9]{8,64}$',
+                                            'minLength': 8,
+                                            'maxLength': 64,
+                                          },
+                                        'items':
+                                          {
+                                            'type': 'array',
+                                            'minItems': 1,
+                                            'maxItems': 30,
+                                            'items':
+                                              {
+                                                'type': 'string',
+                                                'pattern': '^[A-Za-z0-9_.@:-]{1,80}$',
+                                                'minLength': 1,
+                                                'maxLength': 80,
+                                              },
+                                          },
+                                      },
+                                    'required': ['kind', 'signature', 'items'],
+                                    'additionalProperties': false,
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['stage-watch'] },
+                                        'name': { 'type': 'string', 'pattern': '^[A-Za-z0-9._-]{1,64}$' },
+                                        'anomaly': { 'type': 'string', 'enum': ['exit', 'empty', 'late', 'overdue'] },
+                                        'exitCode':
+                                          {
+                                            'type': ['integer', 'null'],
+                                            'minimum': -2147483648,
+                                            'maximum': 4294967295,
+                                          },
+                                        'outputs': { 'type': ['integer', 'null'], 'minimum': 0, 'maximum': 1000000 },
+                                        'lateMin': { 'type': ['integer', 'null'], 'minimum': 0, 'maximum': 1000000 },
+                                        'startedAt': { 'type': 'string', 'format': 'date-time' },
+                                      },
+                                    'required':
+                                      ['kind', 'name', 'anomaly', 'exitCode', 'outputs', 'lateMin', 'startedAt'],
+                                    'additionalProperties': false,
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['stage-watch'] },
+                                        'event':
+                                          { 'type': 'string', 'enum': ['start', 'heartbeat', 'result', 'verified'] },
+                                        'id': { 'type': 'string', 'format': 'uuid' },
+                                        'operationId': { 'type': 'string', 'format': 'uuid' },
+                                        'name': { 'type': 'string', 'pattern': '^[A-Za-z0-9._-]{1,64}$' },
+                                        'at': { 'type': 'string', 'format': 'date-time' },
+                                        'startedAt': { 'type': 'string', 'format': 'date-time' },
+                                        'deadline': { 'type': ['string', 'null'], 'format': 'date-time' },
+                                        'target':
+                                          {
+                                            'oneOf':
+                                              [
+                                                { 'type': 'null' },
+                                                {
+                                                  'type': 'object',
+                                                  'properties':
+                                                    {
+                                                      'project':
+                                                        {
+                                                          'type': 'string',
+                                                          'pattern': '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$',
+                                                        },
+                                                      'number': { 'type': 'integer', 'minimum': 1 },
+                                                    },
+                                                  'required': ['project', 'number'],
+                                                  'additionalProperties': false,
+                                                },
+                                              ],
+                                          },
+                                        'observation':
+                                          { 'type': 'string', 'enum': ['process', 'issue-status', 'entry-health'] },
+                                        'lastSuccessAt': { 'type': ['string', 'null'], 'format': 'date-time' },
+                                        'holder': { 'type': 'string', 'enum': ['watcher'] },
+                                        'exitCode':
+                                          {
+                                            'type': ['integer', 'null'],
+                                            'minimum': -2147483648,
+                                            'maximum': 4294967295,
+                                          },
+                                        'outputs': { 'type': ['integer', 'null'], 'minimum': 0, 'maximum': 1000000 },
+                                        'anomalies':
+                                          {
+                                            'type': 'array',
+                                            'maxItems': 4,
+                                            'items': { 'type': 'string', 'enum': ['exit', 'empty', 'late', 'overdue'] },
+                                          },
+                                      },
+                                    'required':
+                                      [
+                                        'kind',
+                                        'event',
+                                        'id',
+                                        'operationId',
+                                        'name',
+                                        'at',
+                                        'startedAt',
+                                        'deadline',
+                                        'target',
+                                        'observation',
+                                        'lastSuccessAt',
+                                        'holder',
+                                        'exitCode',
+                                        'outputs',
+                                        'anomalies',
+                                      ],
+                                    'additionalProperties': false,
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['format-version'] },
+                                        'repo': { 'type': 'string', 'pattern': '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' },
+                                        'tool': { 'type': 'string', 'enum': ['black', 'ruff'] },
+                                        'code': { 'type': 'integer', 'enum': [78, 79] },
+                                        'pinned':
+                                          {
+                                            'type': 'array',
+                                            'maxItems': 10,
+                                            'items': { 'type': 'string', 'pattern': '^[0-9][0-9A-Za-z.+-]{0,39}$' },
+                                          },
+                                        'installed':
+                                          { 'type': ['string', 'null'], 'pattern': '^[0-9][0-9A-Za-z.+-]{0,39}$' },
+                                      },
+                                    'additionalProperties': false,
+                                    'required': ['kind', 'repo', 'tool', 'code', 'pinned', 'installed'],
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['app-health'] },
+                                        'repo': { 'type': 'string', 'pattern': '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' },
+                                        'category':
+                                          {
+                                            'type': 'string',
+                                            'enum':
+                                              ['ok', 'fetch-failed', 'store-failed', 'disk-low', 'stalled', 'other'],
+                                          },
+                                        'count': { 'type': 'integer', 'minimum': 1, 'maximum': 1000000 },
+                                        'at': { 'type': 'string', 'format': 'date-time' },
+                                        'intervalMinutes': { 'type': 'integer', 'minimum': 5, 'maximum': 1440 },
+                                      },
+                                    'additionalProperties': false,
+                                    'required': ['kind', 'repo', 'category', 'count', 'at', 'intervalMinutes'],
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['webhook', 'scan', 'state', 'full-test'] },
+                                        'seq': { 'type': 'integer', 'minimum': 0 },
+                                        'issues':
+                                          {
+                                            'type': 'array',
+                                            'maxItems': 50,
+                                            'items':
+                                              {
+                                                'type': 'object',
+                                                'properties':
+                                                  { 'repo': { 'type': 'string' }, 'number': { 'type': 'integer' } },
+                                                'additionalProperties': false,
+                                                'required': ['repo', 'number'],
+                                              },
+                                          },
+                                        'truncated': { 'type': 'boolean' },
+                                        'initial': { 'type': 'boolean' },
+                                      },
+                                    'additionalProperties': false,
+                                    'required': ['kind', 'seq'],
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'properties':
+                                      {
+                                        'kind': { 'type': 'string', 'enum': ['ops-watch'] },
+                                        'id': { 'type': 'string', 'format': 'uuid' },
+                                        'text': { 'type': 'string', 'maxLength': 1000 },
+                                        'reason': { 'type': 'string', 'maxLength': 1000 },
+                                        'issues':
+                                          {
+                                            'type': 'array',
+                                            'maxItems': 1,
+                                            'items':
+                                              {
+                                                'type': 'object',
+                                                'properties':
+                                                  { 'repo': { 'type': 'string' }, 'number': { 'type': 'integer' } },
+                                                'additionalProperties': true,
+                                              },
+                                          },
+                                        'cause': { 'type': 'string', 'minLength': 1, 'maxLength': 200 },
+                                        'targets':
+                                          {
+                                            'type': 'array',
+                                            'maxItems': 50,
+                                            'items':
+                                              {
+                                                'type': 'object',
+                                                'properties':
+                                                  { 'repo': { 'type': 'string' }, 'number': { 'type': 'integer' } },
+                                                'additionalProperties': false,
+                                              },
+                                          },
+                                      },
+                                    'additionalProperties': false,
+                                    'required': ['kind', 'id', 'text', 'reason', 'issues'],
+                                  },
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/hosts/{host}/desired-image':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_hosts_host_desired_image',
+              'summary': '望むclientイメージを読む',
+              'description': '自分のPCだけ。desiredはflavorごとにhost別releaseを優先し、次にglobal releaseを選ぶDB行またはnull。配布元は既存のdesired.host（対象PCまたは*）で分かり、hosts表示のimage.desired.source（hostまたはglobal）に対応する。host別releaseにはglobal rolloutの保留・失敗を適用しない。globalは保存済みcanary判定に従い、検証PC以外はpreviousで保留し、passedで解禁、failedではpreviousを返す。判定の更新は定期保守処理で行い、この読取では更新しない。commandは受付が発行した未実行の版の指示({id,kind,tag,issuedAt,expiresAt,by}。有効期限切れは渡さずnull)、pinは固定中の印({tag,id,since,by}。固定中のPCは望む版へ追従しない)で、どちらもなければnull(issue-desk-worker/docs/client-hostd-commands.md)。kindは現在版から望む版までの最強分類align/soon/lazy。currentRevisionは導入済みsha40またはtag（任意）。deploy-nextのjobは{id,repo,commit}またはnull、未報告のrunningを再返却。image-resultのtagはsha12と任意の接尾辞、digestはsha256:64桁。失敗タグは成功の再報告で解除しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'desired': {},
+                                      'heartbeat': {},
+                                      'failedTags': {},
+                                      'command':
+                                        {
+                                          'oneOf':
+                                            [{ 'type': 'null' }, { 'type': 'object', 'additionalProperties': true }],
+                                        },
+                                      'pin':
+                                        {
+                                          'oneOf':
+                                            [{ 'type': 'null' }, { 'type': 'object', 'additionalProperties': true }],
+                                        },
+                                    },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters':
+                [
+                  { 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } },
+                  { 'name': 'flavor', 'in': 'query', 'schema': { 'type': 'string', 'enum': ['', '-python'] } },
+                  { 'name': 'currentRevision', 'in': 'query', 'schema': { 'type': 'string' } },
+                ],
+            },
+        },
+    },
+}

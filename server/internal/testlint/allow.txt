@@ -1,0 +1,136 @@
+server/internal/adminapi/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/adminapi/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/adminapi/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/admincli/app_store_test.go|TestUnmigratedPostgresStopsWithMigrationGuidance|a:製品ファイルの文字列照合	管理コマンドの応答と秘密情報の除外を検証する
+server/internal/admincli/nas_store_test.go|TestNASInspectTemplateFiltersSecretsWithoutSplittingEnvironmentValues|a:製品ファイルの文字列照合	管理コマンドの応答と秘密情報の除外を検証する
+server/internal/attachments/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/attachments/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/attachments/sql_guard_test.go|TestAttachmentSQLHasNoDialectSpecificOrDestructiveSyntax|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/consultationai/usage_detail_test.go|TestConsultationUsageSavedAndReloaded|a:製品ファイルの文字列照合	利用量の保存と再読込を検証する
+server/internal/projects/consultation_projection_spec_test.go|TestConsultationProjectionSpec|a:製品ファイルの文字列照合	公開仕様とプロジェクト相談APIの上限時の拒否・保存結果を照合する
+server/internal/consultations/draft_detail_compat_test.go|TestDraftDetailLegacyCompatibility|d:旧実装との比較	旧実装を仕様の参照として、権限拒否・欠損・読取失敗時の全件読取への戻りを含む現行の詳細応答を実PostgreSQLで検証する
+server/internal/consultations/draft_detail_compat_test.go|TestDraftDetailLegacyMeasurement|d:旧実装との比較	同じ応答のまま無関係な行を読まないこと（読取量の削減）を実PostgreSQLで検証する
+server/internal/consultations/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/consultations/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/consultations/sql_guard_test.go|TestCoreSQLHasNoDialectSpecificSyntax|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/contract/contract_test.go|TestPinnedContractArtifacts|a:製品ファイルの文字列照合	正本と生成物の一致を守る検査
+server/internal/deskcleanup/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/deskcleanup/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/deskcleanup/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/filing/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/filing/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/filing/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/filingcheck/material_measure_test.go|TestMeasureMaterialDrafts|c:環境変数で省略される計測	明示実行する大規模資料読取計測。実行手順と結果の記録は docs/filing-material-measurements.md にある（固定検証のSKIPは計測の成功を意味しない）
+server/internal/filingcheck/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/filingcheck/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/filingcheck/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/fleet/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/fleet/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/fleet/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/hosts/images_test.go|TestImageResultIndexEquivalent|d:旧実装との比較	単純な参照実装との差分比較で、索引版の失敗一覧・表示5件の上限・他PCの成功を大規模fixtureで検証する
+server/internal/httpapi/attention_timing_contract_test.go|TestAttentionTimingErrorResponsesContract|a:製品ファイルの文字列照合	HTTP応答や保存済みイベントの処理を検証する
+server/internal/httpapi/claude_api_key_test.go|TestClaudeAPIKeyContract|a:製品ファイルの文字列照合	配布OpenAPIのスキーマに対して認証済みの実HTTP応答を検証するため。
+server/internal/httpapi/openapi_cache_test.go|TestSpecCacheMatchesBaseline|a:製品ファイルの文字列照合	OpenAPI応答のキャッシュ動作と性能を検証する
+server/internal/httpapi/provider_switch_usage_test.go|TestUsageImpactQueryOnPersistedEvents|a:製品ファイルの文字列照合	HTTP応答や保存済みイベントの処理を検証する
+server/internal/httpapi/server_test.go|TestOpenAPISpecConcurrentRequests|a:製品ファイルの文字列照合	OpenAPI応答の再読込と並行処理を検証する
+server/internal/httpapi/server_test.go|TestOpenAPISpecReloadAndReadFailure|a:製品ファイルの文字列照合	OpenAPI応答の再読込と並行処理を検証する
+server/internal/images/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/images/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/images/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/issueapi/list_measure_test.go|TestListMeasurementAndCompatibilityPostgres|c:環境変数で省略される計測	問い合わせ回数と一覧結果の互換性を確認する計測
+server/internal/issueapi/list_measure_test.go|TestListMeasurementAndCompatibilityPostgres|d:旧実装との比較	問い合わせ回数と一覧結果の互換性を確認する計測
+server/internal/jobs/continuation_artifact_test.go|TestPostgresControlArtifactHandoff|d:旧実装との比較	保存済みの旧形式を含む制御動作を検証する
+server/internal/jobs/continuation_legacy_postgres_test.go|TestPostgresLegacyArtifactControlRetryReportedConditions|d:旧実装との比較	旧形式の保存データに対する制御と再試行を検証する
+server/internal/jobs/continuation_legacy_postgres_test.go|TestPostgresLegacyArtifactFullHistoryAndBranchOnly|d:旧実装との比較	旧形式の保存データに対する制御と再試行を検証する
+server/internal/jobs/continuation_legacy_postgres_test.go|TestPostgresLegacyArtifactRejectsUnprovenOwnership|d:旧実装との比較	旧形式の保存データに対する制御と再試行を検証する
+server/internal/jobs/continuation_legacy_postgres_test.go|TestPostgresLegacyArtifactRetryKeepsInvalidRecord|d:旧実装との比較	旧形式の保存データに対する制御と再試行を検証する
+server/internal/jobs/continuation_legacy_postgres_test.go|TestPostgresLegacyArtifactStateReports|d:旧実装との比較	旧形式の保存データに対する制御と再試行を検証する
+server/internal/jobs/continuation_legacy_postgres_test.go|TestPostgresLegacyArtifactTransactionRollback|d:旧実装との比較	旧形式の保存データに対する制御と再試行を検証する
+server/internal/jobs/continuation_retest_postgres_test.go|TestPostgresArtifactRetestPreservesOwnershipAndPublication|d:旧実装との比較	旧形式の保存データに対する制御と再試行を検証する
+server/internal/jobs/continuation_retest_postgres_test.go|TestPostgresArtifactRetryModesKeepInvalidRecord|d:旧実装との比較	旧形式の保存データに対する制御と再試行を検証する
+server/internal/jobs/dispatch_artifact_test.go|TestPostgresDispatchResetsLegacyArtifactWithoutOwner|d:旧実装との比較	保存済みの旧形式を含む制御動作を検証する
+server/internal/jobs/report_pr_tuple_postgres_test.go|TestPostgresRetryFromBaseDoesNotCarryPreviousPR|d:旧実装との比較	legacyArtifactFixtureの呼出しと比較式が目印に一致するが、旧実装との比較ではなく既定ブランチからやり直した世代で旧PRを新しい枝に結び付けない現行Reportと配布を検証するため維持
+server/internal/jobs/report_pr_tuple_postgres_test.go|TestPostgresRetryPreservesValidPRTuple|d:旧実装との比較	legacyArtifactFixtureの呼出しと比較式が目印に一致するが、旧実装との比較ではなく同じ枝・新PRの明示・枝未保存の報告でPRを保持する現行Reportを検証するため維持
+server/internal/jobs/report_release_test.go|TestPostgresReleaseFailureRejectionRecorded|d:旧実装との比較	legacyArtifactFixtureの呼出しと比較式が目印に一致するが、旧実装との比較ではなく現行Reportの終了報告拒否とイベント保存を検証するため維持
+server/internal/jobs/report_release_test.go|TestPostgresReportRejectionConcurrentAndLatest|d:旧実装との比較	legacyArtifactFixtureの呼出しと比較式が目印に一致するが、旧実装との比較ではなく現行Reportの並行拒否とイベント更新を検証するため維持
+server/internal/jobs/report_release_test.go|TestPostgresReportRejectionRecordedOnce|d:旧実装との比較	legacyArtifactFixtureの呼出しと比較式が目印に一致するが、旧実装との比較ではなく現行Reportのlease拒否とイベント保存を検証するため維持
+server/internal/jobs/report_release_test.go|TestPostgresReportRejectionValidationCodes|d:旧実装との比較	legacyArtifactFixtureの呼出しと比較式が目印に一致するが、旧実装との比較ではなく現行Reportの入力拒否と異なるコードの保存を検証するため維持
+server/internal/jobs/result_concat_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	jsonbでないresultとの連結で更新SQLが失敗する書き方を止める検査。検出例と非検出例を検証する
+server/internal/jobs/result_concat_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	jsonbでないresultとの連結で更新SQLが失敗する書き方を止める検査。検出例と非検出例を検証する
+server/internal/jobs/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/jobs/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/jobs/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/models/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/models/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/models/sql_guard_test.go|TestNoSQLiteCalls|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/models/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/notices/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/notices/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/notices/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/numbers/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/numbers/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/numbers/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/operations/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/operations/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/operations/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/pgtest/guard_test.go|TestOnlyTestFilesImportPgtest|a:製品ファイルの文字列照合	試験用DB支援が本番バイナリに入ることを止める検査
+server/internal/projects/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/projects/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/projects/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/proposals/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/proposals/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/proposals/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/schemadefaults/defaults_test.go|TestEnsureDefaultsLeavesEmptyTablesStartingAtOne|d:旧実装との比較	既存データを含む初期化・修復の挙動を検証する
+server/internal/schemadefaults/defaults_test.go|TestEnsureDefaultsRepairsLegacyTablesAndContinuesAboveExistingRows|d:旧実装との比較	既存データを含む初期化・修復の挙動を検証する
+server/internal/screenapi/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/screenapi/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/screenapi/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/startup/app_integration_test.go|TestOpenAppRegistersBusinessAPIsAndPreservesStatePostgres|a:製品ファイルの文字列照合	起動とAPIの実際の動作・互換性を検証する
+server/internal/startup/consultation_reads_test.go|TestDraftEntryAuthorizationAndTodo|d:旧実装との比較	起動とAPIの実際の動作・互換性を検証する
+server/internal/startup/consultation_reads_test.go|TestDraftEntryFailures|d:旧実装との比較	起動とAPIの実際の動作・互換性を検証する
+server/internal/startup/consultation_reads_test.go|TestDraftEntryJSONCompatibility|d:旧実装との比較	起動とAPIの実際の動作・互換性を検証する
+server/internal/startup/consultation_reads_test.go|TestDraftEntryLegacyAndTransfer|d:旧実装との比較	起動とAPIの実際の動作・互換性を検証する
+server/internal/startup/cutover_test.go|TestOnlyTestsChooseTheApplicationSchema|a:製品ファイルの文字列照合	起動とAPIの実際の動作・互換性を検証する
+server/internal/startup/cutover_test.go|TestOpenPostgresApplicationStoreRefusesUnmigratedStateWithGuidance|a:製品ファイルの文字列照合	起動とAPIの実際の動作・互換性を検証する
+server/internal/startup/family_progress_equivalence_test.go|TestPostgresFamilyProgressFilteredMatchesFull|d:旧実装との比較	起動とAPIの実際の動作・互換性を検証する
+server/internal/startup/handoff_test.go|TestHandoffCommonDeadlineAndMonotonicRecords|a:製品ファイルの文字列照合	起動とAPIの実際の動作・互換性を検証する
+server/internal/startup/nas_checkout_guard_test.go|TestDeployCheckoutKeepsUnsavedChangesAndStops|a:製品ファイルの文字列照合	NAS配置スクリプトの実行結果と復旧動作を検証する
+server/internal/startup/nas_checkout_guard_test.go|TestUpdateScriptGuardsBeforeCheckingTheBranch|a:製品ファイルの文字列照合	NAS配置スクリプトの実行結果と復旧動作を検証する
+server/internal/startup/nas_scripts_test.go|TestNASBlueGreenSuccessConfirmsNewWriterBeforeKeepingOldStopped|a:製品ファイルの文字列照合	NAS配置スクリプトの実行結果と復旧動作を検証する
+server/internal/startup/nas_scripts_test.go|TestNASFailedStandbyAndBusyDrainKeepOldServer|a:製品ファイルの文字列照合	NAS配置スクリプトの実行結果と復旧動作を検証する
+server/internal/startup/nas_scripts_test.go|TestNASFailedTakeoverRollsBackToConfirmedOldServer|a:製品ファイルの文字列照合	NAS配置スクリプトの実行結果と復旧動作を検証する
+server/internal/startup/nas_scripts_test.go|TestNASHealthMatchingParsesTopLevelJSONAndExactRevisionRole|a:製品ファイルの文字列照合	NAS配置スクリプトの実行結果と復旧動作を検証する
+server/internal/startup/nas_scripts_test.go|TestNASSameSHAUpdateDoesNotBuildOrRedeploy|a:製品ファイルの文字列照合	NAS配置スクリプトの実行結果と復旧動作を検証する
+server/internal/startup/nas_scripts_test.go|TestNASUpdateServerBuildKeepsEnvToolsImage|a:製品ファイルの文字列照合	配置用update.shを実行し偽Dockerの呼出しからServerビルドの環境設定を検証する
+server/internal/startup/nas_stdin_test.go|TestNASBoundedHealthVerifierPreservesPipeAndStrictMeaning|a:製品ファイルの文字列照合	NAS配置スクリプトの実行結果と復旧動作を検証する
+server/internal/startup/nas_stdin_test.go|TestNASBoundedTerminatesCommandAndEnforcesDeadline|a:製品ファイルの文字列照合	NAS配置スクリプトの実行結果と復旧動作を検証する
+server/internal/statistics/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/statistics/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/statistics/sql_guard_test.go|TestApplicationDBCallsStayInBoundFiles|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/statistics/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/store/production_sqlite_guard_test.go|TestApplicationStartupAlwaysSelectsPostgresDialect|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/store/production_sqlite_guard_test.go|TestProductionCodeDoesNotUseSQLite|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/store/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/store/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/store/sql_guard_test.go|TestApplicationSQLGuardFixtures|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/testlint/testlint_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	検査器がGoテストを解析するため必要
+server/internal/testlint/testlint_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	検査器がGoテストを解析するため必要
+server/internal/usage/answer_sources_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	使用量の工程ラベルの分類漏れ（集計の欠落）を止める検査。未知の式を拒否することもfixtureで検証する
+server/internal/usage/answer_sources_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	使用量の工程ラベルの分類漏れ（集計の欠落）を止める検査。未知の式を拒否することもfixtureで検証する
+server/internal/usage/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	SQLの安全性と永続化の制約を守る検査
+server/internal/usage/sql_guard_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	SQLの安全性と永続化の制約を守る検査
+server/internal/usage/sql_guard_test.go|TestNoSQLiteCalls|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/usage/sql_guard_test.go|TestSQLGuard|a:製品ファイルの文字列照合	SQLの安全性と永続化の制約を守る検査
+server/internal/usage/steps_test.go|(ファイル単位: テスト名を特定不可)|b:go/ast	使用量の工程の記録呼出しの分類漏れ（集計の欠落）と、分類を迂回するcallDynamicの呼出し元の増加を止める検査
+server/internal/usage/steps_test.go|(ファイル単位: テスト名を特定不可)|b:go/parser	使用量の工程の記録呼出しの分類漏れ（集計の欠落）と、分類を迂回するcallDynamicの呼出し元の増加を止める検査
+server/internal/httpapi/openapi_cache_test.go|BenchmarkSpecRead|a:製品ファイルの文字列照合	OpenAPI応答のキャッシュ動作と性能を検証する
+server/internal/httpapi/openapi_cache_test.go|BenchmarkSpecReadConcurrent|a:製品ファイルの文字列照合	OpenAPI応答のキャッシュ動作と性能を検証する
+server/internal/anomalies/service_test.go|TestPostgresDetectMatchesLegacy|d:旧実装との比較	結果や境界条件も確認する比較検査
+server/internal/filingcheck/material_equivalence_test.go|TestMaterialMatchesLegacyFullRead|d:旧実装との比較	旧方式との比較と個別の結果を検証する
+server/internal/screenapi/topic_links_test.go|TestTopicProjectionMatchesLegacy|d:旧実装との比較	結果や境界条件も確認する比較検査
+server/internal/statistics/overview_performance_test.go|TestOverviewIndexedMatchesLegacy|d:旧実装との比較	結果や境界条件も確認する比較検査
+server/internal/statistics/stats_timing_test.go|TestStatsTimingFixture|d:旧実装との比較	結果や境界条件も確認する比較検査
+server/internal/adminapi/diagnostics_activity_test.go|TestDiagnosticsActivity|a:製品ファイルの文字列照合	実際の認証済みAPI応答を配布OpenAPIのスキーマで検証するため。
+server/internal/startup/entry_equivalence_test.go|TestDraftEntryHTTPAllFamilyStates|d:旧実装との比較	実HTTP応答の状態と操作を従来動作に照合し後方互換性を検証する
+server/internal/jobs/report_release_test.go|TestReportPreservesServerDependencyMerges|d:旧実装との比較	旧形式の準備補助名が目印に一致するが、現行Reportで照合記録が保持される挙動を検証する
+server/internal/consultationai/read_schema_contract_test.go|TestReadSchemasMatchExecutableReadRequests|a:製品ファイルの文字列照合	配布する3つのJSON Schemaで要求値を実際に評価し、受理した要求を製品の読取パーサーへ渡して契約の整合を検証するため。文字列の包含や一致は検証しない。

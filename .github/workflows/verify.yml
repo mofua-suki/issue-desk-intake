@@ -1,0 +1,49 @@
+name: Verify intake
+on:
+  push:
+    branches: ['**']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: [self-hosted, Linux, X64, pc-ci]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - uses: pnpm/action-setup@v5
+        with:
+          package_json_file: client/package.json
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.13.1
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+      - name: Run fixed verification with browser fonts and GNU tail
+        run: |
+          support=$(mktemp -d "$RUNNER_TEMP/issue-desk-test-support.XXXXXXXX")
+          trap 'rm -rf -- "$support"' EXIT
+          mkdir "$support/cache" "$support/bin"
+          (
+            cd "$support"
+            apt-get download fonts-dejavu-core fonts-noto-cjk gnu-coreutils
+            for archive in ./*.deb; do dpkg-deb -x "$archive" .; done
+          )
+          caddy_archive=caddy_2.10.2_linux_amd64.tar.gz
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --retry 2 --max-time 180 \
+            --output "$support/$caddy_archive" "https://github.com/caddyserver/caddy/releases/download/v2.10.2/$caddy_archive"
+          printf '%s  %s\n' '5c218bc34c9197369263da7e9317a83acdbd80ef45d94dca5eff76e727c67cdd' "$caddy_archive" |
+            (cd "$support" && sha256sum --check -)
+          tar -xzf "$support/$caddy_archive" -C "$support/bin" caddy
+          "$support/bin/caddy" version
+          ln -s "$support/usr/bin/gnutail" "$support/bin/tail"
+          "$support/bin/tail" --version
+          printf '%s\n' '<?xml version="1.0"?>' '<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">' \
+            "<fontconfig><dir>$support/usr/share/fonts</dir><cachedir>$support/cache</cachedir></fontconfig>" \
+            >"$support/fonts.conf"
+          PATH="$support/bin:$PATH" FONTCONFIG_FILE="$support/fonts.conf" ISSUE_DESK_TEST_CADDY="$support/bin/caddy" sh scripts/verify.sh

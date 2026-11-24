@@ -1,0 +1,10 @@
+[Unit]
+Description=issue-desk-intakeの更新確認
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

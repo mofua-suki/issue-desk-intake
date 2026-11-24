@@ -1,0 +1,13 @@
+node_modules/
+client/dist/
+server/bin/
+.env
+.env.*
+!.env.example
+config.local.json
+private/
+runtime/
+*.sqlite
+*.sqlite-*
+*.log
+.tmp/

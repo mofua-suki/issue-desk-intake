@@ -1,0 +1,163 @@
+{
+  'paths':
+    {
+      '/api/ai-decisions':
+        {
+          'get':
+            {
+              'operationId': 'aiDecisionList',
+              'description': 'AI判断の一覧。未採点も含む。kind・whoで絞り込む。 運用の代行を許したPC別トークンのみ。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'parameters':
+                [
+                  { 'in': 'query', 'name': 'kind', 'schema': { 'type': 'string' } },
+                  { 'in': 'query', 'name': 'who', 'schema': { 'type': 'string' } },
+                  { 'in': 'query', 'name': 'limit', 'schema': { 'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 100 } },
+                  { 'in': 'query', 'name': 'page', 'schema': { 'type': 'integer', 'minimum': 1, 'default': 1 } },
+                ],
+              'responses':
+                {
+                  '200': { 'description': '絞り込み後の判断記録。atの古い順、同時刻はid順。', 'content': { 'application/json': { 'schema': { 'type': 'object', 'required': ['items', 'total', 'page', 'limit', 'hasMore'], 'properties': { 'items': { 'type': 'array', 'items': { 'type': 'object', 'additionalProperties': true } }, 'total': { 'type': 'integer', 'minimum': 0 }, 'page': { 'type': 'integer', 'minimum': 1 }, 'limit': { 'type': 'integer', 'minimum': 1, 'maximum': 200 }, 'hasMore': { 'type': 'boolean' } } } } } },
+                  '400': { 'description': '入力が不正。' },
+                  '401': { 'description': 'トークンが無効。' },
+                  '403': { 'description': '運用の代行の許可が無い。' },
+                  '404': { 'description': '記録または経路が無い。' },
+                },
+            },
+          'post':
+            {
+              'operationId': 'aiDecisionAdd',
+              'description': 'AI判断の追加。同じIDは元の記録を返し二重登録しない。 運用の代行を許したPC別トークンのみ。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'parameters': [],
+              'responses':
+                {
+                  '200': { 'description': '判断記録または集計。' },
+                  '400': { 'description': '入力が不正。' },
+                  '401': { 'description': 'トークンが無効。' },
+                  '403': { 'description': '運用の代行の許可が無い。' },
+                  '404': { 'description': '記録または経路が無い。' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required':
+                                [
+                                  'id',
+                                  'at',
+                                  'who',
+                                  'pc',
+                                  'project',
+                                  'kind',
+                                  'context',
+                                  'options',
+                                  'chosen',
+                                  'reason',
+                                  'expected',
+                                  'check',
+                                ],
+                              'properties':
+                                {
+                                  'id': { 'type': 'string', 'pattern': '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$' },
+                                  'at':
+                                    {
+                                      'type': 'string',
+                                      'format': 'date-time',
+                                      'description': '実在するUTC日時、秒必須、末尾Z。',
+                                    },
+                                  'who': { 'type': 'string', 'enum': ['chat', 'intake', 'implementation', 'review'] },
+                                  'pc': { 'type': 'string' },
+                                  'project': { 'type': 'string' },
+                                  'kind': { 'type': 'string' },
+                                  'context': { 'type': 'string' },
+                                  'options':
+                                    {
+                                      'type': 'array',
+                                      'minItems': 1,
+                                      'maxItems': 100,
+                                      'items': { 'type': 'string', 'minLength': 1, 'maxLength': 2000 },
+                                    },
+                                  'chosen': { 'type': 'string' },
+                                  'reason': { 'type': 'string' },
+                                  'expected': { 'type': 'string' },
+                                  'check': { 'type': 'string', 'description': '答え合わせの方法と時期。' },
+                                  'score': { 'type': ['string', 'null'], 'enum': ['hit', 'miss', 'partial', null] },
+                                  'outcome': { 'type': ['string', 'null'] },
+                                  'lesson': { 'type': ['string', 'null'] },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/ai-decisions/stats':
+        {
+          'get':
+            {
+              'operationId': 'aiDecisionStats',
+              'description': '種類ごとのhit・miss・partial・scored・rate。未採点は分母から除外。全件の集計のためページ分割しない。 運用の代行を許したPC別トークンのみ。 判断の種類ごとの集計であり今回の主要読取の対象外のため、固定応答型は定義しない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'parameters': [],
+              'responses':
+                {
+                  '200': { 'description': '判断記録または集計。' },
+                  '400': { 'description': '入力が不正。' },
+                  '401': { 'description': 'トークンが無効。' },
+                  '403': { 'description': '運用の代行の許可が無い。' },
+                  '404': { 'description': '記録または経路が無い。' },
+                },
+            },
+        },
+      '/api/ai-decisions/{id}/score':
+        {
+          'post':
+            {
+              'operationId': 'aiDecisionScore',
+              'description': '結果と学びを採点し原子的に更新する。 運用の代行を許したPC別トークンのみ。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'parameters': [{ 'in': 'path', 'name': 'id', 'required': true, 'schema': { 'type': 'string' } }],
+              'responses':
+                {
+                  '200': { 'description': '判断記録または集計。' },
+                  '400': { 'description': '入力が不正。' },
+                  '401': { 'description': 'トークンが無効。' },
+                  '403': { 'description': '運用の代行の許可が無い。' },
+                  '404': { 'description': '記録または経路が無い。' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required': ['score', 'outcome', 'lesson'],
+                              'properties':
+                                {
+                                  'score': { 'type': 'string', 'enum': ['hit', 'miss', 'partial'] },
+                                  'outcome': { 'type': 'string', 'minLength': 1 },
+                                  'lesson': { 'type': 'string', 'minLength': 1 },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

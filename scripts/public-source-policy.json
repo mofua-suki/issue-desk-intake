@@ -1,0 +1,26 @@
+{
+  "intake": {"paths": [], "replacements": [], "reject": []},
+  "worker": {"paths": [], "replacements": [], "reject": []},
+  "registry-example": {
+    "intake": {
+      "repo": "/path/to/intake",
+      "sha": "0000000000000000000000000000000000000000",
+      "paths": [],
+      "replacements": [],
+      "reject": [],
+      "ci": "intake",
+      "verify": "intake",
+      "image": "example.invalid/public-check@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "worker": {
+      "repo": "/path/to/worker",
+      "sha": "0000000000000000000000000000000000000000",
+      "paths": [],
+      "replacements": [],
+      "reject": [],
+      "ci": "worker",
+      "verify": "worker",
+      "image": "example.invalid/public-check@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  }
+}

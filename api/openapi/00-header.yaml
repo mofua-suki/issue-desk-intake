@@ -1,0 +1,140 @@
+{
+  'openapi': '3.1.0',
+  'info':
+    {
+      'title': 'issue-desk 受付 API',
+      'version': '0.2.0',
+      'description': '実装から採録した受付の契約。NAS更新の有効な印がある間の契約不一致409にはx-issue-desk-updating: 1と受付の更新中の案内を付ける。安全なCLIだけ同一ID・本文で5秒間隔、最大180回再照合し、恒久的不一致の診断を保持する。tailnet 内だけで利用し、インターネットへ公開しない。フロー形式のYAML（引用文字列・数値・真偽値・null・配列・写像の部分集合）で依存なしに検査する。任意JSONや外部由来の値は厳密な型を推測せず、description に契約を記す。',
+    },
+  'servers':
+    [
+      {
+        'url': 'https://issue-desk.example.ts.net',
+        'description': 'tailnet 内の受付。Funnel・公開インターネットは使わない。',
+      },
+    ],
+  'x-issue-desk-contract':
+    {
+      'version': '4cd4625bbadfe9da0aa2a3f0af5ead6a3c8b12da3ef27b3d1f751c2ca9759213',
+      'requestHeader': 'x-issue-desk-contract',
+      'responseHeader': 'x-issue-desk-contract',
+      'requestHeaderSchema':
+        {
+          'in': 'header',
+          'name': 'x-issue-desk-contract',
+          'required': false,
+          'schema': { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' },
+        },
+      'responseHeaderSchema': { 'schema': { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' } },
+      'errors':
+        {
+          'DECISION_BASIS_MISMATCH':
+            {
+              'action': 'reconfirm_decision',
+              'guidance': '分類不明・判断に影響する食い違いでは、依頼者のAIが訂正した事実を踏まえて利用者の目的に合う進め方を選び、訂正と選んだ進め方を同じ相談へ返信して再照合を受け、利用者には判断の記録で報告してください。利用者の回答を待つのは、進め方が破壊的な操作・取り返しのつかない操作・新しい権限・上限超えの再試行に当たるときだけです。解消まで確定できません。同じ依頼を自動再送しないでください。',
+            },
+          'INPUT_TOO_LARGE':
+            {
+              'action': 'check_consultation',
+              'guidance': '相談は資料を圧縮しても上限を超える場合だけ子へ分ける。分割禁止は共通の出典規則（「## 利用者の判断と根拠」の該当判断を支持する利用者の「」付き原文引用と日時）で裏付けた場合だけ。引用のない指定は判断材料。裏付けた禁止や子が目安・元の範囲に合わなければ元の相談を続け、収まらなければ未確認事項を残す。同じ相談で進行と子を読み、親は再送しない。起票前の比較・代理回答・見積もり・クローズの停止は理由・未確認事項を報告し、本文は切らない。',
+            },
+          'TOO_MANY_PROPOSALS':
+            {
+              'action': 'report',
+              'guidance': '受付は25件超の分割案を1回だけまとめ直して依存番号も再検査する。このコードは修正後も不合格の場合に返る。依頼者は理由を報告し、案や依存を勝手に削らず、同じ内容を自動再送しない。',
+            },
+          'MORE_CONTEXT_REQUIRED':
+            {
+              'action': 'check_consultation',
+              'guidance': '相談の読み足し回数切れでは自動の分割をせず、元の相談に未確認事項を残す。同じ相談を読んで続け、親を再送しない。',
+            },
+          'CONFIRMATION_INCOMPLETE':
+            {
+              'action': 'check_consultation',
+              'guidance': '実装とテストの確認不足は受付がまず1回読み足しを求め、なお不足なら自動の分割をせず元の相談に未確認事項を残す。固定版に無い資料は最新の既定ブランチへ切り替える。依頼者は相談の進行と未確認事項を読み、利用者の判断が必要な質問だけ回答する。入手できない資料を確認済みとせず、親を再送しない。',
+            },
+          'TEMPORARY_UNAVAILABLE':
+            {
+              'action': 'retry',
+              'guidance': '読取または送信IDで照合できる要求だけ、同じ内容・IDで規定回数待って再送する。',
+            },
+          'SPLIT_CHILDREN':
+            {
+              'action': 'show_children',
+              'guidance': '受付が保存・開始した子の相談を表示し、返信・編集・再送・優先度の変更は各子で続ける。親を再送したり子を新しい依頼として作り直したりしない。',
+            },
+          'CONTRACT_MISMATCH':
+            { 'action': 'update', 'guidance': 'PCのissue-deskを更新し、hostdのSkill配布とNASの受付更新を確認する。' },
+          'REQUEST_REJECTED':
+            {
+              'action': 'report',
+              'guidance': '受付の理由を確認する。権限・状態を変えたり同じ内容を自動再送したりしない。',
+            },
+        },
+      'principles':
+        {
+          'fields':
+            {
+              'prevention':
+                {
+                  'principle': '可能な限り仕組み化する',
+                  'meaning': '再発防止をテスト・検査・自動化で仕組みにする。',
+                  'shape': '{kind: test|check|automation|none, detail}',
+                  'kinds': ['test', 'check', 'automation', 'none'],
+                  'writing': 'kind に方法の種類、detail に具体的な方法を書く。kind=none なら detail に防げない理由を書く。',
+                },
+              'assumptions':
+                {
+                  'principle': '前提を疑う',
+                  'meaning': '判断に使った前提を根拠と照合し、確認と推測を区別する。',
+                  'shape': '[{assumption, evidence, verified}]',
+                  'writing': 'assumption に前提、evidence にファイル・行・コマンドの結果、verified に確認の成否を書く。verified=false は未確認と明記する。',
+                },
+              'similar':
+                {
+                  'principle': 'ほかに同じ箇所がないか調べる',
+                  'meaning': '同種の箇所を探し、対応と全リポジトリで止める検査を記録する。',
+                  'shape': '{searched, found[], handled, guard}',
+                  'writing': 'searched に検索の語・コマンド、found に見つけた箇所の配列、handled に直した箇所・直さなかった理由、guard に全リポジトリで止める検査（テスト・lint）にしたか・しない理由を書く。',
+                },
+            },
+          'required':
+            {
+              'remediation': ['prevention', 'assumptions', 'similar'],
+              'other': ['assumptions'],
+              'rule': '直し・調査・失敗の対応では prevention・assumptions・similar の3つとも必須、それ以外は assumptions だけが必須。',
+            },
+          'placeholderValues': ['なし', '無し', '特になし', '該当なし', 'N/A', 'none', '-'],
+          'placeholderRule': '欄を「形だけ」の語で埋めず、根拠・方法・理由を具体的に書く。kind=none は detail に防げない理由があるときに使う。',
+          'intakeInstruction': '受付AI: 直しの依頼では、受入条件に再発防止の方法と同種の箇所の探し方を含め、確認済み事項に確かめた前提の根拠を書く。',
+          'requesterInstruction': '依頼側のAI: 直し・調査・失敗の対応では、3つの欄に当たる内容を報告する。それ以外も assumptions に当たる内容を報告する。',
+        },
+      'basisConflicts':
+        {
+          'kinds': ['requester_fact', 'user_decision'],
+          'requesterRecovery':
+            {
+              'action': 'correct_requester_facts',
+              'guidance': '依頼者の事実だけの食い違いです。利用者の判断を取り直す必要はありません。依頼者が同じ相談へ訂正を返信し、受付AIが再照合してください。解消するまで確定できません。同じ依頼を自動再送しないでください。',
+            },
+        },
+      'defaults':
+        {
+          'size': { 'files': 4, 'materialBytes': 240000, 'nearLimit': 0.8 },
+          'input': { 'chars': 524288, 'bytes': 1048576 },
+          'limits':
+            {
+              'title': 200,
+              'body': 20000,
+              'readFiles': 12,
+              'questions': 2,
+              'rounds': 6,
+              'roundsAfterRaise': 2,
+              'chatTextMin': 1,
+              'chatText': 8000,
+              'conversation': 80000,
+            },
+          'proposals': 25,
+        },
+    },
+}

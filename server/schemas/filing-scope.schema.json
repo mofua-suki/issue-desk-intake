@@ -1,0 +1,153 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "readFiles",
+    "reviewedFiles",
+    "changeScope"
+  ],
+  "properties": {
+    "readFiles": {
+      "description": "追加で読む資料。通常ファイルの文字列は全文。オブジェクトはfull・outline・lines・keyword。repo-search（別プロジェクトのowner/repo:repo-searchを含む）はkeyword方式と空でない検索語を指定する。",
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^(?:.{0,10}|.*[^:]repo-search|.*[^r].{10}|.*[^e].{9}|.*[^p].{8}|.*[^o].{7}|.*[^-].{6}|.*[^s].{5}|.*[^e].{4}|.*[^a].{3}|.*[^r].{2}|.*[^c].{1}|.*[^h].{0})$"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "file",
+              "mode",
+              "start",
+              "end",
+              "keyword",
+              "context"
+            ],
+            "properties": {
+              "file": {
+                "type": "string",
+                "pattern": "^(?:.{0,10}|.*[^:]repo-search|.*[^r].{10}|.*[^e].{9}|.*[^p].{8}|.*[^o].{7}|.*[^-].{6}|.*[^s].{5}|.*[^e].{4}|.*[^a].{3}|.*[^r].{2}|.*[^c].{1}|.*[^h].{0})$"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "full",
+                  "outline",
+                  "lines",
+                  "keyword"
+                ]
+              },
+              "start": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "end": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "keyword": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "context": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "file",
+              "mode",
+              "start",
+              "end",
+              "keyword",
+              "context"
+            ],
+            "properties": {
+              "file": {
+                "type": "string",
+                "pattern": "^(?:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+:)?repo-search$"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "keyword"
+                ]
+              },
+              "start": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "end": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "keyword": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "pattern": "^[^\\r\\n]+$"
+              },
+              "context": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "reviewedFiles": {
+      "description": "本文を読んだGitea資料のパス（記録用）。",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "changeScope": {
+      "description": "見積もった変更範囲。known=true でファイル単位のパス。ディレクトリ（末尾 /）は reason に理由があるときだけ。特定できなければ known=false と理由。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "known",
+        "paths",
+        "reason"
+      ],
+      "properties": {
+        "known": {
+          "type": "boolean"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

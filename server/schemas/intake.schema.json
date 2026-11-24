@@ -1,0 +1,793 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reply",
+    "basisConflicts",
+    "title",
+    "body",
+    "ready",
+    "readFiles",
+    "reviewedFiles",
+    "questions",
+    "imageReviews",
+    "splitIssues",
+    "crossProject",
+    "changeScope",
+    "dependsOnIssues",
+    "kind",
+    "escalate",
+    "escalateReason",
+    "heavyReason",
+    "workType",
+    "estimate",
+    "completionPlan",
+    "executionPlan"
+  ],
+  "properties": {
+    "basisConflicts": {
+      "description": "利用者の判断の根拠をコード・資料と照合して食い違った事実と理由・分類。requester_factは依頼者の事実だけ、user_decisionは利用者の判断・根拠に影響。節なし・食い違いなし・未確認だけなら空配列。",
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fact",
+          "reason",
+          "kind",
+          "resolution"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "requester_fact",
+              "user_decision"
+            ]
+          },
+          "fact": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "resolution": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "未解決の差異はnull。依頼者の訂正を反映済みの差異だけ解決内容を書く。"
+          }
+        }
+      }
+    },
+    "reply": {
+      "type": "string"
+    },
+    "heavyReason": {
+      "description": "分けられない理由（通常起票。分けられない理由があり実装の難易度「高」が要るときだけ書き、それ以外は空文字。分割起票では各案の heavyReason を使う）。受入条件が2項目以上なら、「## 利用者の判断と根拠」の「」付き原文引用と日時で裏付けた分割禁止があるときだけ有効で、無ければ分割案を求められ、なお裏付けが無ければ外して起票される。",
+      "type": "string"
+    },
+    "escalate": {
+      "type": "boolean"
+    },
+    "escalateReason": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "implementation"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "readFiles": {
+      "description": "追加で読む資料。通常ファイルの文字列は全文。オブジェクトはfull・outline・lines・keyword。repo-search（別プロジェクトのowner/repo:repo-searchを含む）はkeyword方式と空でない検索語を指定する。",
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^(?:.{0,10}|.*[^:]repo-search|.*[^r].{10}|.*[^e].{9}|.*[^p].{8}|.*[^o].{7}|.*[^-].{6}|.*[^s].{5}|.*[^e].{4}|.*[^a].{3}|.*[^r].{2}|.*[^c].{1}|.*[^h].{0})$"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "file",
+              "mode",
+              "start",
+              "end",
+              "keyword",
+              "context"
+            ],
+            "properties": {
+              "file": {
+                "type": "string",
+                "pattern": "^(?:.{0,10}|.*[^:]repo-search|.*[^r].{10}|.*[^e].{9}|.*[^p].{8}|.*[^o].{7}|.*[^-].{6}|.*[^s].{5}|.*[^e].{4}|.*[^a].{3}|.*[^r].{2}|.*[^c].{1}|.*[^h].{0})$"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "full",
+                  "outline",
+                  "lines",
+                  "keyword"
+                ]
+              },
+              "start": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "end": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "keyword": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "context": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "file",
+              "mode",
+              "start",
+              "end",
+              "keyword",
+              "context"
+            ],
+            "properties": {
+              "file": {
+                "type": "string",
+                "pattern": "^(?:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+:)?repo-search$"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "keyword"
+                ]
+              },
+              "start": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "end": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "keyword": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "pattern": "^[^\\r\\n]+$"
+              },
+              "context": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "reviewedFiles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "imageReviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "readable",
+          "screen",
+          "location",
+          "change",
+          "uncertainty"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "readable": {
+            "type": "boolean"
+          },
+          "screen": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "change": {
+            "type": "string"
+          },
+          "uncertainty": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "splitIssues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "project",
+          "title",
+          "purpose",
+          "acceptance",
+          "dependsOn",
+          "dependsOnIssues",
+          "changeScope",
+          "kind",
+          "heavyReason",
+          "workType",
+          "estimate"
+        ],
+        "properties": {
+          "project": {
+            "type": "string"
+          },
+          "heavyReason": {
+            "description": "この案を分けられない理由（実装の難易度「高」が要るときだけ書き、それ以外は空文字）。受入条件が2項目以上なら、利用者の「」付き原文引用と日時で裏付けた分割禁止があるときだけ有効。",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "implementation"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "acceptance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dependsOn": {
+            "description": "分割案を表示順に1、2、3…と数えた番号で、自分より前の案だけを指定します。依存なしは[]、重複不可。例: []、[1]、[2]、[3]。共通番号やGitea番号ではありません。",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "dependsOnIssues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "number"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "desk",
+                    "gitea"
+                  ]
+                },
+                "number": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "changeScope": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "known",
+              "paths",
+              "reason"
+            ],
+            "properties": {
+              "known": {
+                "type": "boolean"
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          },
+          "workType": {
+            "type": "string",
+            "enum": [
+              "bugfix",
+              "feature",
+              "refactor",
+              "docs",
+              "test",
+              "operations"
+            ],
+            "description": "依頼の目的と受入条件から主な作業の種類を1つ選ぶ。bugfix=不具合の修正、feature=機能追加、refactor=動作を保つ作り替え、docs=資料、test=テスト、operations=運用。題名の語だけで決めず、利用者には選択を求めない。調査のみの依頼は起票せず、相談内で回答する。通常起票はトップレベル、分割起票は各案の値を使い、unknown は選べない。"
+          },
+          "estimate": {
+            "description": "テスト・資料を含む見込みの変更行数・変更ファイル数。",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lines",
+              "files"
+            ],
+            "properties": {
+              "lines": {
+                "type": "integer"
+              },
+              "files": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "crossProject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reason",
+        "scopes",
+        "approvalMessageId"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string"
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project",
+              "scope"
+            ],
+            "properties": {
+              "project": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "approvalMessageId": {
+          "type": "string"
+        }
+      }
+    },
+    "changeScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "known",
+        "paths",
+        "reason"
+      ],
+      "properties": {
+        "known": {
+          "type": "boolean"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "dependsOnIssues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "number"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "desk",
+              "gitea"
+            ]
+          },
+          "number": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "workType": {
+      "type": "string",
+      "enum": [
+        "bugfix",
+        "feature",
+        "refactor",
+        "docs",
+        "test",
+        "operations"
+      ],
+      "description": "依頼の目的と受入条件から主な作業の種類を1つ選ぶ。bugfix=不具合の修正、feature=機能追加、refactor=動作を保つ作り替え、docs=資料、test=テスト、operations=運用。題名の語だけで決めず、利用者には選択を求めない。調査のみの依頼は起票せず、相談内で回答する。通常起票はトップレベル、分割起票は各案の値を使い、unknown は選べない。"
+    },
+    "estimate": {
+      "description": "テスト・資料を含む見込みの変更行数・変更ファイル数。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lines",
+        "files"
+      ],
+      "properties": {
+        "lines": {
+          "type": "integer"
+        },
+        "files": {
+          "type": "integer"
+        }
+      }
+    },
+    "completionPlan": {
+      "description": "起票前に全工程と承認事項を整理する。個別操作の認可を代替しない。",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "basis",
+        "steps",
+        "approvals"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "phase",
+              "owner",
+              "prerequisite",
+              "evidence"
+            ],
+            "properties": {
+              "phase": {
+                "type": "string",
+                "enum": [
+                  "implementation",
+                  "verification",
+                  "merge",
+                  "deployment"
+                ]
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "prerequisite": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "evidence": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              }
+            }
+          }
+        },
+        "approvals": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "phase",
+              "target",
+              "operation",
+              "condition",
+              "category",
+              "gate",
+              "children",
+              "evidence"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "phase": {
+                "type": "string",
+                "enum": [
+                  "before_implementation",
+                  "after_diff"
+                ]
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "operation": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "condition": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "permission",
+                  "destructive",
+                  "irreversible",
+                  "scope",
+                  "basis"
+                ]
+              },
+              "gate": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "permission",
+                  "deletion",
+                  null
+                ]
+              },
+              "children": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25
+                },
+                "maxItems": 25,
+                "uniqueItems": true
+              },
+              "evidence": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "required": [
+                  "messageId",
+                  "quote",
+                  "at"
+                ],
+                "properties": {
+                  "messageId": {
+                    "type": "string"
+                  },
+                  "quote": {
+                    "type": "string",
+                    "maxLength": 8000
+                  },
+                  "at": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "executionPlan": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "requirements"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "requirements": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "criterion",
+              "owner",
+              "phase",
+              "method",
+              "expected",
+              "capabilities",
+              "inputs",
+              "children",
+              "evidenceKind"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "criterion": {
+                "type": "string",
+                "description": "担当する受入条件の全文。省略しない。",
+                "maxLength": 8000
+              },
+              "owner": {
+                "type": "string",
+                "enum": [
+                  "implementer",
+                  "controller",
+                  "reporter"
+                ]
+              },
+              "phase": {
+                "type": "string",
+                "enum": [
+                  "implementation",
+                  "verification",
+                  "deployment",
+                  "report"
+                ]
+              },
+              "method": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "expected": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "capabilities": {
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "race",
+                    "gcc",
+                    "cgo",
+                    "docker",
+                    "browser",
+                    "systemd",
+                    "windows",
+                    "realDevice",
+                    "liveMeasurement",
+                    "history",
+                    "network",
+                    "otherRepository"
+                  ]
+                }
+              },
+              "inputs": {
+                "type": "array",
+                "maxItems": 30,
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "children": {
+                "type": "array",
+                "maxItems": 25,
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25
+                }
+              },
+              "evidenceKind": {
+                "type": "string",
+                "enum": [
+                  "fixed_test",
+                  "report_comment",
+                  "external_check"
+                ],
+                "description": "固定検証の実行記録、訂正報告の投稿、コントローラーの外部実測。固定検証の成功だけで配置・実機確認を済ませない。"
+              }
+            }
+          }
+        }
+      },
+      "description": "ready=trueでは全受入条件の実行分担を確定する。実機・本番・履歴・別repoの資料確認はcontroller、報告訂正はreporter。childrenは対象の分割案番号、全子共通なら空配列。"
+    }
+  }
+}

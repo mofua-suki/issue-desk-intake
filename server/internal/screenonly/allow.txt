@@ -1,0 +1,20 @@
+# 画面からだけ受け付ける判定の許可一覧。形式: ファイル|目印|件数<TAB>理由。利用者の承認・操作を画面だけにする理由にはしない（auth.UserApproval を使う）。
+server/internal/adminapi/api.go|screen-kind|1	SSH申請の承認・却下は画面に限る。チャットの承認は host-ssh の許可の付与（利用者の発言の引用付き）で代わり、付与があれば申請時に承認される。
+server/internal/adminapi/api.go|screen-message|2	同上と、通知（push）の購読は利用者の端末の画面の設定で承認の操作ではない。
+server/internal/adminapi/api.go|screen-policy|3	トークンの発行・運用の代行の付与はAIが自分の権限を広げられない根（新しい権限）なので画面だけ。通知の購読は端末の画面の設定。決定の記録（/api/decisions）はNASの一時キーでも読め、書き込みは利用者の判断の記録で承認の入口ではない。
+server/internal/adminapi/ssh.go|screen-kind|1	SSH申請の承認・却下。api.go と同じ理由（host-ssh の許可の付与がチャットの経路）。
+server/internal/adminapi/ssh.go|screen-message|1	同上。
+server/internal/auth/auth.go|screen-message|3	別の画面（Origin・CSRF）からの操作を断る認証の検査で、承認の入口ではない。
+server/internal/completionplan/receipts.go|screen-source|2	受領の送り手の種類の検査で、pc-token・cli-key も受け付ける。
+server/internal/issueapi/close.go|screen-kind|1	/api/issue/close は画面の終了操作。チャットは /api/issues/close（クローズ依頼）と close-requests の確定で同じ操作ができる。
+server/internal/issueapi/close.go|screen-message|1	同上。
+server/internal/issueapi/comment.go|screen-kind|6	最終承認・削除・権限の承認は運用代行トークンでも利用者の発言を添えて送れ、ここは画面とトークンの記録・検査の分岐。返信の /codex 操作の制限と、理由の欄の扱いの分岐。
+server/internal/issueapi/comment.go|screen-message|3	最終承認・削除・権限の承認の断りの文（運用代行トークンからも利用者の発言を添えて送れる）。
+server/internal/live/events.go|screen-policy|1	画面の表示を更新する通知の流れ（読取）で、承認の操作ではない。
+server/internal/projects/http.go|screen-policy|1	プロジェクトの相談の会話・作成の再開・分割案の起票は画面の相談の操作。作成への同意（approve）と読取は運用代行トークンも可。
+server/internal/screenapi/service.go|screen-policy|2	画面だけの計測送信（/api/list/timing）と、画面・NASの一時キー向けの既定の経路。一覧と個別行の読取は一時キーでも可で、承認の操作ではない。
+server/internal/consultations/draft-routes.go|pc-off|2	相談の新規作成（トークンは /api/issues から始める）と、相談の編集・優先度の変更（NASの一時キーでも可）で、承認の操作ではない。
+server/internal/httpapi/notice_routes.go|pc-off|1	有事の「自分で対応する」は利用者の返答で、画面とNASの一時キーで受け付ける（NASのチャットのAIが送れる）。
+server/internal/images/http.go|screen-policy|1	相談・依頼への画像の添付で、画面とNASの一時キーが使う。承認の操作ではない。
+server/internal/operations/job_recovery_question.go|screen-source|2	回復の自動判断で、過去の利用者判断として数える根拠を画面の受領に限る検査。承認の入口ではない。
+server/internal/sessions/routes.go|screen-policy|1	画面の端末の対応付け（pair-code）。新しい画面のセッションを作る根で、承認の操作ではない。

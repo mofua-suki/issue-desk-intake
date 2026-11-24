@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "contentMatch",
+    "reasonConfirmed",
+    "reason",
+    "evidence"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "close",
+        "confirm"
+      ]
+    },
+    "contentMatch": {
+      "type": "boolean"
+    },
+    "reasonConfirmed": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "remote": "gitea-nas:mofua-suki/issue-desk-worker.git",
+  "branch": "trunk",
+  "flavor": "-python",
+  "pushRegistry": "127.0.0.1:5000",
+  "hosts": {
+    "nas": "127.0.0.1:5000",
+    "a9max": "ugreen-nas.example.ts.net:5443",
+    "gt12": "ugreen-nas.example.ts.net:5443",
+    "nab-9s": "ugreen-nas.example.ts.net:5443",
+    "x1-pro1": "ugreen-nas.example.ts.net:5443",
+    "x1-pro2": "ugreen-nas.example.ts.net:5443"
+  }
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=issue-desk（NAS）のCodex起票後の巡回
+
+[Service]
+Type=oneshot
+TimeoutStartSec=4min
+UMask=0077
+Environment=PATH=%h/.local/bin:%h/.issue-desk:/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=__DIR__
+ExecStart=%h/.local/bin/node __DIR__/scripts/codex-issue-watch.ts

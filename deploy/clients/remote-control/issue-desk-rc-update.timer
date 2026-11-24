@@ -1,0 +1,13 @@
+# 正本は issue-desk の deploy/clients/remote-control/。rc-setup.sh が置き、rc-update.sh が変わった回に更新する。手で変えない。
+# 10分ごと、起動後（OnBootSec）と有効化の直後（OnActiveSec。起算点になる）にも1回動かす。
+[Unit]
+Description=issue-desk remote-control の配布を10分ごとに動かす
+
+[Timer]
+OnBootSec=2min
+OnActiveSec=1min
+OnUnitActiveSec=10min
+Unit=issue-desk-rc-update.service
+
+[Install]
+WantedBy=timers.target

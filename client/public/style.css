@@ -1,0 +1,2146 @@
+:root {
+  font-family: 'Yu Gothic UI', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
+  color: #182b3e;
+  background: #f5f7fa;
+  font-synthesis: none;
+  --navy: #152c43;
+  --blue: #205eac;
+  --line: #dce3eb;
+  --muted: #627486;
+  --green: #c4f17c;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #77a8e5;
+  outline-offset: 3px;
+}
+a {
+  color: var(--blue);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+.topbar {
+  height: 82px;
+  background: var(--navy);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 max(28px, calc((100vw - 1320px) / 2));
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.brand:hover {
+  text-decoration: none;
+}
+.brand-icon {
+  display: grid;
+  place-content: center;
+  background: var(--green);
+  color: var(--navy);
+  font-size: 30px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+.brand small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.19em;
+  margin-top: 1px;
+  color: #adbdcd;
+}
+.connection {
+  margin-left: auto;
+  font-size: 13px;
+  color: #c6d3df;
+}
+.connection:before {
+  content: '';
+  display: inline-block;
+  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+  background: var(--green);
+  margin-right: 8px;
+}
+.connection.off:before {
+  background: #e7b44d;
+}
+.topbar .quiet {
+  color: white;
+  border-color: #4f6274;
+}
+main {
+  max-width: 1320px;
+  padding: 34px 28px 20px;
+  margin: auto;
+  min-height: calc(100dvh - 140px);
+}
+.page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 25px;
+}
+.eyebrow {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  font-weight: 750;
+}
+.page-heading h1 {
+  font-size: 28px;
+  letter-spacing: 0.03em;
+  margin: 7px 0 5px;
+}
+.page-heading p {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+.button,
+button.primary {
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: white;
+  border-radius: 9px;
+  padding: 12px 20px;
+  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 45px;
+}
+.primary:hover {
+  background: #254560;
+}
+.quiet {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 14px;
+  color: var(--navy);
+  min-height: 40px;
+}
+.quiet:hover {
+  background: #eaf0f7;
+}
+.topbar .quiet:hover {
+  background: #29435c;
+}
+.back {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0;
+  overflow-x: auto;
+}
+.tab {
+  white-space: nowrap;
+  flex: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 12px 16px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+.tab.active {
+  color: var(--navy);
+  border-bottom-color: var(--navy);
+}
+.count {
+  font-size: 12px;
+  display: inline-block;
+  padding: 1px 6px;
+  background: #e5ebf2;
+  border-radius: 5px;
+  margin-left: 6px;
+}
+.list {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  /* 更新で上の行が増減・移動したときの位置は、表示中の行を基準に画面側が補正する（server/web/app-list-rows.js）。 */
+  overflow-anchor: none;
+}
+.issue-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 116px 1fr 100px;
+  align-items: center;
+  text-align: left;
+  gap: 20px;
+  background: white;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 24px;
+}
+.issue-row:last-child {
+  border: 0;
+}
+.issue-row:hover {
+  background: #f7faff;
+}
+.issue-row h3 {
+  font-size: 16px;
+  margin: 0 0 8px;
+  font-weight: 650;
+}
+.issue-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.issue-row time {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 5px;
+  background: #ecf1f6;
+  color: #455c73;
+  font-size: 12px;
+  padding: 6px 9px;
+  white-space: nowrap;
+  width: max-content;
+}
+.count.alert {
+  color: white;
+  background: #c2571a;
+}
+.badge.waiting,
+.badge.review_held,
+.badge.stopped {
+  color: #946013;
+  background: #fff0cf;
+}
+.badge.completed,
+.badge.submitted {
+  color: #226044;
+  background: #e2f3e9;
+}
+.badge.running,
+.badge.thinking,
+.badge.ai_queued,
+.badge.ai_recovering,
+.badge.queued {
+  color: #225c9e;
+  background: #e7f0fd;
+}
+.badge.failed,
+.badge.error,
+.badge.stalled {
+  color: #a43c3c;
+  background: #fcebea;
+}
+.badge:before {
+  content: '';
+  height: 5px;
+  width: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.empty {
+  text-align: center;
+  padding: 70px 20px;
+  color: var(--muted);
+}
+.empty strong {
+  display: block;
+  font-size: 20px;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.empty .primary {
+  margin-top: 16px;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.9fr);
+  gap: 24px;
+  align-items: start;
+}
+.panel {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.panel-head {
+  padding: 19px 24px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.panel-head h2 {
+  font-size: 16px;
+  margin: 0;
+}
+.panel-head small {
+  margin-left: auto;
+  color: var(--muted);
+}
+.panel-body {
+  padding: 24px;
+}
+.field {
+  display: block;
+  margin-bottom: 20px;
+}
+.field > span {
+  display: block;
+  font-size: 14px;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+.field small,
+.hint {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+input,
+select,
+textarea {
+  color: var(--navy);
+  background: white;
+  border: 1px solid #bbc9d7;
+  border-radius: 8px;
+  width: 100%;
+  padding: 12px;
+  outline: 0;
+  font-size: 16px;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #407ab9;
+  box-shadow: 0 0 0 3px #dceaf9;
+}
+textarea {
+  resize: vertical;
+  line-height: 1.7;
+}
+/* 「難易度「高」で相談する」のチェックボックス（入力欄の全幅・枠の指定を外し、見出しと横に並べる）。 */
+.check-field > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.check-field input[type='checkbox'] {
+  width: auto;
+  padding: 0;
+  margin: 0;
+}
+/* 新しいプロジェクトを選んだときは出さない（.field の display: block が hidden 属性より優先されるため）。 */
+.check-field[hidden] {
+  display: none;
+}
+/* 相談画面の難易度の記録（難易度・モデル・推論レベル・理由・引き上げ）。 */
+.tier-record {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.tier-record dt {
+  font-weight: 650;
+}
+.tier-record dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+select {
+  min-height: 46px;
+}
+details {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  margin-top: 12px;
+}
+summary {
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.conversation {
+  padding: 24px;
+  max-height: 520px;
+  min-height: 260px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+.message {
+  margin-bottom: 24px;
+  line-height: 1.85;
+  font-size: 15px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.message .who {
+  display: block;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.message.user {
+  margin-left: 35px;
+  padding: 14px 18px;
+  border-radius: 12px 12px 2px 12px;
+  background: #edf2f7;
+}
+.message.assistant {
+  padding-right: 18px;
+}
+/* 代理のAIの回答（role=proxy。Issue #758）。受付AI・利用者の発言と見分けられるよう枠と色を分ける。 */
+.message.proxy {
+  margin-right: 35px;
+  padding: 12px 16px;
+  border-left: 3px solid #7a5af8;
+  border-radius: 2px 12px 12px 2px;
+  background: #f4f1fe;
+}
+.message.proxy .who {
+  color: #5b3fd6;
+}
+.proxy-answers {
+  margin: 0;
+  padding-left: 20px;
+  white-space: normal;
+}
+.proxy-answers li {
+  margin-bottom: 8px;
+}
+/* 回答待ちの相談の、代理で答えた質問と利用者に回した質問の理由。 */
+.proxy-summary {
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.proxy-summary ul {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+}
+.composer {
+  border-top: 1px solid var(--line);
+  padding: 18px 24px;
+}
+.composer textarea {
+  min-height: 98px;
+}
+.composer-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+.composer-actions small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.draft-panel {
+  position: sticky;
+  top: 20px;
+}
+.draft-panel textarea {
+  font-size: 14px;
+  min-height: 310px;
+}
+.draft-panel .primary {
+  width: 100%;
+  background: #205eac;
+  border-color: #205eac;
+}
+.draft-panel .primary:hover {
+  background: #194c8b;
+}
+.draft-panel .field {
+  margin-bottom: 16px;
+}
+.preview-note {
+  background: #f0f5fb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #486684;
+  margin-bottom: 18px;
+}
+.status-line {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 12px 0;
+  line-height: 1.8;
+}
+.busy {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--blue);
+  font-size: 14px;
+  padding: 12px;
+  background: #eef5ff;
+  border-radius: 8px;
+}
+.busy:before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid #bcd3ed;
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.error-box {
+  color: #9b3434;
+  background: #fff0ef;
+  border: 1px solid #f4cccc;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+.error-box button {
+  margin-top: 12px;
+}
+.close-reason,
+.priority-box {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #dcdcdc;
+  background: #f6f6f6;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+.issue-body {
+  white-space: pre-wrap;
+  line-height: 1.85;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+/* 他のPCからのクローズ依頼の確認画面。項目ごとに見出しと内容を縦に並べる。 */
+.close-request {
+  display: grid;
+  gap: 14px;
+}
+.close-field strong {
+  display: block;
+  margin-bottom: 4px;
+}
+.split-plan {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.split-plan li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e4e4e0;
+}
+.result-link {
+  display: block;
+  border: 1px solid #c3dbcc;
+  background: #eff8f2;
+  border-radius: 8px;
+  padding: 16px;
+  color: #246445;
+  font-weight: 650;
+  margin-bottom: 20px;
+}
+.timeline .message {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 20px;
+  margin-left: 0;
+  background: transparent;
+}
+.timeline .message:last-child {
+  border: 0;
+}
+.timeline .bot .who {
+  color: var(--blue);
+}
+.mobile-tabs {
+  display: none;
+}
+.loading {
+  padding: 80px;
+  text-align: center;
+  color: var(--muted);
+}
+.heading-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.stats-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+.stats-form fieldset {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+.stats-coverage {
+  color: var(--muted);
+  font-size: 14px;
+}
+.stats-table {
+  overflow-x: auto;
+  margin-bottom: 24px;
+}
+.stats-table table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 14px;
+}
+.stats-table th,
+.stats-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.stop-check-stats tr.overdue td {
+  background: #fff0d6;
+  color: #6b3000;
+}
+/* 相談の難易度と結末（Issue #433）。引き上げの履歴は1件1行。 */
+.tier-outcomes td {
+  white-space: pre-line;
+  min-width: 7em;
+}
+/* モデルの一時的な切り替え（Issue #443）。工程ごとの欄に今の状態と設定の入力を並べる。 */
+.model-note {
+  color: var(--muted);
+  font-size: 14px;
+}
+.model-step {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 4px 16px 16px;
+  margin-bottom: 16px;
+}
+.model-state {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 0;
+}
+.model-state.active {
+  color: var(--blue);
+  font-weight: 650;
+}
+.model-step .tier-record + button {
+  margin-top: 10px;
+}
+.model-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: flex-end;
+  margin-top: 14px;
+}
+.stats-notes dt {
+  font-weight: 650;
+  margin-top: 10px;
+}
+.stats-notes dd {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+footer {
+  padding: 20px 24px 30px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+#notice {
+  position: fixed;
+  top: 90px;
+  right: 24px;
+  left: 24px;
+  max-width: 650px;
+  margin: auto;
+  background: #fff1ef;
+  border: 1px solid #e7b6ae;
+  padding: 16px 42px 16px 20px;
+  border-radius: 10px;
+  z-index: 10;
+  font-size: 14px;
+  box-shadow: 0 6px 20px #152c4320;
+  cursor: pointer;
+}
+/* 画面の更新を保留している知らせ。入力の邪魔にならないよう、上部の帯として本文の流れに置く。 */
+#update {
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  max-width: 1180px;
+  margin: 12px auto 0;
+  padding: 10px 16px;
+  background: #fff8e6;
+  border: 1px solid #ecd49a;
+  border-radius: 10px;
+  color: #6b4d0f;
+  font-size: 14px;
+}
+#update[hidden] {
+  display: none;
+}
+/* 成功の知らせ。エラー（#notice、上部・赤系）と重ならないよう下部に緑系で出す。 */
+#toast {
+  position: fixed;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  right: 24px;
+  left: 24px;
+  max-width: 420px;
+  margin: auto;
+  background: #eaf6ee;
+  border: 1px solid #a9d3b5;
+  color: #1d5a32;
+  padding: 12px 20px;
+  border-radius: 10px;
+  z-index: 10;
+  font-size: 14px;
+  text-align: center;
+  box-shadow: 0 6px 20px #152c4320;
+}
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  max-width: 470px;
+  width: calc(100% - 32px);
+  padding: 32px;
+  color: var(--navy);
+}
+dialog::backdrop {
+  background: #10233599;
+}
+dialog h2 {
+  font-size: 23px;
+}
+.close {
+  float: right;
+}
+.code {
+  font-size: 32px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  text-align: center;
+  background: #edf3f9;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 16px 0;
+}
+.pair-form {
+  max-width: 460px;
+  margin: 40px auto;
+}
+.pair-form h1 {
+  font-size: 24px;
+}
+.pair-form .primary {
+  width: 100%;
+}
+.phone-url {
+  overflow-wrap: anywhere;
+  display: block;
+  line-height: 1.8;
+}
+.instruction {
+  line-height: 1.9;
+  font-size: 15px;
+}
+.muted {
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .topbar {
+    height: 56px;
+    padding: 0 14px;
+    gap: 10px;
+  }
+  .brand {
+    font-size: 17px;
+    gap: 9px;
+  }
+  .brand-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 25px;
+  }
+  .topbar .quiet {
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+  .topbar .quiet[hidden] {
+    display: none;
+  }
+  main {
+    padding: 14px 12px 10px;
+  }
+  .page-heading {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .page-heading h1 {
+    font-size: 24px;
+  }
+  .page-heading p {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .page-heading .primary {
+    font-size: 13px;
+    padding: 10px 12px;
+    white-space: nowrap;
+  }
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .draft-panel {
+    position: static;
+  }
+  .panel-head {
+    padding: 17px 18px;
+  }
+  .panel-body {
+    padding: 18px;
+  }
+  /* 会話は別スクロールの枠にせず、ページ全体で1回だけスクロールする。 */
+  .conversation {
+    padding: 18px;
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
+  }
+  .composer {
+    padding: 16px 18px;
+  }
+  .message {
+    font-size: 15px;
+  }
+  .composer-actions small {
+    max-width: 160px;
+    line-height: 1.7;
+  }
+  .mobile-tabs {
+    display: flex;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+  .mobile-tabs button {
+    flex: 1;
+    border: 1px solid var(--line);
+    background: white;
+    border-radius: 7px;
+    padding: 10px;
+    color: var(--muted);
+  }
+  .mobile-tabs .active {
+    background: var(--navy);
+    color: white;
+    border-color: var(--navy);
+  }
+  .workspace[data-view='chat'] .draft-panel {
+    display: none;
+  }
+  .workspace[data-view='draft'] .chat-panel {
+    display: none;
+  }
+  .draft-panel textarea {
+    min-height: 330px;
+    font-size: 16px;
+  }
+  .panel input,
+  .panel textarea {
+    font-size: 16px;
+  }
+  .preview-note {
+    font-size: 14px;
+  }
+  .hint,
+  .field small {
+    font-size: 14px;
+  }
+  .badge {
+    font-size: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    animation: none !important;
+  }
+}
+.instruction {
+  white-space: pre-line;
+}
+.image-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+}
+.image-gallery figure {
+  margin: 0;
+  width: 140px;
+  max-width: 100%;
+}
+.image-gallery img {
+  display: block;
+  width: 100%;
+  height: 110px;
+  object-fit: contain;
+  background: #edf2f7;
+  border: 1px solid #bbc9d7;
+  border-radius: 6px;
+}
+.image-gallery figcaption {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.image-gallery button {
+  margin-top: 6px;
+}
+.image-composer input {
+  font-size: 14px;
+}
+.share-paste {
+  margin-bottom: 18px;
+}
+.share-paste button {
+  width: 100%;
+}
+.share-paste .share-note {
+  color: var(--navy);
+  font-weight: 600;
+}
+.image-reviews {
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+/* 日時列は「2026/9/23 17:03」の年付き表示が収まる幅にする（並び替え見出しの列と揃える）。 */
+.issue-row {
+  grid-template-columns: 170px minmax(0, 1fr) minmax(160px, 0.7fr) 120px;
+}
+.issue-row h3,
+.issue-row p,
+.issue-row .hint,
+.issue-row .draft-id {
+  overflow-wrap: anywhere;
+}
+/* 下書きIDは省略せず全部出す。狭い画面でも折り返し、選んでコピーできるようにする。 */
+.draft-id {
+  display: block;
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.badge {
+  white-space: normal;
+  max-width: 100%;
+}
+.badge.intake_waiting {
+  color: #946013;
+  background: #fff0cf;
+}
+.badge.submit_error,
+.badge.submit_unknown {
+  color: #a43c3c;
+  background: #fcebea;
+}
+/* 相談前のTODOは急ぎではない。注意色を使わず、落ち着いた色にする。 */
+.badge.saved_todo {
+  color: #4a5568;
+  background: #eef1f5;
+}
+/* 新しいプロジェクトの相談（#/projects）。状態名は依頼の相談と別の一覧なので、色も project- の名前で分ける。 */
+.badge.project-thinking {
+  color: #225c9e;
+  background: #e7f0fd;
+}
+.badge.project-waiting,
+.badge.project-ready {
+  color: #946013;
+  background: #fff0cf;
+}
+.badge.project-error {
+  color: #a43c3c;
+  background: #fcebea;
+}
+.badge.project-create_approved {
+  color: #226044;
+  background: #e2f3e9;
+}
+/* 同意の前に見せる定義の全文。改行（分割案の受入条件など）をそのまま出し、長い語は折り返す。 */
+.project-definition {
+  margin: 12px 0;
+}
+.project-definition dt {
+  margin-top: 12px;
+  font-weight: 700;
+}
+.project-definition dd {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.project-approve .primary {
+  margin-top: 12px;
+}
+/* 進行中・フォローアップタブの並び替え。PCでは行と同じ列に見出しを置き（優先度は案内文の列の左端）、
+   スマホ幅では4つを折り返して並べる。 */
+.sort-bar {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) minmax(160px, 0.7fr) 120px;
+  gap: 4px 20px;
+  align-items: end;
+  padding: 0 24px 8px;
+}
+.sort-bar[hidden] {
+  display: none;
+}
+.sort {
+  grid-row: 1;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.sort[data-sort='status'] {
+  grid-column: 1;
+}
+.sort[data-sort='project'] {
+  grid-column: 2;
+  justify-self: start;
+}
+.sort[data-sort='priority'] {
+  grid-column: 3;
+  justify-self: start;
+}
+/* 最終更新日時は行の日時と同じ第4列だけに置き、優先度（第3列）と列を分ける。列が狭いときは向きの表記を
+   次の行へ折り返し、隣の見出しに重ならない。 */
+.sort[data-sort='updated'] {
+  grid-column: 4;
+  justify-self: end;
+  justify-content: flex-end;
+  text-align: right;
+}
+.sort:hover {
+  background: #f7faff;
+}
+.sort:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+.sort.active {
+  color: var(--navy);
+  border-color: var(--line);
+  background: white;
+}
+.sort-direction {
+  font-size: 12px;
+  font-weight: 500;
+}
+.sort-summary {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .sort-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 0 10px;
+  }
+  .sort {
+    flex: 1 1 auto;
+    justify-content: center;
+    border-color: var(--line);
+    background: white;
+    font-size: 14px;
+  }
+  .sort[data-sort='updated'] {
+    justify-content: center;
+    text-align: left;
+  }
+  .sort-summary {
+    flex-basis: 100%;
+  }
+}
+/* 完了・クローズ済みタブの絞り込み（すべて／通常の依頼／フォローアップ）。スマホ幅でも3つとも出す。 */
+.kind-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px 8px;
+}
+.kind-bar[hidden] {
+  display: none;
+}
+.kind {
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kind:hover {
+  background: #f7faff;
+}
+.kind:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+.kind.active {
+  color: white;
+  border-color: var(--navy);
+  background: var(--navy);
+}
+.kind-summary {
+  color: var(--muted);
+  font-size: 12px;
+}
+/* 完了・クローズ済みタブの行に付けるフォローアップの目印。 */
+.kind-mark {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+/* Issue画面の見出しでは「プロジェクトと番号」（eyebrow）の中に置き、同じ行の右に並べる。 */
+.issue-page-heading .kind-mark {
+  margin: 0 0 0 8px;
+  letter-spacing: normal;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .kind-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 0 10px;
+  }
+  .kind {
+    flex: 1 1 auto;
+    background: white;
+    font-size: 14px;
+  }
+  .kind-summary {
+    flex-basis: 100%;
+    font-size: 13px;
+  }
+  .issue-row .kind-mark {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin: 0;
+    font-size: 13px;
+  }
+}
+
+.todo {
+  margin: 20px 24px 0;
+  padding: 16px 18px;
+  border: 1px solid #efcf8d;
+  border-left: 4px solid #c2571a;
+  background: #fffaf0;
+  border-radius: 8px;
+}
+.todo .eyebrow {
+  display: block;
+  color: #a2500f;
+  margin-bottom: 6px;
+}
+.todo strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.todo .issue-body {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #efdcb4;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+.todo.idle {
+  border-color: var(--line);
+  border-left-color: var(--line);
+  background: #f7f9fb;
+  color: var(--muted);
+  font-size: 14px;
+}
+.todo + .composer {
+  border-top: 0;
+}
+.timeline .message.you {
+  margin-left: 35px;
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 12px 12px 2px 12px;
+  background: #edf2f7;
+}
+.timeline .message.you .who {
+  color: var(--navy);
+}
+.timeline .ask .who,
+.timeline .notice .who {
+  color: #a2500f;
+}
+/* 反映しなかった操作の通知。会話履歴に出し、記録（log）より目立たせる。 */
+.timeline .message.notice {
+  padding: 12px 16px;
+  border: 1px solid #f0c9a4;
+  border-radius: 8px;
+  background: #fff7ef;
+}
+.timeline .result .who,
+.timeline .log .who {
+  color: var(--blue);
+}
+.timeline .log {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+}
+.timeline .hint {
+  margin: 0 0 18px;
+}
+.side {
+  display: grid;
+  gap: 16px;
+}
+.request-body {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+@media (max-width: 760px) {
+  .todo {
+    margin: 16px 18px 0;
+  }
+  .composer .primary {
+    white-space: nowrap;
+  }
+  .request-body {
+    max-height: none;
+  }
+  .timeline .message.you {
+    margin-left: 18px;
+  }
+}
+
+/* 上部の接続表示の短い形。PC幅では出さず、スマホ幅だけ #connection の代わりに出す。 */
+.connection-toggle {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #e3ebf2;
+  font-size: 13px;
+  padding: 6px 4px;
+}
+.connection-toggle:before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.connection-toggle.off:before {
+  background: #e7b44d;
+}
+/* 固定しない位置に出す入力欄の案内文。PC幅では送信ボタンの横の案内文だけを出す。 */
+.dock-note {
+  display: none;
+}
+/* 画像の添付。素のファイル選択欄は見た目だけ隠し、「画像を添付」ボタンから開く。 */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.image-composer {
+  position: relative;
+}
+.image-composer .image-gallery:empty {
+  display: none;
+}
+.image-attach-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+.image-limits {
+  flex: 1 1 200px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.image-limits summary {
+  margin: 0;
+  font-size: 13px;
+}
+.image-limits .hint {
+  margin-top: 4px;
+}
+/* 本文の簡易Markdown。表とコードは枠の中だけで横スクロールし、ページを横に広げない。 */
+.md > :first-child {
+  margin-top: 0;
+}
+.md > :last-child {
+  margin-bottom: 0;
+}
+.md p,
+.md ul,
+.md ol,
+.md blockquote,
+.md .md-scroll {
+  margin: 0 0 10px;
+}
+.md ul,
+.md ol {
+  padding-left: 1.4em;
+}
+.md li > ul,
+.md li > ol {
+  margin: 2px 0 0;
+}
+.md .md-heading {
+  margin: 14px 0 6px;
+  font-size: 1.05em;
+  line-height: 1.5;
+}
+.md .md-h1 {
+  font-size: 1.25em;
+}
+.md .md-h2 {
+  font-size: 1.15em;
+}
+.md blockquote {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+.md hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 12px 0;
+}
+.md code,
+.long-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+.md code {
+  background: #edf2f7;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.md-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.md pre {
+  margin: 0;
+  padding: 10px 12px;
+  background: #f3f6f9;
+  border-radius: 6px;
+  white-space: pre;
+  overflow-wrap: normal;
+  line-height: 1.6;
+}
+.md pre code {
+  background: none;
+  padding: 0;
+  font-size: 13px;
+}
+.md table {
+  border-collapse: collapse;
+  white-space: normal;
+  overflow-wrap: normal;
+}
+.md th,
+.md td {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+.md th {
+  background: #f3f6f9;
+}
+.md a {
+  overflow-wrap: anywhere;
+}
+.todo .md strong {
+  display: inline;
+  font-size: inherit;
+  line-height: inherit;
+}
+/* 長いID・コミットハッシュ。押すと全文を出し、開いた全文は選択・コピーできる。 */
+.long-id-toggle {
+  border: 0;
+  border-radius: 4px;
+  padding: 0 4px;
+  background: #edf2f7;
+  color: var(--navy);
+  font: inherit;
+  cursor: pointer;
+}
+.long-id-full {
+  margin-right: 4px;
+  word-break: break-all;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.timeline .show-older {
+  width: 100%;
+}
+
+/* スマホ幅の表示（Issue #296）。PC幅（760pxを超える幅）の規則は変えない。 */
+@media (max-width: 760px) {
+  /* 上部の接続表示は「● 稼働中」だけにし、押すと全文（#connection の表示と title）を開く。 */
+  .topbar {
+    position: relative;
+  }
+  .connection {
+    display: none;
+  }
+  .connection-toggle {
+    display: inline-flex;
+  }
+  .connection[data-open='true'] {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 12px;
+    right: 12px;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 0 0 10px 10px;
+    background: var(--navy);
+    color: #e3ebf2;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+    z-index: 20;
+    box-shadow: 0 6px 20px #152c4340;
+  }
+  .connection[data-open='true']::after {
+    content: attr(title);
+    display: block;
+    color: #adbdcd;
+  }
+  /* 文字は最小13px（ロゴの副題は装飾なので対象外）。画面下の説明文は出さない。 */
+  .eyebrow,
+  .page-heading .eyebrow,
+  .message .who,
+  .count,
+  .composer-actions small,
+  .panel-head small,
+  .draft-id,
+  .image-gallery figcaption,
+  .sort-direction,
+  .sort-summary {
+    font-size: 13px;
+  }
+  footer {
+    display: none;
+  }
+  .badge {
+    white-space: nowrap;
+    flex-shrink: 0;
+    max-width: none;
+  }
+  /* Issue画面の見出し。状態表示を「プロジェクトと番号」の行に並べ、題名はその下に出す。 */
+  .issue-page-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 10px;
+  }
+  .issue-page-heading > div {
+    display: contents;
+  }
+  .issue-page-heading .eyebrow {
+    grid-row: 1;
+    grid-column: 1;
+    overflow-wrap: anywhere;
+  }
+  .issue-page-heading > .badge {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  /* フォローアップの目印は eyebrow の中にあり、1行目の左の欄（grid-column: 1）に収まる。 */
+  .issue-page-heading .kind-mark {
+    margin-left: 6px;
+    font-size: 13px;
+  }
+  .issue-page-heading h1 {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 21px;
+    line-height: 1.5;
+  }
+  /* 依頼一覧の見出しは1行に収め、「稼働実績」を小さいリンクにする。 */
+  .list-heading {
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .list-heading .eyebrow,
+  .list-heading p {
+    display: none;
+  }
+  .list-heading h1 {
+    margin: 0;
+    font-size: 22px;
+  }
+  .list-heading .heading-actions {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 12px;
+  }
+  /* 見出しを1行に収めるため、モデルの切り替えの入口はPC幅だけに出す（#/models のURLはスマホでも開ける）。 */
+  .list-heading .models-link {
+    display: none;
+  }
+  .list-heading .stats-link {
+    border: 0;
+    background: none;
+    min-height: 0;
+    padding: 4px 0;
+    color: var(--blue);
+    text-decoration: underline;
+    font-size: 14px;
+  }
+  /* 一覧のタブは横スクロールせず、3個×2段に折り返す。件数0のタブは薄く表示する（押せるまま）。 */
+  .toolbar {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 4px;
+    margin: 8px 0;
+  }
+  .toolbar .tab {
+    flex: 1 1 30%;
+    padding: 8px 4px;
+    font-size: 14px;
+    white-space: normal;
+    word-break: keep-all;
+    line-height: 1.4;
+  }
+  .toolbar .tab .count {
+    margin-left: 3px;
+    padding: 1px 5px;
+  }
+  .toolbar .tab.tab-empty:not(.active) {
+    opacity: 0.5;
+  }
+  /* 一覧の1件。1行目に状態・プロジェクトと番号・更新日時、2行目に題名（2行まで）。案内文は要対応タブだけ。 */
+  .issue-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px 8px;
+    padding: 14px;
+  }
+  .issue-row > div {
+    display: contents;
+  }
+  .issue-row > .badge {
+    grid-row: 1;
+    grid-column: 1;
+  }
+  .issue-row > div > p:first-of-type {
+    grid-row: 1;
+    grid-column: 2;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 元の依頼と案の要約は題名の下へ自動配置し、プロジェクトと番号の升目に重ねない。 */
+  .issue-row > div > p.attention-proposal-summary,
+  .issue-row > div > p.origin {
+    grid-column: 1 / -1;
+  }
+  /* 更新日時はどのタブでも出す。本文（PC幅の年付き表示）の代わりに data-short の短い形を出す。 */
+  .issue-row time {
+    display: block;
+    grid-row: 1;
+    grid-column: 3;
+    white-space: nowrap;
+    font-size: 0;
+  }
+  .issue-row time::before {
+    content: '更新 ';
+    font-size: 13px;
+  }
+  .issue-row time::after {
+    content: attr(data-short);
+    font-size: 13px;
+  }
+  .issue-row h3 {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .issue-row .draft-id {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .issue-row > .hint {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .issue-row > .narrow-hidden {
+    display: none;
+  }
+  .list-attention .row-guidance {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 新しい依頼。画像の欄の後ろにも項目の間と同じ余白を置き、送信欄は説明文・相談開始・TODO保存の縦並び。 */
+  .panel-body > .image-composer {
+    margin-bottom: 20px;
+  }
+  .new-request-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .new-request-actions small {
+    max-width: none;
+  }
+  .new-request-actions .primary {
+    order: 1;
+  }
+  .new-request-actions .quiet {
+    order: 2;
+  }
+  /* 相談・Issue画面。入力欄・添付・送信だけを画面下に固定し、Issue画面では会話履歴の後ろへ回す。 */
+  .chat-panel.docked {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    overflow: clip;
+  }
+  .docked > .composer {
+    display: contents;
+  }
+  .docked .dock-note {
+    display: block;
+    margin: 12px 18px 0;
+  }
+  /* .composer の余白が無くなるので、失敗の表示と依頼先の改名通知（retargetNotice）に個別の余白を付ける。 */
+  .docked > .composer > .error-box,
+  .docked > .composer > .retarget-notice {
+    margin: 12px 18px 0;
+  }
+  .docked .composer-dock {
+    order: 1;
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: white;
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 12px #152c4314;
+  }
+  .docked .composer-dock > textarea {
+    flex: 1 1 100%;
+    min-height: 0;
+    resize: none;
+  }
+  .composer-dock .image-composer,
+  .composer-dock .image-attach-row,
+  .composer-dock .composer-actions {
+    display: contents;
+  }
+  .composer-dock .image-gallery {
+    order: -1;
+    flex: 1 1 100%;
+    margin: 0;
+  }
+  .composer-dock .image-attach,
+  .composer-dock .image-limits,
+  .composer-dock .primary {
+    order: 1;
+  }
+  .composer-dock .image-limits {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .composer-dock .image-limits[open] {
+    order: 2;
+    flex-basis: 100%;
+  }
+  .composer-dock .composer-actions small {
+    display: none;
+  }
+  .composer-dock .primary {
+    margin-left: auto;
+  }
+}
+/* 依頼の相談から引き継いだ新しいプロジェクトの相談（Issue #506）。見出しの下に元の相談への案内と引き継いだ内容を出す。 */
+.handoff-note {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+.handoff-note .instruction,
+.handoff-note .issue-body {
+  overflow-wrap: anywhere;
+}
+.handoff-note .field {
+  margin-top: 12px;
+}
+@media (max-width: 760px) {
+  .handoff-note {
+    padding: 12px 14px;
+  }
+  /* 同意（リポジトリを作成する）・作成を始める・作成／起票の再試行と、引き継ぎの案内のボタンは、幅いっぱいにして
+     長い文言も折り返して押せるようにする。 */
+  .project-panel .primary,
+  .handoff-note .quiet {
+    width: 100%;
+    white-space: normal;
+    min-height: 44px;
+  }
+}
+
+/* 依頼内容の本文の折り畳み（Issue #607。server/web/app-issue-view.js）。.hint は display: block なので hidden を明示する。 */
+.hint[hidden] {
+  display: none;
+}
+.request-toggle {
+  margin-bottom: 8px;
+}
+/* Issue詳細の内容と状況を縦に並べる。 */
+.issue-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.issue-section {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.issue-section > :not(.panel-head):not(.composer):not(.composer-dock):not(.todo) {
+  margin-left: 18px;
+  margin-right: 18px;
+}
+.issue-excerpt,
+.issue-status-text {
+  margin: 12px 18px 8px;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+.issue-status-line {
+  margin: 12px 18px 0;
+}
+.lazy-fold {
+  min-width: 0;
+}
+.lazy-fold:not(:empty) {
+  margin: 0 18px 12px;
+}
+.issue-section > .request-toggle {
+  margin: 0 18px 12px;
+}
+/* PCごとの負荷の表（Issue #619。server/web/app-hosts.js）。列が多いので表の枠の中だけを横にスクロールし、ページを広げない。 */
+.hosts-panel {
+  margin-top: 24px;
+}
+.hosts-panel[hidden] {
+  display: none;
+}
+.hosts-panel h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.hosts-table {
+  max-width: 100%;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+.hosts-table table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 14px;
+}
+.hosts-table th,
+.hosts-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+/* 行のPC名を横スクロール中も表示する。詳細行はPC名を本文に含む。 */
+.hosts-table thead th:first-child,
+.hosts-table tbody tr:not(.host-environment) td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--host-sticky-background, #fff);
+}
+.hosts-table thead th:first-child { z-index: 2; }
+.hosts-assignment tbody tr:not(.host-environment) td:nth-child(3) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 12em;
+}
+.hosts-table .host-stale td {
+  color: var(--muted);
+}
+.hosts-table select,
+.hosts-table button {
+  font-size: 14px;
+}
+.hosts-table .host-restart-safe td {
+  font-weight: 600;
+}
+/* 実行環境の問題で止めたPCの理由と直し方（Issue #783）。表の幅いっぱいの行で、長い文とパスは折り返す。 */
+.hosts-table .host-environment td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.hosts-reason {
+  display: block;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  /* スマホ幅でも文字は最小13px（docs/web-ui.md）。表は枠の中だけ横にスクロールする。 */
+  .hosts-panel h2 {
+    font-size: 15px;
+  }
+  .hosts-table table,
+  .hosts-table select,
+  .hosts-table button,
+  .hosts-reason {
+    font-size: 13px;
+  }
+  .hosts-table th,
+  .hosts-table td {
+    padding: 6px 8px;
+  }
+}
+/* 依頼一覧の見出しの入口（稼働実績・モデルの切り替え）。PC幅は従来どおり横に並べる。 */
+.heading-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 760px) {
+  /* 見出しを1行に収めるため、入口のリンクを縦に重ねる（モデルの切り替えはPC幅だけ。上の .models-link）。 */
+  .list-heading .heading-links {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 2px;
+  }
+}
+
+/* SVGの色・大きさはCSPに従いクラスだけで指定する。 */
+.ops-overview {
+  min-width: 0;
+  font-size: 14px;
+}
+.ops-panel {
+  margin-block: 24px;
+  min-width: 0;
+}
+.ops-chart {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
+.ops-bar-row {
+  margin-block: 8px;
+}
+.ops-bar-row p,
+.ops-definition {
+  overflow-wrap: anywhere;
+}
+.ops-tab-list {
+  display: flex;
+  gap: 8px;
+  margin-block: 12px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.ops-tabs [role='tabpanel'][hidden] {
+  display: none;
+}
+.ops-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ops-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+.ops-legend li {
+  overflow-wrap: anywhere;
+}
+.ops-swatch {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 6px;
+}
+.ops-color-0 {
+  fill: #237a57;
+  stroke: #237a57;
+  background-color: #237a57;
+}
+.ops-color-1 {
+  fill: #bc483d;
+  stroke: #bc483d;
+  background-color: #bc483d;
+}
+.ops-color-2 {
+  fill: #a87919;
+  stroke: #a87919;
+  background-color: #a87919;
+}
+.ops-color-3 {
+  fill: #386cb0;
+  stroke: #386cb0;
+  background-color: #386cb0;
+}
+.ops-color-4 {
+  fill: #8057a8;
+  stroke: #8057a8;
+  background-color: #8057a8;
+}
+.ops-color-5 {
+  fill: #368087;
+  stroke: #368087;
+  background-color: #368087;
+}
+.ops-donut {
+  fill: none;
+  stroke-width: 28;
+  transform: rotate(-90deg);
+  transform-origin: 200px 110px;
+}
+.ops-line {
+  fill: none;
+  stroke-width: 2;
+}
+.ops-overview .stats-table {
+  max-width: 100%;
+}
+.ops-overview .stats-table table {
+  min-width: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+.ops-overview .stats-table th,
+.ops-overview .stats-table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+@media (max-width: 760px) {
+  .ops-overview .stats-table th,
+  .ops-overview .stats-table td {
+    padding: 4px;
+    font-size: 13px;
+  }
+}
+
+.token-list {
+  display: grid;
+  gap: 10px;
+  max-width: 1100px;
+  margin: 1rem auto;
+}
+.token-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+.token-name {
+  min-width: 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.token-meta {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.token-actions {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+@media (max-width: 600px) {
+  .token-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .token-actions {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+.provider-disable-banner {
+  margin: 1rem auto;
+  padding: 1rem;
+  max-width: 1100px;
+  background: #fff3cd;
+  color: #493800;
+}
+.provider-disable-banner button {
+  margin-left: 1rem;
+}

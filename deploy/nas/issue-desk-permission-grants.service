@@ -1,0 +1,9 @@
+[Unit]
+Description=issue-desk（NAS）の許可の付与を remote-control のプロジェクト設定へ反映する
+
+[Service]
+Type=oneshot
+# __DIR__ は update-units.sh が配置先に置き換える。node は ~/.issue-desk/node（監視のイメージの node を docker で動かす）。
+# 有効化の印（~/.issue-desk/remote-control/permission-grants-enabled）が無ければ何も足さない（docs/permission-grants.md）。
+WorkingDirectory=__DIR__
+ExecStart=%h/.issue-desk/node __DIR__/deploy/nas/permission-grants-apply.ts

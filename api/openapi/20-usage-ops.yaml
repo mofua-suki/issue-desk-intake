@@ -1,0 +1,766 @@
+{
+  'paths':
+    {
+      '/api/openapi.json': {"get": {"operationId": "get_api_openapi_json", "summary": "結合版API仕様を取得する", "description": "pathPrefix は経路の前方一致。指定時は一致する paths と参照用 components を含む仕様を返す。未知の引数、空値、重複、不正な指定は400。tailnet内でのみ利用する。", "security": [{"pcToken": []}, {"cliKey": []}, {"screenSession": []}], "parameters": [{"name": "pathPrefix", "in": "query", "required": false, "description": "/ で始まる経路の前方一致", "schema": {"type": "string", "minLength": 1, "pattern": "^/"}}], "responses": {"200": {"description": "OpenAPI仕様", "content": {"application/json": {"schema": {"type": "object"}}}}, "400": {"$ref": "#/components/responses/Error400"}, "401": {"$ref": "#/components/responses/Error401"}, "403": {"$ref": "#/components/responses/Error403"}}}},
+      '/api/v1/stop-check-fires':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_stop_check_fires',
+              'summary': 'Stop検査の発動記録を送る',
+              'description': 'PC別トークンは運用代行不要。一時キーも利用可。PC名は認証主体から取得し、英数字・ドット・アンダースコア・ハイフンの1〜100文字以外はotherとして保存する。本文・理由・パスは受け取らない。同じ記録IDの再送は重複しない。1000件・1MiBまで受け付け、上限超過、不正な記録、重複キーは400で拒否し保存しない。400は恒久的な入力エラーなので送信側は同じ控えを自動再送せず、原因を確認する。 全件成功か全件拒否で、200は重複IDを含む全行の受領を表す。部分成功や件数の返却は行わない。空配列も200とする。本文上限は1048576 bytes、超過時は400。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }, { 'cliKey': [] }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content': { 'application/json': { 'schema':
+                    {
+                      'type': 'array',
+                      'minItems': 0,
+                      'maxItems': 1000,
+                      'items':
+                        {
+                          'type': 'object',
+                          'required': ['id', 'checkId', 'result', 'at', 'project'],
+                          'properties':
+                            {
+                              'id': { 'type': 'string', 'format': 'uuid' },
+                              'checkId': { 'type': 'string', 'maxLength': 100, 'pattern': '^[a-z][a-z0-9-]{0,99}$', 'description': '台帳のcounted=trueの検査IDのみ受け付ける。' },
+                              'result': { 'type': 'string', 'enum': ['block', 'warn'] },
+                              'at': { 'type': 'string', 'format': 'date-time' },
+                              'project': { 'type': 'string', 'description': '英数字・ドット・アンダースコア・ハイフンの1〜100文字。不正な名前はother。' },
+                            },
+                          'additionalProperties': false,
+                        },
+                    } } },
+                },
+              'responses':
+                {
+                  '200': { 'description': '受付成功。同一IDの再送も成功。', 'content': { 'application/json': { 'schema': { 'type': 'object', 'required': ['ok'], 'properties': { 'ok': { 'type': 'boolean', 'const': true } }, 'additionalProperties': false } } } },
+                  '400': { '$ref': '#/components/responses/Error400', 'description': '不正な記録、重複キー、1000件超過または本文1048576 bytes超過。全件を保存しない。' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                },
+            },
+        },
+      '/api/v1/usage':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_usage',
+              'summary': '使用量・上限の行を送る',
+              'description': '本文1MiB、usage+limits+fixedTests+logLinesの合計は1000行まで。超過・本文の形式違いは400で保存しない。不正な行はrejected、同じ鍵はduplicate。usage行のbillingは任意。subscriptionは契約の枠、api_creditはAPIクレジットを表す。欄なしとnullは課金経路の解釈上subscription扱い。不正なbilling値は行ごとにrejected。既存行の保存値は補完・書換えしない。logLinesのPCはPC別トークンの名前。at・lineだけを受け付け、atは年0001〜9999で実在するUTC ISO日時（小数秒は1〜3桁）、他の項目・改行・空本文・上限超過はrejected。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'added': {}, 'duplicate': {}, 'rejected': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                {
+                                  'usage':
+                                    { 'type': 'array', 'items': { 'type': 'object', 'description': 'diagnosticKindとcallIdは省略可能。いずれもsource=intakeのみ指定でき、不正な値は行ごとにrejected。callIdは物理呼び出しごとのUUIDで、同一ID・同一内容はduplicate、同一ID・異なる内容はrejected。', 'properties': { 'source': { 'type': 'string' }, 'callId': { 'type': 'string', 'pattern': '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$' }, 'diagnosticKind': { 'type': 'string', 'enum': ['completed', 'timeout_idle', 'timeout_total', 'canceled_by_server', 'spawn_failed', 'output_overflow', 'exit_nonzero', 'authentication', 'rate_limit', 'usage_limit', 'format', 'session', 'input_invalid', 'execution'] } }, 'allOf': [{ 'if': { 'required': ['callId'] }, 'then': { 'required': ['source'], 'properties': { 'source': { 'const': 'intake' } } } }, { 'if': { 'required': ['diagnosticKind'] }, 'then': { 'required': ['source'], 'properties': { 'source': { 'const': 'intake' } } } }], 'additionalProperties': true } },
+                                  'limits':
+                                    { 'type': 'array', 'items': { 'type': 'object', 'additionalProperties': true } },
+                                  'fixedTests':
+                                    { 'type': 'array', 'items': { 'type': 'object', 'additionalProperties': true } },
+                                  'logLines':
+                                    {
+                                      'type': 'array',
+                                      'items':
+                                        {
+                                          'type': 'object',
+                                          'required': ['at', 'line'],
+                                          'properties':
+                                            {
+                                              'at':
+                                                {
+                                                  'type': 'string',
+                                                  'format': 'date-time',
+                                                  'description': 'UTCのISO日時（Z、秒以下は3桁まで）',
+                                                },
+                                              'line':
+                                                {
+                                                  'type': 'string',
+                                                  'minLength': 1,
+                                                  'maxLength': 16384,
+                                                  'pattern': '^[^\u0000\r\n]+$',
+                                                  'description': 'UTF-16コード単位で16384以内。空文字・NUL・CR・LFはrejected。',
+                                                },
+                                            },
+                                          'additionalProperties': false,
+                                        },
+                                    },
+                                },
+                              'additionalProperties': false,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/settings':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_settings',
+              'summary': '運用設定の版と値を読む',
+              'description': 'sinceが現在の版なら{version,unchanged:true}。違えば{version,settings}（期限内の設定）。server/internal/fleet/settings.go の Settings を参照。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'version': {}, 'settings': {}, 'unchanged': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'since', 'in': 'query', 'schema': { 'type': 'string' } }],
+            },
+        },
+      '/api/v1/client-config':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_client_config',
+              'summary': '自分のclient設定を読む',
+              'description': 'host省略時は送り手。別PCは403。sinceが現在の版なら{version,unchanged:true}。違えば{version,config,configurationVersion,settings,settingsVersion,reviewNotes}。server/internal/fleet/client_config.go の ClientConfig を参照。配布する構成の全項目の型は採録していない。config.nativeTestVersionsはテスト担当IDごとの設定ダイジェストで、Mac側の検証コマンド変更も実装担当のconfigurationVersionへ反映する。config.hostRoleはimplementation/test-only。config.testRepositoriesはこのPCのネイティブテスト対象。config.assignments.hostRolesとtestRepositoriesにもホスト別の役割・対象を配る。Macテスト担当のconfig.repositories[].nativeNetwork（任意の真偽値）は隔離した検証のネットワークを有効にし、nativeToolRoots（任意の絶対パス配列）はSDKの参照先を指定する。config.repositories[].nativeTestHostがあるリポジトリはマージ前にそのホストのAppleネイティブ検証の成功が必要。config.repositories[].testTimeoutSecondsは任意で、1〜2147483の整数を指定すると、そのリポジトリの固定テスト本体の期限になる（省略時はPC単位のtestTimeoutSeconds。準備はjobTimeoutSeconds）。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'version': {},
+                                      'config': {},
+                                      'configurationVersion': {},
+                                      'settings': {},
+                                      'settingsVersion': {},
+                                      'reviewNotes': {},
+                                      'unchanged': {},
+                                    },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters':
+                [
+                  { 'name': 'host', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'since', 'in': 'query', 'schema': { 'type': 'string' } },
+                ],
+            },
+        },
+      '/api/v1/usage/summary':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_usage_summary',
+              'summary': '受付DBに集まった全PC分の使用量と詳細の要約',
+              'description': '今日を含む直近30日、日本時間の0時境界の[from,to)。運用の代行を許したPC別トークン専用。未送信分は含まない。正常0件はok=true、DB初期化・期間内または補正用読取失敗はok=falseでローカルへ代替しない。生の行・プロンプト・依頼文・回答本文は返さない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'project',
+                    'in': 'query',
+                    'description': '省略・空文字は全体。それ以外は登録済みリポジトリ名。',
+                    'schema': { 'type': 'string' },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '取得成否と上限付き要約。DB障害も200で欠測理由を返す。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'additionalProperties': false,
+                                  'required':
+                                    [
+                                      'source',
+                                      'project',
+                                      'from',
+                                      'to',
+                                      'generatedAt',
+                                      'ok',
+                                      'reason',
+                                      'skipped',
+                                      'summaries',
+                                    ],
+                                  'properties':
+                                    {
+                                      'source': { 'const': 'usage-db' },
+                                      'project': { 'type': 'string' },
+                                      'from': { 'type': 'string', 'format': 'date-time' },
+                                      'to': { 'type': 'string', 'format': 'date-time' },
+                                      'generatedAt': { 'type': 'string', 'format': 'date-time' },
+                                      'ok': { 'type': 'boolean' },
+                                      'reason':
+                                        {
+                                          'type': ['string', 'null'],
+                                          'description': '秘匿済みの欠測理由。正常時はnull。',
+                                        },
+                                      'skipped':
+                                        {
+                                          'type': ['integer', 'null'],
+                                          'minimum': 0,
+                                          'description': '期間内の読めなかった行数。取得できなければnull。',
+                                        },
+                                      'summaries':
+                                        {
+                                          'type': 'array',
+                                          'minItems': 3,
+                                          'maxItems': 3,
+                                          'items':
+                                            {
+                                              'type': 'object',
+                                              'additionalProperties': false,
+                                              'required': ['kind', 'text'],
+                                              'properties':
+                                                {
+                                                  'kind': { 'enum': ['usage', 'detail', 'coverage'] },
+                                                  'text':
+                                                    {
+                                                      'type': 'string',
+                                                      'description': 'usageはUTF-8で3000 bytes以内、detailは2000 bytes以内、coverageは1500 bytes以内（到着棚卸し・対象期間・観測範囲・省略件数・取得失敗理由。呼び出し母数と送信位置は不明）。文字境界と省略表示を保つ。',
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                },
+            },
+        },
+      '/api/v1/ops-watch/lease':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_ops_watch_lease',
+              'summary': '運用の見張りの予約を取得・更新する',
+              'description': '予約なし・期限切れ・同じPC・primary=trueなら取得。主は待機から取り戻す。同期settingsのops-watch-leaseにholder・renewedAt・untilを保存する。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'additionalProperties': false,
+                              'required': ['ttlMinutes', 'primary'],
+                              'properties':
+                                {
+                                  'ttlMinutes': { 'type': 'integer', 'minimum': 1, 'maximum': 1440 },
+                                  'primary': { 'type': 'boolean' },
+                                },
+                            },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '予約の取得結果',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required': ['held', 'holder', 'until'],
+                                  'properties':
+                                    {
+                                      'held': { 'type': 'boolean' },
+                                      'holder': { 'type': 'string' },
+                                      'until': { 'type': 'string', 'format': 'date-time' },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { 'description': '本文の項目・値が不正' },
+                  '401': { 'description': 'トークンが無効・失効' },
+                  '403': { 'description': '運用の代行の許可がない、または画面・一時キー' },
+                  '405': { 'description': 'POST以外' },
+                },
+            },
+        },
+      '/api/v1/ops/usage-anomalies':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_ops_usage_anomalies',
+              'summary': '使用量の異常を読む',
+              'description': '時差付きISO日時。省略は直近24時間、最大7日。[from,to)。保存・起票しない。anomaliesのkindはlimit-forecast（上限の枠が切れる見込み。全判定はlimitForecast。判定・閾値・保留理由は応答スキーマを参照）・repeat・outlier・failure・hourly・intake-repeat（受付の活動下書き当たりの呼び出し増加）・cache（相談のキャッシュに乗らない入力の増加）・call-trigger（受付の呼び出しのきっかけの比率の悪化）・unit-total（相談・Issue 単位の合計の外れ）・filing-check（起票1件あたりの確認回数の増加。全判定はfilingCheck。直近7日と直前7日の起票あたり確認回数を比べ、直近値>=max(1.0,直前値×2)で当たり。分母不足・欠測は理由付きでheld）・filing-cache（起票直前の確認のキャッシュの是正の効果なし。全判定はfilingCache）。unit-totalは期間末尾endで1回、draftのある行は相談、それ以外のrepo・issueのある行はIssueとして分け、期間に行がある単位の(end−7日,end]の行数・重み付き量を、同種の他単位（自分を除く）の(end−14日,end−7日]の合計の中央値と比較。比較10単位以上で、行数が5倍以上かつ30行以上、または量が5倍以上。各指標の中央値0は判定しない。不明量は行数に含め量から除きunknownに数える。両条件成立時は回数を返す。閾値は期間7日・同種の他単位10件以上・中央値の5倍以上・回数は30行以上（server/internal/anomalies/aggregate.go の UnitTotals）。step=null、at=end、rowは単位の最後の行の写し、相談はdraftを持ちcauseKey=unit-total:draft:<draft>、Issueはunit-total:<repo>#<issue>。call-triggerは期間の最後の行の時刻endで1回、source=intakeを工程×実行先別に直近24時間(end−24時間,end]と直前7日(end−8日,end−24時間]で比較。文字列callTriggerの行だけを分母とし、欠測はcurrent/previous.unknown、既知の分母はcount。initial・user_reply以外の各値を動的に比較。両窓20行以上、直近の比率が直前の1.5倍以上かつ0.1以上増加で当たり。基準0なら直近0.1以上でratio=null。threshold=max(基準×1.5,基準+0.1)、unit=比率、step・provider・callTrigger・measured・baseline・rule・periodを含み、rowは組の直近窓の最後の行の写し、causeKeyはcall-trigger:<工程>:<実行先>:<値>。閾値は server/internal/anomalies/aggregate.go の CallTriggers。provider-shift（実行先の急変）は期間の最後の行の時刻endで1回。0件の型は、直前7日(end−7日−12時間,end−12時間]に20行以上あった実行先が直近12時間(end−12時間,end]に0行で、同じ12時間にほかの実行先の行が合わせて10行以上なら当たり（measuredは最後の行からendまでの時間、unit=時間、rowはその実行先の最後の行の写し、causeKey=provider-shift:*:<実行先>）。比率の型は工程ごとに直近24時間(end−24時間,end]と直前7日(end−8日,end−24時間]の各実行先の行の比率を比べ、両窓が各20行以上で差の絶対値が0.5以上なら当たり（unit=比率、causeKey=provider-shift:<工程>:<実行先>）。実行先の無い行は分母と0件の判定から除きunknownに数える。閾値は server/internal/anomalies/aggregate.go の ProviderShifts。検出全体の入口は server/internal/anomalies/service.go の Detect。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'from': {},
+                                      'to': {},
+                                      'rows': {},
+                                      'anomalies': {},
+                                      'filingCheck':
+                                        {
+                                          'type': 'array',
+                                          'description': '起票1件あたりの確認回数の増加（kind=filing-check）。稼働実績filingCheckと同じ保持した確認イベントの集計をconfig.repositoriesのリポジトリごとに読む。比較期間はtoを終端にした直近7日[to−7日,to)と直前7日[to−14日,to−7日)。値=確認回数(compare_requested)÷期間内の新規Issue数。直近値>=max(1.0,直前値×2)（ちょうども当たり）でhit。分母0・保持記録なし・収集開始前や30日の保持範囲外を含む期間・読取失敗は値を捏造せずheldとしreasonsに理由を返す。当たりだけanomaliesにも含む。本文・題名・プロンプトは含まない。',
+                                          'items':
+                                            {
+                                              'type': 'object',
+                                              'properties':
+                                                {
+                                                  'kind': { 'const': 'filing-check' },
+                                                  'kindName': { 'const': '起票1件あたりの確認回数の増加' },
+                                                  'repo': { 'type': 'string' },
+                                                  'status': { 'enum': ['hit', 'normal', 'held'] },
+                                                  'reasons':
+                                                    {
+                                                      'type': 'array',
+                                                      'description': 'previous_unavailable/current_unavailable=集計が返らない（理由はdetails）、previous_no_issues/current_no_issues=新規Issue数0、read_failed=読取失敗。',
+                                                      'items':
+                                                        {
+                                                          'enum':
+                                                            [
+                                                              'previous_unavailable',
+                                                              'current_unavailable',
+                                                              'previous_no_issues',
+                                                              'current_no_issues',
+                                                              'read_failed',
+                                                            ],
+                                                        },
+                                                    },
+                                                  'details': { 'type': 'array', 'items': { 'type': 'string' } },
+                                                  'measured':
+                                                    {
+                                                      'type': ['number', 'null'],
+                                                      'description': '直近7日の確認回数/起票',
+                                                    },
+                                                  'baseline':
+                                                    {
+                                                      'type': ['number', 'null'],
+                                                      'description': '直前7日の確認回数/起票',
+                                                    },
+                                                  'threshold':
+                                                    {
+                                                      'type': ['number', 'null'],
+                                                      'description': 'max(1.0,baseline×2)',
+                                                    },
+                                                  'ratio': { 'type': ['number', 'null'] },
+                                                  'unit': { 'const': '回/起票' },
+                                                  'windows':
+                                                    {
+                                                      'type': 'object',
+                                                      'description': 'previous/currentにfrom/to（ISO日時）。',
+                                                    },
+                                                  'previous':
+                                                    {
+                                                      'type': 'object',
+                                                      'description': 'requests・newIssues・requestsPerNewIssue',
+                                                    },
+                                                  'current': { 'type': 'object', 'description': 'previousと同じ項目' },
+                                                  'causeKey':
+                                                    { 'type': 'string', 'description': 'filing-check:<リポジトリ>' },
+                                                },
+                                            },
+                                        },
+                                      'filingCache':
+                                        {
+                                          'type': 'array',
+                                          'description': '起票直前の確認のキャッシュの是正の前後比較（kind=filing-cache、常に1件）。工程「起票直前の重複と依存の確認」のClaudeの行を[to−21日,to]で読み、promptCache=falseの最初の行の時刻をdeployedAtとする。前=直前7日、後=deployedAtからtoの完了行。値=重み÷promptTotalBytes×1000。前後とも大きさの分かる行が30件以上で後の値>=前の値ならhit。印なし・反映が14日より前・件数不足は理由付きでheld。当たりだけanomaliesにも含む。server/internal/anomalies/filing.go の FilingCaches。',
+                                          'items':
+                                            {
+                                              'type': 'object',
+                                              'properties':
+                                                {
+                                                  'kind': { 'const': 'filing-cache' },
+                                                  'kindName': { 'const': '起票直前の確認のキャッシュの是正の効果なし' },
+                                                  'status': { 'enum': ['hit', 'normal', 'held'] },
+                                                  'reasons':
+                                                    {
+                                                      'type': 'array',
+                                                      'items':
+                                                        {
+                                                          'enum':
+                                                            [
+                                                              'not_deployed',
+                                                              'deployment_out_of_range',
+                                                              'previous_insufficient_rows',
+                                                              'current_insufficient_rows',
+                                                              'missing_data',
+                                                            ],
+                                                        },
+                                                    },
+                                                  'deployedAt': { 'type': ['string', 'null'] },
+                                                  'measured':
+                                                    {
+                                                      'type': ['number', 'null'],
+                                                      'description': '反映後の重み/1,000 bytes',
+                                                    },
+                                                  'baseline':
+                                                    {
+                                                      'type': ['number', 'null'],
+                                                      'description': '反映前7日の重み/1,000 bytes',
+                                                    },
+                                                  'previous':
+                                                    {
+                                                      'type': 'object',
+                                                      'description': 'rows・sizedRows・perCall（weight・uncachedInput・cacheRead・cacheWrite・output・promptBytes）・weightPerKB',
+                                                    },
+                                                  'current': { 'type': 'object', 'description': 'previousと同じ項目' },
+                                                  'causeKey': { 'type': 'string' },
+                                                },
+                                            },
+                                        },
+                                      'limitForecast':
+                                        {
+                                          'type': 'array',
+                                          'description': '上限の枠が切れる見込み。claude・codex×seven_day・five_hourの全4件。readLimitsを1回読み(to−8日,to]をusageLimitTimelineで集計。toより後にリセットする窓のうち最後の観測が最新のもの（同時刻は後のリセット）のfirst/lastを使う。ratePerHour=(last.percent−first.percent)/経過時間。最低経過時間はseven_day=1時間・five_hour=0.25時間。projectedAt=last.at+(100−last.percent)/ratePerHourがresetsAtより前ならhit、等しいならnormal。当たりだけanomaliesにも含む。読取失敗は例外にせずheld。',
+                                          'items':
+                                            {
+                                              'type': 'object',
+                                              'properties':
+                                                {
+                                                  'kind': { 'const': 'limit-forecast' },
+                                                  'kindName': { 'const': '上限の枠が切れる見込み' },
+                                                  'provider': { 'enum': ['claude', 'codex'] },
+                                                  'limit': { 'enum': ['seven_day', 'five_hour'] },
+                                                  'resetsAt': { 'type': ['string', 'null'] },
+                                                  'first':
+                                                    {
+                                                      'type': ['object', 'null'],
+                                                      'description': '最初の点。at（ISO日時）・percent。',
+                                                    },
+                                                  'last':
+                                                    {
+                                                      'type': ['object', 'null'],
+                                                      'description': '最後の点。at（ISO日時）・percent。',
+                                                    },
+                                                  'ratePerHour':
+                                                    {
+                                                      'type': ['number', 'null'],
+                                                      'description': '使用率の増加（%/時間）。',
+                                                    },
+                                                  'projectedAt':
+                                                    {
+                                                      'type': ['string', 'null'],
+                                                      'description': '枠が切れる見込みのISO日時。',
+                                                    },
+                                                  'measured':
+                                                    {
+                                                      'type': ['number', 'null'],
+                                                      'description': 'lastから枠が切れるまでの時間。',
+                                                    },
+                                                  'threshold':
+                                                    {
+                                                      'type': ['number', 'null'],
+                                                      'description': 'lastからリセットまでの時間。',
+                                                    },
+                                                  'unit': { 'const': '時間' },
+                                                  'causeKey':
+                                                    { 'type': 'string', 'description': 'limit-forecast:<実行先>:<枠>' },
+                                                  'status': { 'enum': ['hit', 'normal', 'held'] },
+                                                  'reasons':
+                                                    {
+                                                      'type': 'array',
+                                                      'description': 'read_limits_unavailable=読取機能なし、read_limits_failed=読取例外・rowsが配列でない応答、no_active_window=対象窓なし、missing_resets_at=対象窓なしでリセット欠測・不正あり、stale_record=使用率の最後の記録がないか、toからseven_dayは6時間、five_hourは1時間を超えて古い（heldとなり枠切れ予測は出さない）、insufficient_records=2件未満、missing_percent=選んだ窓の使用率欠測、insufficient_elapsed=最低経過時間未満、non_positive_rate=速さ0以下、invalid_projection=見込み日時の範囲外。計算できない値はnull。保留でも計算済みの速さ・リセットまでの時間は残す。',
+                                                      'items':
+                                                        {
+                                                          'enum':
+                                                            [
+                                                              'read_limits_unavailable',
+                                                              'read_limits_failed',
+                                                              'no_active_window',
+                                                              'missing_resets_at',
+                                                              'stale_record',
+                                                              'insufficient_records',
+                                                              'missing_percent',
+                                                              'insufficient_elapsed',
+                                                              'non_positive_rate',
+                                                              'invalid_projection',
+                                                            ],
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                      'intakeRepeat':
+                                        {
+                                          'type': 'array',
+                                          'description': 'source=intakeを工程・実行先別に比較。to以前の最後のJST 0時で終わる直近7日と直前7日。[from,to)。両週D>=10かつR/Dが1.5倍以上、2以上増加でhit。当たりはanomaliesにも入る。draft欠測のDとR/Dはnull。行無しも正常扱いしない。',
+                                          'items':
+                                            {
+                                              'type': 'object',
+                                              'properties':
+                                                {
+                                                  'kind': { 'const': 'intake-repeat' },
+                                                  'step': { 'type': ['string', 'null'] },
+                                                  'provider': { 'type': ['string', 'null'] },
+                                                  'status': { 'enum': ['hit', 'normal', 'held'] },
+                                                  'reasons':
+                                                    {
+                                                      'type': 'array',
+                                                      'items':
+                                                        {
+                                                          'enum':
+                                                            [
+                                                              'period_incomplete',
+                                                              'missing_data',
+                                                              'missing_required_data',
+                                                              'insufficient_drafts',
+                                                            ],
+                                                        },
+                                                    },
+                                                  'provisional':
+                                                    {
+                                                      'type': 'object',
+                                                      'description': 'toまでの暫定の比較。(to-7日,to]と直前7日を確定と同じ閾値・欠測の扱いで判定。status（hit/normal/held）、reasons（period_incompleteは使わない）、windows、previous、current、baseline、measured、threshold、causeKey（intake-repeat-provisional:<[工程,実行先]>）を持つ。hitはanomaliesにもprovisional=trueで入る。',
+                                                    },
+                                                  'windows':
+                                                    {
+                                                      'type': 'object',
+                                                      'description': 'previous/currentにfrom/to（ISO日時）、timezone=Asia/Tokyo。未来の比較終端はperiod_incomplete。',
+                                                    },
+                                                  'previous':
+                                                    {
+                                                      'type': 'object',
+                                                      'description': 'D（活動下書き数、draft欠測時null）、R（行数）、rowsPerDraft（R/D、欠測・D=0時null）、missingDraftRows（draft欠測行数）',
+                                                    },
+                                                  'current':
+                                                    {
+                                                      'type': 'object',
+                                                      'description': 'previousと同じ項目を持つ直近7日',
+                                                    },
+                                                  'baseline': { 'type': ['number', 'null'], 'description': '直前R/D' },
+                                                  'measured': { 'type': ['number', 'null'], 'description': '直近R/D' },
+                                                  'threshold':
+                                                    {
+                                                      'type': ['number', 'null'],
+                                                      'description': 'max(baseline*1.5,baseline+2)',
+                                                    },
+                                                  'thresholds':
+                                                    {
+                                                      'type': 'object',
+                                                      'description': 'minDrafts=10、ratio=1.5、increase=2。定数として管理。',
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  { 'name': 'from', 'in': 'query', 'schema': { 'type': 'string', 'format': 'date-time' } },
+                  { 'name': 'to', 'in': 'query', 'schema': { 'type': 'string', 'format': 'date-time' } },
+                ],
+            },
+        },
+      '/api/v1/commands':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_commands',
+              'summary': '自分宛ての指示を読む',
+              'description': 'queued/ackedをseq順に50件まで。hostは送り手と同じ。nextは最後のseq、空ならafter（既定0）。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties': { 'commands': {}, 'next': {} },
+                                  'additionalProperties': true,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters':
+                [
+                  { 'name': 'host', 'in': 'query', 'schema': { 'type': 'string' } },
+                  { 'name': 'after', 'in': 'query', 'schema': { 'type': 'integer', 'minimum': 0 } },
+                ],
+            },
+        },
+      '/api/v1/commands/{id}/ack':
+        {
+          'post':
+            {
+              'operationId': 'post_api_v1_commands_id_ack',
+              'summary': '指示の結果を送る',
+              'description': '宛先は送り手と同じ。本文64KiB。同じ結果は再送可、終わった指示を変更すると409。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { 'type': 'object', 'properties': { 'command': {} }, 'additionalProperties': true },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+              'parameters': [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'properties':
+                                { 'status': { 'type': 'string', 'enum': ['acked', 'done', 'failed'] }, 'result': {} },
+                              'additionalProperties': true,
+                              'required': ['status'],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

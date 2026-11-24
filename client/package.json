@@ -1,0 +1,25 @@
+{
+  "name": "@issue-desk/intake-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.26.0",
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "test": "node --test --test-isolation=none test/*.test.ts",
+    "typecheck": "node scripts/typecheck.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@sparticuz/chromium": "153.0.0",
+    "@types/node": "24.10.1",
+    "eslint": "10.14.0",
+    "knip": "5.63.1",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1"
+  }
+}

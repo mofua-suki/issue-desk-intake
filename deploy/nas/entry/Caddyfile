@@ -1,0 +1,55 @@
+# 受付の入口（deploy/nas/compose.yaml の issue-desk-intake-entry。docs/server-blue-green.md の「入口」）。
+# 8787 で受け、動いている方の色へ転送する。優先色のブロック（reverse_proxy issue-desk-intake-<色>:8787 { … }）は volume の
+# /entry/active.caddy にあり、deploy/nas/deploy-server.sh が書き換えて caddy reload する。
+# Host・パス・本文は変えずに渡す（受付の Host の確かめが今までどおり働く）。TLS は Tailscale Serve が受け持つので使わない。
+{
+	auto_https off
+	admin localhost:2019
+	persist_config off
+	# reload で処理中の要求を強制切断しない（grace_period の既定は無期限）。
+}
+
+(intake_retry) {
+	lb_policy first
+	lb_try_duration 60s
+	lb_try_interval 250ms
+	# 送信後に応答を失った POST は再送しない。
+	lb_retry_match method GET HEAD
+	# 接続前の再試行でも本文を失わない（通常の受付 API の本文上限より大きい）。
+	request_buffers 1MiB
+	# 停止した色への古い接続を POST が再利用しないよう、上流は毎回接続する。
+	transport http {
+		keepalive off
+	}
+	health_uri /healthz
+	health_interval 1s
+	health_timeout 2s
+	health_headers {
+		Host 127.0.0.1:8787
+	}
+	# 待機色も要求を保持して書き手へ中継できる。役割で候補から外さない。
+}
+
+:8787 {
+	# 応答の圧縮（gzip・zstd）。JSON・JavaScript・CSS・HTML・SVG・manifest だけを対象にし、SSE（text/event-stream。
+	# /api/events の即時通知）は Content-Type の一覧に無いので圧縮のバッファーで滞留しない。圧縮は本文を包むだけで、
+	# Cache-Control（認証付き API の no-store）とセキュリティヘッダーは受付の応答のまま渡る。
+	encode {
+		gzip
+		zstd
+		minimum_length 1024
+		match {
+			header Content-Type application/json*
+			header Content-Type text/javascript*
+			header Content-Type text/css*
+			header Content-Type text/html*
+			header Content-Type image/svg+xml*
+			header Content-Type application/manifest+json*
+		}
+	}
+	import /entry/active.caddy
+	handle_errors {
+		header Retry-After 2
+		respond "受付の入れ替え中です。再試行してください。" 503
+	}
+}

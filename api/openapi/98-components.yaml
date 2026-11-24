@@ -1,0 +1,231 @@
+{
+  'components':
+    {
+      'headers':
+        {
+          'AttentionErrorServerTiming': { 'description': 'Optional durations in milliseconds for stages reached, including a failed stage; absent if failure occurs before timing begins.', 'schema': { 'type': 'string' } },
+        },
+      'securitySchemes':
+        {
+          'pcToken':
+            {
+              'type': 'http',
+              'scheme': 'bearer',
+              'bearerFormat': 'idk_',
+              'description': 'PC別トークン。名前が送り手PC。AuthorizationがあるとCookie・一時キーへフォールバックしない。',
+            },
+          'hostdToken':
+            {
+              'type': 'http',
+              'scheme': 'bearer',
+              'bearerFormat': 'idh_',
+              'description': 'hostd専用。自分のPCの更新・配備・実地確認とdrainだけ。PC別トークンと交換できない。',
+            },
+          'screenSession':
+            {
+              'type': 'apiKey',
+              'in': 'cookie',
+              'name': 'desk_session',
+              'description': '受付画面のセッション。GET以外は同一OriginとcsrfTokenも必要。',
+            },
+          'csrfToken': { 'type': 'apiKey', 'in': 'header', 'name': 'x-csrf-token' },
+          'cliKey':
+            {
+              'type': 'apiKey',
+              'in': 'header',
+              'name': 'x-desk-key',
+              'description': '受付と同じPCだけの1回限りのキー。GET以外は同一Originが必要。別PCから発行しない。',
+            },
+        },
+      'schemas':
+        {
+          'ReadJob': {"type":"object","properties":{"id":{"type":"integer"},"issue":{"type":"integer"},"priority":{"type":"integer"},"generation":{"type":"integer"},"leaseEpoch":{"type":"integer"},"repo":{"type":"string"},"title":{"type":"string"},"kind":{"type":"string"},"filedAt":{"type":"string"},"scopeSource":{"type":"string"},"status":{"type":"string"},"updatedAt":{"type":"string"},"provider":{"type":["string","null"]},"tier":{"type":["string","null"]},"holdReason":{"type":["string","null"]},"branch":{"type":["string","null"]},"headSha":{"type":["string","null"]},"leaseHost":{"type":["string","null"]},"leaseExpiresAt":{"type":["string","null"]},"progressAt":{"type":["string","null"]},"pr":{"type":["integer","null"]},"scope":{"type":["array","null"],"items":{"type":"string"}},"view":{"type":["object","null"],"additionalProperties":true},"result":{"type":["object","null"],"description":"同じ世代でleaseの期限切れが3回以上続いた失敗ではstatus=failed、summary、leaseExpiredCount、lastHostを設定する。lastHostは最後のPC名、無ければ不明。lastStageは今回のview.phaseが空でない文字列の場合だけ設定し、それ以外では以前の値を削除する。lastExecutionErrorは今回のviewにオブジェクトがあれば上書きし、無ければ以前の値を保持する。既存resultのその他の項目は保持される。","properties":{"status":{"type":"string"},"summary":{"type":"string"},"leaseExpiredCount":{"type":"integer"},"lastHost":{"type":"string"},"lastStage":{"type":"string"},"lastExecutionError":{"type":"object","additionalProperties":true}},"additionalProperties":true},"reviewHolds":{}},"required":["id","issue","priority","generation","leaseEpoch","repo","title","kind","filedAt","scopeSource","status","updatedAt","provider","tier","holdReason","branch","headSha","leaseHost","leaseExpiresAt","progressAt","pr","scope","view","result","reviewHolds"],"additionalProperties":true},
+          'ReadJobEvent': {"type":"object","properties":{"seq":{"type":"integer"},"jobId":{"type":"integer"},"host":{"type":["string","null"]},"kind":{"type":"string"},"at":{"type":"string"},"data":{}},"required":["seq","jobId","host","kind","at","data"]},
+          'HeartbeatNumberSummary':
+            {
+              'type': 'object',
+              'description': '有効標本の集計。時間はms、historyRowsでは行数。p95は固定ヒストグラム境界0,1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,30000,60000の上端近似（超過は最大値）。CPU消費ではない。',
+              'properties':
+                {
+                  'count': { 'type': 'integer', 'description': '有効な完了標本数。実測0も含む。' },
+                  'total': { 'type': 'number', 'description': '有効標本の総量。標本なしは0（実測0とはcountで区別）。' },
+                  'average': { 'type': ['number', 'null'], 'description': '有効標本の算術平均。標本なしはnull。' },
+                  'min': { 'type': ['number', 'null'], 'description': '有効標本の最小値。標本なしはnull。' },
+                  'max': { 'type': ['number', 'null'], 'description': '有効標本の最大値。標本なしはnull。' },
+                  'p95':
+                    {
+                      'type': ['number', 'null'],
+                      'description': 'ceil(count*0.95)位のヒストグラム上端による近似。標本なしはnull。',
+                    },
+                  'missing': { 'type': 'integer', 'description': '欠測数。未実行・処理中の区間を0msとして補わない。' },
+                },
+            },
+          'HeartbeatMeasures':
+            {
+              'type': 'object',
+              'description': 'total=本文読取開始から受信関数終了、save=hosts保存、historyAppend=履歴保存、historyRead=履歴読取、aggregate=負荷集計。DB種類はhostsSave,hostsRead,historyInsert,historyDelete,historySelect。await経過は接続待ち等を含み得る。入れ子区間は加算しない。履歴障害の吸収時も区間のfailureと後続の欠測を残す。',
+              'additionalProperties':
+                {
+                  'type': 'object',
+                  'properties':
+                    {
+                      'calls':
+                        { 'type': 'integer', 'description': '区間またはDB呼出しの実行開始回数。DB未呼出しは0。' },
+                      'success':
+                        { 'type': 'integer', 'description': '区間またはDB呼出しの正常終了回数。HTTP成功とは別。' },
+                      'failure':
+                        {
+                          'type': 'integer',
+                          'description': '区間またはDB呼出しの例外終了回数。自由文の例外は保持しない。',
+                        },
+                      'pending': { 'type': 'integer', 'description': '開始済みで未完了の回数。' },
+                      'elapsedMs': { '$ref': '#/components/schemas/HeartbeatNumberSummary' },
+                    },
+                },
+            },
+          'HeartbeatRevisionSet':
+            {
+              'type': 'object',
+              'properties':
+                {
+                  'values':
+                    {
+                      'type': 'array',
+                      'maxItems': 4,
+                      'items': { 'type': 'string' },
+                      'description': '検証済み40桁版の異なる値（最大4件）。',
+                    },
+                  'unknown': { 'type': 'boolean', 'description': '未取得・検証前失敗・標本なしを含む。' },
+                  'mixed': { 'type': 'boolean', 'description': '複数版または切捨てを含む。' },
+                  'truncated':
+                    { 'type': 'boolean', 'description': '4版の上限により値を切り捨てた。完全な版一覧ではない。' },
+                },
+            },
+          'HeartbeatMetrics':
+            {
+              'type': 'object',
+              'readOnly': true,
+              'required': ['available', 'complete', 'reasons'],
+              'description': '認証後putHostStatus到達分のみの受付プロセス内計測。認証前拒否、hostd、ローカル生存ファイル、定期refresh、配布は除外。追加DBクエリ・書込み・タイマー・毎回ログはない。最大128PC、1分180バケット/PC（現在分と前179分）。GET時も期限切れを除外し、再起動で消失。本文・資格情報・SQL引数・例外本文は保持しない。CPU消費、物理I/O、通信量、送信側処理とネットワーク所要時間は未計測。画面・CLI既定テキストは変更しない。比較手順と固定例はissue-desk-worker/docs/intake-api-hosts.md。',
+              'properties':
+                {
+                  'available': { 'type': 'boolean', 'description': '対象PCの受信標本がある。falseは理由付き欠測。' },
+                  'observed':
+                    {
+                      'type': 'boolean',
+                      'description': '期間内の受信観測に計測例外・PC上限欠落がない。trueかつreceived=0は観測した0件。起動前・保持期間外は未計測。',
+                    },
+                  'complete':
+                    { 'type': 'boolean', 'description': 'reasonsが空。区間欠測・失敗・上限到達を完全計測としない。' },
+                  'reasons':
+                    {
+                      'type': 'array',
+                      'items':
+                        {
+                          'enum':
+                            [
+                              'no_observations',
+                              'measurement_error',
+                              'host_limit',
+                              'metadata_limit',
+                              'incomplete_intervals',
+                              'not_instrumented',
+                            ],
+                        },
+                      'description': '欠測・不完全の固定理由。計測不能時はavailable/complete/reasonsと取得可能なgenerationだけを返す。',
+                    },
+                  'generation':
+                    { 'type': 'string', 'description': 'プロセスの計測世代UUID。再起動前の値を復元しない。' },
+                  'startedAt': { 'type': 'string', 'format': 'date-time', 'description': '計測開始UTC時刻。' },
+                  'period':
+                    {
+                      'type': 'object',
+                      'properties':
+                        {
+                          'from': { 'type': 'string', 'format': 'date-time' },
+                          'to': { 'type': 'string', 'format': 'date-time' },
+                        },
+                      'description': '保持窓と計測開始で切った対象期間。開始壁時計+単調経過によるUTC。',
+                    },
+                  'retention':
+                    {
+                      'type': 'object',
+                      'properties':
+                        {
+                          'bucketMs': { 'const': 60000 },
+                          'maxBuckets': { 'const': 180 },
+                          'maxHosts': { 'const': 128 },
+                        },
+                      'description': '固定保持上限。',
+                    },
+                  'observedHosts':
+                    {
+                      'type': 'object',
+                      'properties': { 'current': { 'type': 'integer' }, 'max': { 'type': 'integer' } },
+                      'description': 'currentは保持中の追跡PC数、maxはこのPCの受信時に観測したその最大数。設定PC数ではない。',
+                    },
+                  'dropped': { 'type': 'integer', 'description': '世代内でPC上限により未追跡となった受信の全PC累計。' },
+                  'measurementErrors':
+                    { 'type': 'integer', 'description': '世代内の計測例外の全PC累計。例外本文は含まない。' },
+                  'received': { 'type': 'integer', 'description': '期間の受信開始数。' },
+                  'success': { 'type': 'integer', 'description': '受信処理正常終了数。送信側の応答受領は保証しない。' },
+                  'failure': { 'type': 'integer', 'description': '本文検証・保存失敗等の受信処理失敗数。' },
+                  'inFlight': { 'type': 'integer', 'description': '受信開始後まだ終了していない件数。' },
+                  'intervalMs':
+                    {
+                      '$ref': '#/components/schemas/HeartbeatNumberSummary',
+                      'description': '受信開始間隔。初回は標本なし。前回受信が対象期間外の場合もある。設定周期は推定しない。',
+                    },
+                  'historyRows':
+                    {
+                      '$ref': '#/components/schemas/HeartbeatNumberSummary',
+                      'description': '履歴SELECTが返した全PC分の行数。成功時0行は有効、未実行・失敗は欠測。',
+                    },
+                  'senderRevision':
+                    { '$ref': '#/components/schemas/HeartbeatRevisionSet', 'description': '検証済み送信側revision。' },
+                  'intakeRevision':
+                    {
+                      '$ref': '#/components/schemas/HeartbeatRevisionSet',
+                      'description': '既存service.revisionから取得する受付版。',
+                    },
+                  'configuredIntervalMs':
+                    { 'type': 'null', 'description': '設定周期は未確認。比較時は180秒等の条件を別途記録する。' },
+                  'measures': { '$ref': '#/components/schemas/HeartbeatMeasures' },
+                  'buckets':
+                    {
+                      'type': 'array',
+                      'maxItems': 180,
+                      'items':
+                        {
+                          'type': 'object',
+                          'properties':
+                            {
+                              'from':
+                                {
+                                  'type': 'string',
+                                  'format': 'date-time',
+                                  'description': '受信開始を割り当てた1分の開始UTC。',
+                                },
+                              'received': { 'type': 'integer' },
+                              'success': { 'type': 'integer' },
+                              'failure': { 'type': 'integer' },
+                              'inFlight': { 'type': 'integer' },
+                              'measures': { '$ref': '#/components/schemas/HeartbeatMeasures' },
+                              'historyRows': { '$ref': '#/components/schemas/HeartbeatNumberSummary' },
+                              'intervalMs': { '$ref': '#/components/schemas/HeartbeatNumberSummary' },
+                              'senderRevision': { '$ref': '#/components/schemas/HeartbeatRevisionSet' },
+                              'intakeRevision': { '$ref': '#/components/schemas/HeartbeatRevisionSet' },
+                              'observedHosts':
+                                {
+                                  'type': 'integer',
+                                  'description': 'この分のこのPC受信時に観測した保持中PC数の最大。',
+                                },
+                            },
+                        },
+                      'description': '非空の分だけ。受信開始分へ帰属。正常観測期間の空の分は受信0件で、処理時間0msの標本ではない。区間のp95を平均して期間p95にしない。',
+                    },
+                },
+            },
+        },
+    },
+}

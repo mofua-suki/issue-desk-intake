@@ -1,0 +1,152 @@
+[
+  {
+    "file": "client/test/browser-flow.test.ts",
+    "name": "ブラウザで詳細を閲覧し、相談とTODOを利用する",
+    "marker": "環境変数なしでskipする計測",
+    "reason": "計測ではなく、Chromiumを指定して実行するブラウザ操作の結合検査"
+  },
+  {
+    "file": "test/bootstrap-drain-fixture.test.ts",
+    "name": "導入は無期限停止と期限切れを受付応答から判定する",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "実際の導入スクリプトから受付応答の処理を実行し、無期限と期限切れの停止判定を検証する"
+  },
+  {
+    "file": "test/bootstrap-drain-fixture.test.ts",
+    "name": "導入完了時も既存の無期限手動停止を自動解除しない",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "実際の導入スクリプトの完了処理を実行し、無期限の手動停止が解除されないことを検証する"
+  },
+  {
+    "file": "test/chat-distribution.test.ts",
+    "name": "チャット用配布はServerとClientを展開せず、HTTPとSkillを更新する",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "配布されたSkillが正本と一致することを検証する"
+  },
+  {
+    "file": "test/chat-hook-distribution.test.ts",
+    "name": "NASとUbuntuの更新は正本を両常設指示へ配り管理範囲外を保持する",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "実際のNASとUbuntuの更新を通し、正本の配布と管理範囲外の既存文の保持を検証する"
+  },
+  {
+    "file": "test/chat-hook-distribution.test.ts",
+    "name": "実際の配布登録から優先度SkillをNASとPCへ配置する",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "NASとPCに配布されたSkillが正本と一致することを検証する"
+  },
+  {
+    "file": "test/chat-hook-distribution.test.ts",
+    "name": "実際の配布登録から相談確定SkillをNASとPCへ配置する",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "実際のNASとPCの配布関数を実行し、両AI向け計4配置先のSkillが正本と同じ内容になる配布挙動を検証するため、正本の読取と配布後の内容照合が必要"
+  },
+  {
+    "file": "test/client-bootstrap-token.test.ts",
+    "name": "Webhook入口が定義された場合だけ稼働を必須にする",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "導入スクリプトから稼働判定の関数を抜き出してbashで実行し、Webhook入口の定義の有無ごとの終了値を検証する"
+  },
+  {
+    "file": "test/client-bootstrap-token.test.ts",
+    "name": "導入のvolume処理は取得した現行・次版のcomposeを使う",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "導入スクリプトのvolume処理を抜き出して偽dockerで実行し、色ごとのvolume作成と削除しないことを検証する"
+  },
+  {
+    "file": "test/close-operation-skill.test.ts",
+    "name": "テスト名を一意に特定できない（共有の読取）",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "Skillに掲載した固定呼出し例を抽出して実際のpreloadとローカルHTTPで実行し、POSTの固定経路・本文・一時キー回収・秘密の非表示を検証するための共有読取"
+  },
+  {
+    "file": "test/consultation-spec.test.ts",
+    "name": "公開した相談の仕様は正本と一致する",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "生成仕様と配布資料の一致を保証する"
+  },
+  {
+    "file": "test/desk-pc-route-list.test.ts",
+    "name": "一時キー非対応のAPIを呼ぶスクリプトは一覧にある",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "一時キー非対応のAPI経路と管理スクリプトの対応を保つ権限上の検査"
+  },
+  {
+    "file": "test/github-actions-runner.test.ts",
+    "name": "Linuxで対象外のPC・リポジトリを拒否し、有効な登録を再実行しても重複しない",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "SSH固定コマンドへの入力として実物のバイト列を渡し、モックを使って導入・再実行を検証する"
+  },
+  {
+    "file": "test/list-limit-guard.test.ts",
+    "name": "テスト名を一意に特定できない（共有の読取）",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "出荷APIの一覧に上限または理由付き例外があることを検査する"
+  },
+  {
+    "file": "test/nas-host-node.test.ts",
+    "name": "NAS更新は本体のNodeを deploy/versions.json の版にし、失敗しても更新を止めない",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "NAS更新の本体はGit・Docker・systemdを要し実行できないため、本体のNodeの手順を読み込み失敗で止めない呼び方だけを照合する。手順の挙動は同じファイルの他のテストで実行して検証する"
+  },
+  {
+    "file": "test/openapi-read-contract.test.ts",
+    "name": "テスト名を一意に特定できない（共有の読取）",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "配布する結合仕様と分割正本の一致を保証する"
+  },
+  {
+    "file": "test/openapi-read-contract.test.ts",
+    "name": "配布する結合仕様は正規の整形とバイト単位で一致する",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "配布する結合仕様と分割正本の一致を保証する"
+  },
+  {
+    "file": "test/openapi-stats-yaml.test.ts",
+    "name": "出荷する両仕様で入力縮小率の応答と算術関係を検証する",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "出荷する両OpenAPIを解析した定義でJSON応答の互換性・境界・算術関係を検証し、文言だけを照合しない"
+  },
+  {
+    "file": "test/worker-release-auto.test.ts",
+    "name": "待機のalign一覧は受付のclassifyReleaseと一致する",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "NAS更新スクリプトと受付のclassifyReleaseが持つ同じ分類一覧の一致を検証する（ずれるとWorkerの登録待ちと受付の判定が食い違う）"
+  },
+  {
+    "file": "test/guard-gitea.test.ts",
+    "name": "資料どおりの呼び方: docs/chat-operations.md に書いた入口のコマンドをそのまま実行できる",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "受入条件が資料に書いた入口の呼び方をそのまま実行することを求めるため、資料を読んでそのコマンドを実行する"
+  },
+  {
+    "file": "test/guard-gitea.test.ts",
+    "name": "記録の基盤 資料どおりの呼び方: docs/chat-operations.md に書いた点検のコマンドをそのまま実行できる",
+    "marker": "製品ファイルの文字列照合",
+    "reason": "資料に書いた記録・ロックの点検の呼び方をそのまま実行できることを確かめるため、資料を読んでそのコマンドを実行する"
+  },
+  {
+    "file": "server/internal/projects/templates/deploy/node/test/server.test.ts",
+    "name": "ファイル単位",
+    "marker": "固定検証で実行されないテストファイル",
+    "reason": "新しいプロジェクトに配る雛形のテストで、配った先のリポジトリの npm test・pytest で実行される（このリポジトリでは雛形の中身として埋め込むだけ）"
+  },
+  {
+    "file": "server/internal/projects/templates/deploy/python/tests/test_server.py",
+    "name": "ファイル単位",
+    "marker": "固定検証で実行されないテストファイル",
+    "reason": "新しいプロジェクトに配る雛形のテストで、配った先のリポジトリの npm test・pytest で実行される（このリポジトリでは雛形の中身として埋め込むだけ）"
+  },
+  {
+    "file": "server/internal/projects/templates/node/test/smoke.test.ts",
+    "name": "ファイル単位",
+    "marker": "固定検証で実行されないテストファイル",
+    "reason": "新しいプロジェクトに配る雛形のテストで、配った先のリポジトリの npm test・pytest で実行される（このリポジトリでは雛形の中身として埋め込むだけ）"
+  },
+  {
+    "file": "server/internal/projects/templates/python/tests/test_smoke.py",
+    "name": "ファイル単位",
+    "marker": "固定検証で実行されないテストファイル",
+    "reason": "新しいプロジェクトに配る雛形のテストで、配った先のリポジトリの npm test・pytest で実行される（このリポジトリでは雛形の中身として埋め込むだけ）"
+  }
+]

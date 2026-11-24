@@ -1,0 +1,271 @@
+{
+  "repositoryGroups": [
+    ["mofua-suki/sample-expense-server", "mofua-suki/sample-expense-client"]
+  ],
+  "monitorHost": "gt12",
+  "releaseCanaryHosts": [
+    "gt12",
+    "a9max",
+    "x1-pro1",
+    "x1-pro2"
+  ],
+  "fixedTestRepairRounds": 1,
+  "repositories": {
+    "mofua-suki/demo-image-rating": {
+      "deployHost": "a9max"
+    },
+    "mofua-suki/demo-image-generator": {
+      "deployHost": "a9max"
+    }
+  },
+  "retiredHosts": [
+    "surface"
+  ],
+  "hosts": {
+    "a9max": {
+      "machineName": "a9-max",
+      "maxImplementations": 3,
+      "repositories": {
+        "mofua-suki/demo-image-rating": {
+          "rank": 1
+        },
+        "mofua-suki/demo-image-generator": {
+          "rank": 1
+        }
+      }
+    },
+    "nas": {
+      "maxImplementations": 1,
+      "repositories": {
+        "mofua-suki/sample-scraper": {
+          "rank": 1
+        },
+        "mofua-suki/demo-image-culling": {
+          "rank": 1
+        }
+      }
+    },
+    "surface": {
+      "maxImplementations": 1
+    },
+    "gt12": {
+      "machineName": "gt12-pro",
+      "maxImplementations": 4,
+      "repositories": {
+        "mofua-suki/issue-desk-worker": {
+          "rank": 2
+        },
+        "mofua-suki/issue-desk-intake": {
+          "rank": 2
+        },
+        "mofua-suki/sample-expense-server": {
+          "rank": 1
+        },
+        "mofua-suki/sample-expense-client": {
+          "rank": 1
+        },
+        "mofua-suki/alarm-checklist": {
+          "rank": 1
+        },
+        "mofua-suki/image-review-client": {
+          "rank": 1
+        },
+        "games/game-laboratory": {
+          "rank": 1
+        }
+      }
+    },
+    "x1-pro1": {
+      "maxImplementations": 3,
+      "repositories": {
+        "mofua-suki/demo-image-rating": {
+          "rank": 2
+        },
+        "mofua-suki/demo-image-generator": {
+          "rank": 2
+        }
+      }
+    },
+    "x1-pro2": {
+      "maxImplementations": 3,
+      "repositories": {
+        "mofua-suki/demo-image-rating": {
+          "rank": 3
+        },
+        "mofua-suki/demo-image-generator": {
+          "rank": 3
+        }
+      }
+    },
+    "nab-9s": {
+      "maxImplementations": 4,
+      "repositories": {
+        "mofua-suki/issue-desk-worker": {
+          "rank": 3
+        },
+        "mofua-suki/issue-desk-intake": {
+          "rank": 3
+        },
+        "mofua-suki/sample-expense-server": {
+          "rank": 2
+        },
+        "mofua-suki/sample-expense-client": {
+          "rank": 2
+        },
+        "mofua-suki/alarm-checklist": {
+          "rank": 2
+        },
+        "mofua-suki/image-review-client": {
+          "rank": 2
+        },
+        "games/game-laboratory": {
+          "rank": 2
+        }
+      }
+    },
+    "macbook-pro-test": {
+      "machineName": "macbook-pro",
+      "role": "test-only",
+      "maxImplementations": 1,
+      "repositories": {},
+      "testRepositories": [
+        "mofua-suki/sample-expense-client",
+        "mofua-suki/alarm-checklist"
+      ]
+    },
+    "macbook-air-test": {
+      "role": "test-only",
+      "maxImplementations": 1,
+      "repositories": {},
+      "testRepositories": [
+        "mofua-suki/sample-expense-client"
+      ]
+    }
+  },
+  "dispatch": {
+    "leaseMinutes": 15,
+    "preferenceSeconds": 30,
+    "conflictRestartLines": 400,
+    "scopeExemptPaths": [
+      "README.md",
+      "AGENTS.md"
+    ]
+  },
+  "pollSeconds": 60,
+  "antigravityRouting": {
+    "maxFiles": 3,
+    "repositories": [
+      "*"
+    ]
+  },
+  "usageReviewHost": "gt12",
+  "reviewRoundLimit": 2,
+  "implementationRunLimit": 4,
+  "implementationUsageLimit": 8000000,
+  "sizeFixRounds": 2,
+  "prSizeFixRounds": 1,
+  "intakeSplit": {
+    "lines": 400,
+    "files": 8,
+    "scopePaths": 12,
+    "acceptance": 10,
+    "riskLines": 500,
+    "riskFiles": 16
+  },
+  "reviewNotes": {
+    "minOccurrences": 2,
+    "staleDays": 60,
+    "maxBytes": 4000
+  },
+  "gpu": {
+    "maxGpuPercent": 20,
+    "minFreeVramMB": 4096,
+    "repositories": [
+      "mofua-suki/demo-image-rating"
+    ]
+  },
+  "testBudget": {
+    "spawns": 400,
+    "seconds": 60,
+    "increasePercent": 30
+  },
+  "workerAccounts": {
+    "a9max": "issue-desk-worker-a9",
+    "nas": "issue-desk-worker-nas",
+    "surface": "issue-desk-worker-surface",
+    "gt12": "issue-desk-worker-gt12",
+    "x1-pro1": "issue-desk-worker-x1-pro1",
+    "x1-pro2": "issue-desk-worker-x1-pro2",
+    "nab-9s": "issue-desk-worker-nab-9s",
+    "macbook-pro-test": "issue-desk-worker-mac-book-pro"
+  },
+  "models": {
+    "model": "gpt-6.2-sol",
+    "claudeModel": "opus",
+    "codexEquivalents": {
+      "fable": "gpt-6.2-astra",
+      "opus": "gpt-6.2-sol",
+      "sonnet": "gpt-6.1-terra",
+      "haiku": "gpt-6-luna"
+    },
+    "implementation": {
+      "tiers": {
+        "light": {
+          "model": "gpt-6.1-terra",
+          "claudeModel": "sonnet",
+          "reasoningEffort": "medium"
+        },
+        "standard": {
+          "model": "gpt-6.1-terra",
+          "claudeModel": "sonnet",
+          "reasoningEffort": "medium"
+        },
+        "heavy": {
+          "model": "gpt-6.2-sol",
+          "claudeModel": "opus",
+          "reasoningEffort": "high"
+        }
+      }
+    },
+    "intake": {
+      "claudeModel": "opus",
+      "reasoningEffort": "high",
+      "tiers": {
+        "light": {
+          "model": "gpt-6.1-terra",
+          "claudeModel": "sonnet",
+          "reasoningEffort": "medium"
+        },
+        "standard": {
+          "model": "gpt-6.1-terra",
+          "claudeModel": "sonnet",
+          "reasoningEffort": "medium"
+        },
+        "heavy": {
+          "model": "gpt-6.2-sol",
+          "claudeModel": "opus",
+          "reasoningEffort": "medium"
+        },
+        "filingCheck": {
+          "model": "gpt-6.1-terra",
+          "claudeModel": "sonnet",
+          "reasoningEffort": "medium"
+        }
+      }
+    },
+    "review": {
+      "claudeModel": "opus",
+      "tiers": {
+        "light": {"claudeModel": "sonnet"},
+        "standard": {"claudeModel": "sonnet"},
+        "heavy": {"claudeModel": "opus"}
+      }
+    },
+    "priority": {
+      "claudeModel": "haiku"
+    },
+    "antigravity": {
+      "model": "gemini-3.8-flash-high"
+    }
+  }
+}

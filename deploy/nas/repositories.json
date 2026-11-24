@@ -1,0 +1,12 @@
+{
+  "repositories": [
+    {
+      "name": "mofua-suki/demo-image-culling",
+      "displayName": "demo-image-culling",
+      "description": "NAS（UGREEN DXP480T Plus、Core i5-1235U・メモリー31GiB・内蔵GPU Intel Iris Xe、UGOS Pro の Docker）で動かす収集画像の選別システム。sample-scraper が受け入れ用の置き場 /home/user/PhotosInbox に保存した画像を SigLIP2 で判定する。WD tagger はGPU/CPUに対応する。",
+      "autoMerge": true,
+      "autoDeploy": false,
+      "testCommand": ["{node}", "--test", "test/*.test.ts"]
+    }
+  ]
+}

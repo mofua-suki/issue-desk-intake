@@ -1,0 +1,257 @@
+name: ${ISSUE_DESK_COMPOSE_PROJECT:-issue-desk-intake}
+services:
+  issue-desk-intake-blue:
+    profiles: ['intake']
+    image: ${ISSUE_DESK_INTAKE_IMAGE:-issue-desk-intake:latest}
+    # Serverの更新処理がビルドしたイメージを使う。
+    pull_policy: never
+    restart: unless-stopped
+    entrypoint: ['sh', '/usr/local/bin/intake-entrypoint']
+    # シグナルの中継と子プロセス（受付AIのCLI）の回収。停止は docker stop の SIGTERM で受付が閉じる。
+    # 停止の猶予は、受付が実行中の応答・起票の終わりを待つ上限（server/internal/startup/run.go の shutdownGraceMs、45秒）より
+    # 長くする（入れ替えで、停止のときに実行中の処理を途中で切らないため。Issue #738）。
+    init: true
+    stop_grace_period: 60s
+    # 受付の状態（設定・private/ の受付専用トークン・runtime/ の DB と使用量の記録）と、受付AIのCLIの認証
+    # （/data/codex・/data/claude）は受付専用の volume を2色で共有する（書くのは書き手だけ）。監視の volume はマウントしない（大整理 2-3 S2。ジョブの状態は共有DBの
+    # jobs 表、監視の生存・合図・使用量は API で受ける。docs/shared-db-jobs.md の「受付の表示と操作」）。
+    volumes:
+      - issue-desk-intake-state:/state
+      - issue-desk-intake-cli:/data
+      - ../../assignments.json:/app/assignments.json:ro
+    environment:
+      ISSUE_DESK_COLOR: blue
+      # もう一方の色。受け付けられない間（待機中・交代後）の要求を保留し、書き手になった色へ渡す（server/internal/startup/relay.go）。
+      ISSUE_DESK_PEER_URL: http://issue-desk-intake-green:8787
+      ISSUE_DESK_CONFIG: /state/config.local.json
+      ISSUE_DESK_CLAUDE: /opt/agent-tools/bin/claude
+      # Claude の認証切れの案内を受付のコンテナでのログインにする（client/src/claude.mjs）。
+      ISSUE_DESK_ROLE: intake
+      TZ: ${TZ:-Asia/Tokyo}
+      # 同じ NAS の監視からの内部の接続（Host: issue-desk-intake:8787）を、/api/v1/ の PC別トークンの要求に限って受ける
+      # （server/internal/auth）。NAS の監視の運用の設定・監視への依頼と指示・生存と変化の合図・
+      # 使用量の行はすべてここを通る。
+      ISSUE_DESK_INTAKE_INTERNAL_HOST: issue-desk-intake:8787
+      # 共有DB（下の issue-desk-db。docs/shared-db.md）の接続先。受付は起動時に接続・マイグレーション・版を確かめ、
+      # 失敗すれば起動しない（server/internal/store）。パスワードは deploy/nas/.env の ISSUE_DESK_DB_PASSWORD。
+      PGHOST: issue-desk-db
+      PGUSER: issue_desk
+      PGDATABASE: issue_desk
+      PGPASSWORD: ${ISSUE_DESK_DB_PASSWORD:-}
+      # 受付の保存先（相談・認証・設定）は常に PostgreSQL（SQLite廃止の段階6a。SQLite は開かない）。切替の記録が無い保存先では
+      # 起動を止め、docs/pg-cutover.md を案内する（server/internal/startup/cutover.go）。ISSUE_DESK_APP_STORE は
+      # postgres か未設定だけを受け付け、sqlite を指定すると起動しない。パスワードは上の PGPASSWORD から入る。
+      ISSUE_DESK_APP_STORE: postgres
+      ISSUE_DESK_DATABASE_URL: 'host=issue-desk-db user=issue_desk dbname=issue_desk'
+    # 共有DBが応答する（healthcheck が通る）まで受付を起動しない。
+    depends_on:
+      issue-desk-db:
+        condition: service_healthy
+    # 既定のネットワーク（入口からの転送・受付AIの外向きの通信）と、共有DBだけの内部ネットワーク。
+    networks:
+      - default
+      - issue-desk-db
+    # Codexのサンドボックス（受付AI）が動くよう、監視と同じ設定にする（上の監視の説明を参照）。
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=unconfined
+      - apparmor=unconfined
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+
+  issue-desk-intake-green:
+    profiles: ['intake']
+    image: ${ISSUE_DESK_INTAKE_IMAGE:-issue-desk-intake:latest}
+    # Serverの更新処理がビルドしたイメージを使う。
+    pull_policy: never
+    restart: unless-stopped
+    entrypoint: ['sh', '/usr/local/bin/intake-entrypoint']
+    # シグナルの中継と子プロセス（受付AIのCLI）の回収。停止は docker stop の SIGTERM で受付が閉じる。
+    # 停止の猶予は、受付が実行中の応答・起票の終わりを待つ上限（server/internal/startup/run.go の shutdownGraceMs、45秒）より
+    # 長くする（入れ替えで、停止のときに実行中の処理を途中で切らないため。Issue #738）。
+    init: true
+    stop_grace_period: 60s
+    # 受付の状態（設定・private/ の受付専用トークン・runtime/ の DB と使用量の記録）と、受付AIのCLIの認証
+    # （/data/codex・/data/claude）は受付専用の volume を2色で共有する（書くのは書き手だけ）。監視の volume はマウントしない（大整理 2-3 S2。ジョブの状態は共有DBの
+    # jobs 表、監視の生存・合図・使用量は API で受ける。docs/shared-db-jobs.md の「受付の表示と操作」）。
+    volumes:
+      - issue-desk-intake-state:/state
+      - issue-desk-intake-cli:/data
+      - ../../assignments.json:/app/assignments.json:ro
+    environment:
+      ISSUE_DESK_COLOR: green
+      # もう一方の色。受け付けられない間（待機中・交代後）の要求を保留し、書き手になった色へ渡す（server/internal/startup/relay.go）。
+      ISSUE_DESK_PEER_URL: http://issue-desk-intake-blue:8787
+      ISSUE_DESK_CONFIG: /state/config.local.json
+      ISSUE_DESK_CLAUDE: /opt/agent-tools/bin/claude
+      # Claude の認証切れの案内を受付のコンテナでのログインにする（client/src/claude.mjs）。
+      ISSUE_DESK_ROLE: intake
+      TZ: ${TZ:-Asia/Tokyo}
+      # 同じ NAS の監視からの内部の接続（Host: issue-desk-intake:8787）を、/api/v1/ の PC別トークンの要求に限って受ける
+      # （server/internal/auth）。NAS の監視の運用の設定・監視への依頼と指示・生存と変化の合図・
+      # 使用量の行はすべてここを通る。
+      ISSUE_DESK_INTAKE_INTERNAL_HOST: issue-desk-intake:8787
+      # 共有DB（下の issue-desk-db。docs/shared-db.md）の接続先。受付は起動時に接続・マイグレーション・版を確かめ、
+      # 失敗すれば起動しない（server/internal/store）。パスワードは deploy/nas/.env の ISSUE_DESK_DB_PASSWORD。
+      PGHOST: issue-desk-db
+      PGUSER: issue_desk
+      PGDATABASE: issue_desk
+      PGPASSWORD: ${ISSUE_DESK_DB_PASSWORD:-}
+      # 受付の保存先（相談・認証・設定）は常に PostgreSQL（SQLite廃止の段階6a。SQLite は開かない）。切替の記録が無い保存先では
+      # 起動を止め、docs/pg-cutover.md を案内する（server/internal/startup/cutover.go）。ISSUE_DESK_APP_STORE は
+      # postgres か未設定だけを受け付け、sqlite を指定すると起動しない。パスワードは上の PGPASSWORD から入る。
+      ISSUE_DESK_APP_STORE: postgres
+      ISSUE_DESK_DATABASE_URL: 'host=issue-desk-db user=issue_desk dbname=issue_desk'
+    # 共有DBが応答する（healthcheck が通る）まで受付を起動しない。
+    depends_on:
+      issue-desk-db:
+        condition: service_healthy
+    # 既定のネットワーク（入口からの転送・受付AIの外向きの通信）と、共有DBだけの内部ネットワーク。
+    networks:
+      - default
+      - issue-desk-db
+    # Codexのサンドボックス（受付AI）が動くよう、監視と同じ設定にする（上の監視の説明を参照）。
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=unconfined
+      - apparmor=unconfined
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+
+  # 受付の入口（Caddy。docs/server-blue-green.md『Entry』）。受付のポート（ホストのループバックの 8787。NAS 本体の
+  # Tailscale Serve の転送先）を公開するのはこれだけで、動いている方の色へ転送する。転送先は volume の
+  # /entry/active.caddy（deploy/nas/deploy-server.sh が書き換えて caddy reload する。無ければ blue で始める）。
+  # 既定のネットワークでの別名 issue-desk-intake を持つので、NAS の監視（ISSUE_DESK_INTAKE_INTERNAL_URL）と受付専用の
+  # Tailscale のコンテナ（tailscale-serve.json）の http://issue-desk-intake:8787 も入口に届く。Caddy は Host を変えずに渡すので、
+  # 受付の Host の確かめ（intake.publicUrl・127.0.0.1:8787・内部の issue-desk-intake:8787）は今までどおり働く。
+  # 版は公開から14日以上たったマイナー版に固定し（2.10.2、2025-08 公開）、上げるときは PR で変える。
+  issue-desk-intake-entry:
+    profiles: ['intake']
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    entrypoint:
+      - sh
+      - -c
+      - '[ -s /entry/active.caddy ] || echo "reverse_proxy issue-desk-intake-blue:8787" >/entry/active.caddy; exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+    volumes:
+      - ./entry:/etc/caddy:ro
+      - issue-desk-intake-entry:/entry
+    networks:
+      default:
+        aliases:
+          - issue-desk-intake
+    # コンテナ内は 0.0.0.0 の 8787 で待ち受け、ホストへはループバックの 8787 にだけ公開する。
+    # tailnet へは Tailscale Serve がここへ転送する（Funnel は使わない）。
+    ports:
+      - '127.0.0.1:8787:8787'
+    security_opt:
+      - no-new-privileges:true
+    # Caddy のイメージの実行ファイルは NET_BIND_SERVICE のファイルの権限を持つので、それだけを残す。
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+
+  # 共有DB（PostgreSQL。docs/shared-db.md）。受付と同じ profile intake に置き、受付の起動の前に起動する（depends_on）。
+  # ポートは公開せず、外へ出られない内部ネットワーク issue-desk-db（受付とこのコンテナだけが入る）でだけ受け付ける。
+  # 版は公開から14日以上たったマイナー版に固定し（17.11、2026-08-13 公開）、上げるときは PR で変える。
+  # update.sh・deploy/nas/deploy-server.sh の入れ替えは、設定が変わらない限りこのコンテナを作り直さず、巻き戻し
+  # （--force-recreate は監視だけ。受付は色の切り替え）でも触らない。データは volume issue-desk-db にあり、どの操作でも消さない（down・--volumes を使わない）。
+  # バックアップは NAS 本体の systemd タイマー（deploy/nas/db-backup.sh）が毎日 pg_dump で取る。
+  issue-desk-db:
+    profiles: ['intake']
+    image: postgres:17.11-bookworm
+    command: ["postgres", "-c", "wal_compression=on", "-c", "max_wal_size=4GB", "-c", "checkpoint_timeout=15min"]
+    # バックアップ（deploy/nas/db-backup.sh）が docker exec で名指しするため、名前を固定する。
+    container_name: issue-desk-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: issue_desk
+      POSTGRES_DB: issue_desk
+      # 空なら PostgreSQL が初期化を断って起動しない（受付も起動しない）。deploy/nas/.env に設定する。
+      POSTGRES_PASSWORD: ${ISSUE_DESK_DB_PASSWORD:-}
+      TZ: ${TZ:-Asia/Tokyo}
+    volumes:
+      - issue-desk-db:/var/lib/postgresql/data
+    networks:
+      - issue-desk-db
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U issue_desk -d issue_desk']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # 停止の猶予（PostgreSQL の fast shutdown が書き終えるまで待つ）。
+    stop_grace_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+
+  # 受付の入口を NAS 本体の Tailscale Serve に置けないときだけ使う、受付専用の Tailscale のコンテナ（機器名 issue-desk。
+  # docs/intake.md『Entry and pair code』）。
+  # https://issue-desk.<tailnet>/ を受付の入口（別名 issue-desk-intake:8787）へ転送する（tailscale-serve.json。Funnel は使わない）。
+  # profile は受付（intake）と分ける: 受付の切り替え（deploy/nas/deploy-server.sh）は --profile intake の入口と DB を起動するので、同じ profile に置くと
+  # 本体の Serve の方式でもこのコンテナが起動してしまう。入れ替えは要らない（イメージは Tailscale の公開のもの）。
+  issue-desk-intake-tailscale:
+    profiles: ['intake-tailscale']
+    image: tailscale/tailscale:stable
+    hostname: issue-desk
+    restart: unless-stopped
+    environment:
+      TS_HOSTNAME: issue-desk
+      TS_STATE_DIR: /var/lib/tailscale
+      # ユーザー空間のネットワークで動かす（tun・NET_ADMIN を使わない。NAS 本体の tailscale と同じホストでも重ならない）。
+      TS_USERSPACE: 'true'
+      TS_SERVE_CONFIG: /config/serve.json
+      # 認証キーは使わず、初回だけログインの URL をスクリプトが表示する。ログインは専用の状態 volume に残る。
+      TS_AUTH_ONCE: 'true'
+    volumes:
+      - issue-desk-intake-tailscale:/var/lib/tailscale
+      - ./tailscale-serve.json:/config/serve.json:ro
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+
+volumes:
+  # 受付専用。名前は固定（移行前の古い名前は無い）。
+  issue-desk-intake-state:
+    name: issue-desk-intake-state
+  issue-desk-intake-cli:
+    name: issue-desk-intake-cli
+  # 受付の入口の転送先（active.caddy）。名前は固定（deploy/nas/deploy-server.sh・deploy/nas/intake.sh が読む）。
+  issue-desk-intake-entry:
+    name: issue-desk-intake-entry
+  # 受付専用の Tailscale のコンテナの状態（ログイン）。コンテナを止めても残す。
+  issue-desk-intake-tailscale:
+    name: issue-desk-intake-tailscale
+  # 共有DBのデータ。名前は固定し、更新・巻き戻しでは消さない（docs/shared-db.md）。
+  issue-desk-db:
+    name: issue-desk-db
+
+networks:
+  # 共有DBだけの内部ネットワーク（外へ出られない。受付と issue-desk-db だけが入る）。
+  issue-desk-db:
+    internal: true

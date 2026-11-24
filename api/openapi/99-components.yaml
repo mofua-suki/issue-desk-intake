@@ -1,0 +1,749 @@
+{
+  'components':
+    {
+      'schemas':
+        {
+          'SshTicket':
+            {
+              'type': 'object',
+              'required': ['id', 'host', 'operation', 'status', 'requester', 'requested_at'],
+              'properties':
+                {
+                  'id': { 'type': 'string' },
+                  'host': { 'type': 'string' },
+                  'operation': { 'type': 'string' },
+                  'command': { 'type': ['string', 'null'], 'description': 'command操作の保存済み全文。前後の空白除去・Unicode正規化・切り詰めをせず保存し、発券時のforceCommandと一致する。固定操作や過去の申請ではnullまたは未提供を許容する。' },
+                  'reason': { 'type': 'string' },
+                  'evidence': { 'type': 'string' },
+                  'requester': { 'type': 'string' },
+                  'requested_token': { 'type': ['string', 'null'] },
+                  'approver': { 'type': ['string', 'null'] },
+                  'summary': { 'type': ['string', 'null'], 'maxLength': 2000 },
+                  'connection_result': { 'type': ['string', 'null'], 'enum': ['connected', 'failed', null] },
+                  'status':
+                    { 'type': 'string', 'enum': ['requested', 'approved', 'denied', 'issued', 'reported', 'expired'] },
+                  'emergency': { 'type': 'boolean' },
+                  'exit_code': { 'type': ['integer', 'null'] },
+                  'requested_at': { 'type': 'string', 'format': 'date-time' },
+                  'decided_at': { 'type': ['string', 'null'], 'format': 'date-time' },
+                  'issued_at': { 'type': ['string', 'null'], 'format': 'date-time' },
+                  'expires_at': { 'type': ['string', 'null'], 'format': 'date-time' },
+                  'reported_at': { 'type': ['string', 'null'], 'format': 'date-time' },
+                },
+            },
+          'SshTicketRequest':
+            {
+              'type': 'object',
+              'required': ['host', 'operation', 'reason', 'evidence', 'emergency'],
+              'description': 'operation=commandではcommandが必須。空・空白のみ、4000 UTF-16コード単位超、U+0000〜U+001FまたはU+007F〜U+009Fを含む文字列は400。UTF-16では補助文字は2コード単位だがJSON SchemaのmaxLengthはUnicodeコードポイント数で数えるため、maxLengthだけでは上限を検証できない。固定操作ではcommand項目が存在するとnullを含め400。',
+              'if': { 'properties': { 'operation': { 'const': 'command' } }, 'required': ['operation'] },
+              'then': { 'required': ['command'] },
+              'else': { 'not': { 'required': ['command'] } },
+              'properties':
+                {
+                  'directPR': {
+                    'type': 'object',
+                    'properties': {
+                      'repo': {'type': 'string', 'pattern': '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'},
+                      'head': {'type': 'string', 'pattern': '^[0-9a-f]{40}$'},
+                      'base': {'type': 'string', 'pattern': '^[0-9a-f]{40}$'},
+                      'branch': {'type': 'string', 'pattern': '^chat/[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$', 'maxLength': 160},
+                      'commits': {'type': 'array', 'items': {'type': 'string', 'contentEncoding': 'base64', 'maxLength': 16384}, 'minItems': 1, 'maxItems': 16}
+                    },
+                    'required': ['repo', 'head', 'base', 'branch', 'commits'],
+                    'additionalProperties': false
+                  },
+                  'host': { 'type': 'string' },
+                  'operation': { 'type': 'string' },
+                  'command': { 'type': 'string', 'minLength': 1, 'maxLength': 4000, 'description': '未正規化の全文を前後の空白除去・切り詰めをせず保存する。空白のみと制御文字は禁止。UTF-16コード単位で4000以下。' },
+                  'reason': { 'type': 'string', 'minLength': 1, 'maxLength': 4000 },
+                  'evidence': { 'type': 'string', 'minLength': 1, 'maxLength': 16000 },
+                  'emergency': { 'type': 'boolean' },
+                },
+            },
+          'PermissionGrantRequest':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['id', 'kind', 'target', 'evidence'],
+              'description': 'targetは nas-claude-rule なら規則ID（usage-per-issue・docker-inspect・docker-stats・docker-compose-ps）、hostd-repair なら <PC名>:<修理ID>（restore-hostd-files・set-node-path・quarantine-old-requests・send-log-tail）、host-ssh（ホスト作業用SSH）なら固定操作は <PC名>:<操作名>（host-ssh.json の hosts・operations に在り operationHosts で許可された組合せだけ）。command操作は登録済みの <PC名>:command-<未正規化commandのUTF-8バイト列のSHA-256、小文字16進64桁>。コマンド本文をtargetに含めず、包括的な <PC名>:command と不正なハッシュ形式は拒否する。implementation-limit-retryならowner/repo形式のプロジェクト、db-readなら shared または app。implementation-limit-retryは期限付きだけで恒久許可不可。ttlSeconds と permanent は同時に指定しない。どちらも無ければ3600秒。',
+              'properties':
+                {
+                  'id': { 'type': 'string', 'pattern': '^[0-9a-f]{32}$' },
+                  'kind':
+                    {
+                      'type': 'string',
+                      'enum': ['nas-claude-rule', 'hostd-repair', 'host-ssh', 'implementation-limit-retry', 'db-read'],
+                    },
+                  'target': { 'type': 'string' },
+                  'ttlSeconds': { 'type': 'integer', 'minimum': 60, 'maximum': 86400 },
+                  'permanent': { 'type': 'boolean', 'description': 'trueは nas-claude-rule だけ。' },
+                  'evidence':
+                    {
+                      'type': 'object',
+                      'additionalProperties': false,
+                      'required': ['quote', 'statedAt'],
+                      'properties':
+                        {
+                          'quote':
+                            { 'type': 'string', 'description': '利用者の発言の引用。前後の空白を除いて1〜2000文字。' },
+                          'statedAt':
+                            {
+                              'type': 'string',
+                              'format': 'date-time',
+                              'description': 'タイムゾーン付き。未来でなく、登録の7日以内。',
+                            },
+                        },
+                    },
+                },
+            },
+          'PermissionGrant':
+            {
+              'type': 'object',
+              'required':
+                ['id', 'kind', 'target', 'status', 'permanent', 'expiresAt', 'evidence', 'createdBy', 'createdAt'],
+              'properties':
+                {
+                  'id': { 'type': 'string' },
+                  'kind':
+                    {
+                      'type': 'string',
+                      'enum': ['nas-claude-rule', 'hostd-repair', 'host-ssh', 'implementation-limit-retry', 'db-read'],
+                    },
+                  'target': { 'type': 'string' },
+                  'status':
+                    {
+                      'type': 'string',
+                      'enum': ['active', 'expired', 'revoked'],
+                      'description': '期限は読み取り時に判定する。',
+                    },
+                  'permanent': { 'type': 'boolean' },
+                  'ttlSeconds': { 'type': ['integer', 'null'] },
+                  'expiresAt': { 'type': ['string', 'null'], 'format': 'date-time' },
+                  'evidence':
+                    {
+                      'type': 'object',
+                      'properties':
+                        { 'quote': { 'type': 'string' }, 'statedAt': { 'type': 'string', 'format': 'date-time' } },
+                    },
+                  'createdBy': { 'type': 'string', 'description': 'screen、token:<PC名>、temporary-key。' },
+                  'createdAt': { 'type': 'string', 'format': 'date-time' },
+                  'revokedAt': { 'type': ['string', 'null'], 'format': 'date-time' },
+                  'revokedBy': { 'type': ['string', 'null'] },
+                  'appliedAt': { 'type': ['string', 'null'], 'format': 'date-time' },
+                },
+            },
+          'UnreadProject':
+            {
+              'type': 'object',
+              'description': '一覧・検索で読めなかった候補のリポジトリ。reasonはGiteaの応答の状態などの短い理由で、資格情報や外部の応答本文は含まない。',
+              'required': ['project', 'reason'],
+              'properties': { 'project': { 'type': 'string' }, 'reason': { 'type': 'string' } },
+              'additionalProperties': false,
+            },
+          'ListRow':
+            {
+              'type': 'object',
+              'description': '依頼一覧の1行の一覧用データ。keyは種類と識別子から作る安定した値（issue:<project>#<number>、draft:<id>、todo:<id>、closeRequest:<id>）。itemは一覧が読む項目だけで、相談の本文・会話・資料、TODOの本文（見出しの1行だけ）、クローズ依頼の確認の材料は含まない。Issueのitemは、GET /api/issuesの行から画面の一覧が読まないdispatchRecord・executionSettings・dispatchSkip・workType・publishPending・releasePending・executionWaitを除いたもので、これらだけの変化は差分に含めない（GET /api/issues・GET /api/issueで読む）。',
+              'required': ['key', 'type', 'item'],
+              'properties':
+                {
+                  'key': { 'type': 'string' },
+                  'type': { 'type': 'string', 'enum': ['issue', 'draft', 'todo', 'closeRequest'] },
+                  'item': { 'type': 'object', 'additionalProperties': true },
+                },
+            },
+          'HostdCommandResultInput':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['id', 'ok', 'reason', 'at'],
+              'description': 'hostdが版の指示を実行した結果。okがtrueならreasonはdoneだけ、falseならdone以外の固定語。例外文・出力は載せない。',
+              'properties':
+                {
+                  'id': { 'type': 'string', 'pattern': '^[0-9a-f]{32}$' },
+                  'ok': { 'type': 'boolean' },
+                  'reason':
+                    {
+                      'type': 'string',
+                      'enum':
+                        [
+                          'done',
+                          'expired',
+                          'tag_missing',
+                          'verify_failed',
+                          'switch_failed',
+                          'no_target',
+                          'unsupported',
+                          'failed',
+                        ],
+                    },
+                  'at': { 'type': 'string', 'format': 'date-time' },
+                },
+            },
+          'Error':
+            {
+              'type': 'object',
+              'properties':
+                {
+                  'error': { 'type': 'string' },
+                  'detail': { 'type': 'string' },
+                  'retryable': { 'type': 'string', 'enum': ['new-request', 'same-request'] },
+                  'safeToChange': { 'type': 'boolean' },
+                  'code':
+                    {
+                      'type': 'string',
+                      'description': '共通コードはx-issue-desk-contract.errors。既存の画面向けコードも保持する。',
+                    },
+                  'contractVersion': { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' },
+                  'recovery':
+                    {
+                      'type': 'object',
+                      'required': ['action', 'guidance'],
+                      'properties':
+                        {
+                          'action':
+                            {
+                              'type': 'string',
+                              'enum':
+                                [
+                                  'reconfirm_decision',
+                                  'check_consultation',
+                                  'report',
+                                  'retry',
+                                  'show_children',
+                                  'update',
+                                  'correct_requester_facts',
+                                ],
+                            },
+                          'guidance': { 'type': 'string' },
+                        },
+                      'additionalProperties': false,
+                    },
+                },
+              'additionalProperties': true,
+            },
+          'ExecutionPlan': {"type": ["object", "null"], "additionalProperties": false, "required": ["version", "requirements"], "properties": {"version": {"type": "integer", "enum": [1]}, "requirements": {"type": "array", "minItems": 1, "maxItems": 30, "items": {"type": "object", "additionalProperties": false, "required": ["id", "criterion", "owner", "phase", "method", "expected", "capabilities", "inputs", "children", "evidenceKind"], "properties": {"id": {"type": "string", "maxLength": 100}, "criterion": {"type": "string", "description": "担当する受入条件の全文。省略しない。", "maxLength": 8000}, "owner": {"type": "string", "enum": ["implementer", "controller", "reporter"]}, "phase": {"type": "string", "enum": ["implementation", "verification", "deployment", "report"]}, "method": {"type": "string", "maxLength": 4000}, "expected": {"type": "string", "maxLength": 4000}, "capabilities": {"type": "array", "maxItems": 20, "items": {"type": "string", "enum": ["race", "gcc", "cgo", "docker", "browser", "systemd", "windows", "realDevice", "liveMeasurement", "history", "network", "otherRepository"]}}, "inputs": {"type": "array", "maxItems": 30, "items": {"type": "string", "maxLength": 2000}}, "children": {"type": "array", "maxItems": 25, "items": {"type": "integer", "minimum": 1, "maximum": 25}}, "evidenceKind": {"type": "string", "enum": ["fixed_test", "report_comment", "external_check"], "description": "固定検証の実行記録、訂正報告の投稿、コントローラーの外部実測。固定検証の成功だけで配置・実機確認を済ませない。"}}}}}, "description": "ready=trueでは全受入条件の実行分担を確定する。実機・本番・履歴・別repoの資料確認はcontroller、報告訂正はreporter。childrenは対象の分割案番号、全子共通なら空配列。"},
+          'ExecutionProgress': {"type": "object", "additionalProperties": false, "properties": {"unavailable": {"type": "string"}, "planSHA": {"type": "string"}, "head": {"type": "string"}, "generation": {"type": "integer"}, "pending": {"type": "integer", "minimum": 0}, "checks": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string"}, "criterion": {"type": "string"}, "owner": {"type": "string"}, "phase": {"type": "string"}, "status": {"type": "string"}, "reason": {"type": "string"}, "method": {"type": "string"}, "expected": {"type": "string"}, "evidenceKind": {"type": "string"}, "capabilities": {"type": "array", "items": {"type": "string"}}, "inputs": {"type": "array", "items": {"type": "string"}}}}}}},
+          'Draft':
+            {
+              'type': 'object',
+              'additionalProperties': true,
+              'properties':
+                {
+                  'executionPlan': { '$ref': '#/components/schemas/ExecutionPlan' },
+                  "id": {"type":"string"}, "project": {"type":["string","null"],"description":"プロジェクト未定の相談では null。"}, "provider": {"type":"string"}, "body": {"type":"string"}, "revision": {"type":"integer"}, "createdAt": {"type":"string"}, "updatedAt": {"type":"string"}, "url": {"type":"string"}, "actions": {"type":"array","items":{"type":"string"}}, "consultationProvider": {"type":"string"}, "status": {"type":"string"}, "title": {"type":"string"}, "ready": {"type":"boolean"}, "questions": {"type":"array","items":{}}, "messages": {"type":"array","description":"assistantのcompletionProposalとcompletionPlanはコントローラー保存の提示指紋と構造化スナップショット。userのid/text/at/sourceは保存された回答の出典。履歴と了承の自己申告を入力として受け付けない。","items":{"type":"object","additionalProperties":true}},
+                  "repositoryStops": {"type": "array", "readOnly": true, "description": "確定したIssue作成423の後に保管済みと確認した宛先の停止記録。表示エラーと独立して保存する。欠落した旧記録は停止未確認。既存の相談JSONの保存・復元で保持し、旧版への復旧後はこの停止を判定できないため起票を再開せず対応版を復旧する。保管解除や別プロジェクト選択で過去の停止記録を自動消去しない。", "items": {"type": "object", "required": ["project", "reason", "message", "stoppedAt"], "properties": {"project": {"type": "string"}, "reason": {"type": "string", "enum": ["archived"]}, "message": {"type": "string"}, "stoppedAt": {"type": "string", "format": "date-time"}}}},
+                  "stallCause": {"type":"string", "enum":["explicit","timeout"], "description":"停止中の原因。旧記録はerrorから読取時に判定し、判定不能なら省略。再開時に消去する。"},
+                  "completionPlan": {"type": ["object", "null"], "additionalProperties": true, "description": "有効な完了計画。保存提示への有効な明示回答があり、候補との差がbasis・工程のprerequisite/evidenceだけなら提示計画を維持する。docs/completion-plan.md参照。"},
+                  "completionApproval": {"type": ["object", "null"], "additionalProperties": true, "description": "保存済み提示と認証付き回答を照合した監査記録。個別操作の認可や本人性の証明ではない。"},
+                  "completionComparison": {"type": ["object", "null"], "additionalProperties": true, "description": "コントローラーの比較監査。rule、提示/候補指紋、presentedPlan/candidatePlan、equivalent、自由文を含むchanges、explanationを保持。保存提示への有効な明示回答はcompletion-plan-presented-reply-v1で判定し、自由文差があればequivalent=falseでもpresentedReplyCompatible=trueとして提示計画への了承を確定できる。候補への了承や操作の認可ではない。"},
+                  "completionReconfirmation": {"type": ["string", "null"], "description": "意味のある変更または同一性未確認の変更への再確認対象指紋。"},
+                  "completionReconfirmationAfter": {"type": ["integer", "null"], "minimum": 0, "description": "再確認開始時の保存発言件数。これより前の回答で解除しない。"},
+                  'familyProgress': { 'type': 'object', 'description': '分割の親の子から求めた進捗。読み取りに失敗した場合は省略。', 'required': ['total','completed','closed','remaining','stopped'], 'properties': { 'total': {'type':'integer'}, 'completed': {'type':'integer'}, 'closed': {'type':'integer'}, 'remaining': {'type':'integer'}, 'unknown': {'type':'integer', 'description':'状態を確認できない子の数'}, 'stopped': {'type':'array','items': {'type':'object','required':['project','number','status','reason'],'properties': {'project':{'type':'string'},'number':{'type':'integer'},'desk':{'type':['integer','null']},'status':{'type':'string'},'reason':{'type':'string'}}}} } },
+                  'filingCheckSummary':
+                    {
+                      'type': 'object',
+                      'description': '起票前判定の各回の結果と理由。判定の記録が無い相談では省略。保存時に資格情報・本文・会話・比較候補の引用を除いている。',
+                      'required': ['revision', 'count', 'checks'],
+                      'properties':
+                        {
+                          'revision': { 'type': ['integer', 'null'], 'description': '現在の判定回数を数えている相談の版。旧記録の欠測は null。' },
+                          'count': { 'type': ['integer', 'null'], 'description': '現在の版での判定回数。旧記録の欠測は null。' },
+                          'checks':
+                            {
+                              'type': 'array',
+                              'maxItems': 20,
+                              'description': '古い順の判定履歴（最新20件）。旧記録で欠けた結果・理由は null（未記録）で、過去回へ補わない。',
+                              'items':
+                                {
+                                  'type': 'object',
+                                  'required': ['revision', 'result', 'reason'],
+                                  'properties':
+                                    {
+                                      'revision': { 'type': ['integer', 'null'] },
+                                      'at': { 'type': ['string', 'null'] },
+                                      'phase': { 'type': ['integer', 'null'] },
+                                      'result': { 'type': ['string', 'null'], 'enum': ['refused', 'evidence_requested', 'ai_failed', 'invalid_answer', 'allowed', null] },
+                                      'reason': { 'type': ['string', 'null'], 'maxLength': 500, 'description': '1行・500文字以内。' },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  'lastFailure':
+                    {
+                      'type': ['object', 'null'],
+                      'additionalProperties': true,
+                      'description': '直近の失敗。stageは処理の段階、causeは資格情報と相談の本文を除いた元の原因（1行・500文字以内）、messageは画面向けの文、kindは受付AIの呼び出しの失敗の種類（ある場合だけ）。古い記録はatとmessageだけ。',
+                      'properties':
+                        {
+                          'at': { 'type': 'string' },
+                          'message': { 'type': 'string' },
+                          'stage': { 'type': 'string' },
+                          'cause': { 'type': 'string' },
+                          'kind': { 'type': 'string' },
+                        },
+                    },
+                  'receiptId':
+                    {
+                      'type': 'string',
+                      'format': 'uuid',
+                      'description': '永続受領の受付ID。GET /api/drafts/{id}で照合できる。新規起票では送信idと同じ。初回chatでは別に発行する。',
+                    },
+                  'requestId':
+                    {
+                      'type': 'string',
+                      'format': 'uuid',
+                      'description': '依頼者の送信ID。起票依頼はid、初回chatはid（未指定ならmessageId）。',
+                    },
+                  'draftId':
+                    {
+                      'type': ['string', 'null'],
+                      'description': 'この受領の初回発言を保存した下書きID。引き渡し前はnull。従来のidは予定の下書きIDを保つ。',
+                    },
+                  'accepted':
+                    { 'type': 'boolean', 'description': 'trueは永続受領済み。起票成功や外部照合の合格を意味しない。' },
+                  'receiptState':
+                    {
+                      'type': 'string',
+                      'enum': ['accepted', 'processing', 'waiting', 'completed', 'rejected', 'failed', 'unknown'],
+                      'description': '受付済み、処理中、質問/hold確定待ち、Issue起票完了、受領後拒否、失敗、起票結果不明。既存statusは下書きの状態を保ち、受領だけの場合はthinking（拒否/失敗はerror）。submit_unknownとsubmit_errorを混同しない。',
+                    },
+                  'consultationBudget':
+                    {
+                      'type': 'object',
+                      'additionalProperties': true,
+                      'description': '相談全体のcalls・weighted・unknownCalls・停止履歴・利用者の追加枠を保持。contextReadは読み足しの累計（最大12枠、10枠から案内）、計測開始点（旧相談の復元可能な最低回数と過去欠測）、予約済み残件と終了用draft/repairの使用済み状態。1枠は最大12要求で、ファイル数・context_readの使用量行数とは別。新枠は耐久保存後だけ開始し、返信・復旧・retry・難易度変更・再起動でリセットしない。有効call残り3以下では新枠を始めず、最後の1callを残して具体的なready=false下書きを返す。本文末尾の参照に根拠・未確認範囲を残し、この通常終了ではstoppedを作らず自動起票しない。認証・既存のcalls/weighted停止は維持する。',
+                    },
+                  'consultationUrl':
+                    {
+                      'type': ['string', 'null'],
+                      'format': 'uri',
+                      'description': '上限停止中の相談応答に表示時だけ付与。intake.publicUrlのpathを保持した完全URL（#/drafts/<id>）。HTTP(S)絶対URLのみ、資格情報・query・fragmentを含む基点は拒否し、Gitea用URLや要求ヘッダーは代用しない。生成不能時null。履歴は変更しない。',
+                    },
+                  'consultationUrlReason':
+                    {
+                      'type': ['string', 'null'],
+                      'description': 'consultationUrl生成成功時null、失敗時は入力や例外原文を含まない固定理由。対象IDは相談応答のid。既存受付画面で相談を開き「上限を足して続行する」を選ぶ。返信・retry・submitでは再開しない。consultation_budget要対応にも同じ2項目とconsultationIdを付与し、reasonへURLまたは生成不能理由を表示する。',
+                    },
+                  'waitStartedAt': { 'type': ['string', 'null'], 'description': '応答待ちの開始時刻。一覧にも残す。' },
+                  'topicCheck':
+                    {
+                      'type': 'object',
+                      'description': 'TODO開始の重複照合。completeも既定の取得範囲内の結果。incompleteは重複なしを意味しない。',
+                      'properties':
+                        {
+                          'state': { 'type': 'string', 'enum': ['pending', 'complete', 'incomplete'] },
+                          'reason': { 'type': ['string', 'null'] },
+                          'pages': { 'type': 'integer' },
+                        },
+                    },
+                  'filingQueue':
+                    {
+                      'type': ['object', 'null'],
+                      'description': 'auto_ready・submittingの起票枠の記録。splitIssuesとsplitChildrenを持つ未完了の親では、親に属する実在のauto_ready・submittingの子を枠保持中、待機記録の古い順、記録なしの順で選び、同順位はsplitChildren順。選択した子のproject・状態・時刻から全項目を判定する。別家族の保持者は待ちの理由になるが親のrunningの根拠にはしない。欠測は子の既存判定を使い、読取不能・存在しない・終了済みの子は除外し、候補がなければnull。件数は順序を保証しない目安。受付プロセスのメモリだけに保持。ほかの状態はnull。',
+                      'required': ['ahead', 'holder', 'lastProgressAt', 'reason', 'stuck', 'inactiveMinutes'],
+                      'properties':
+                        {
+                          'ahead': { 'type': 'integer', 'minimum': 0 },
+                          'holder':
+                            {
+                              'type': ['object', 'null'],
+                              'required': ['id', 'at'],
+                              'properties':
+                                { 'id': { 'type': 'string' }, 'at': { 'type': 'string', 'format': 'date-time' } },
+                            },
+                          'lastProgressAt': { 'type': ['string', 'null'], 'format': 'date-time' },
+                          'reason':
+                            { 'type': 'string', 'enum': ['filing_slot', 'drain_hold', 'running', 'not_running'] },
+                          'stuck':
+                            {
+                              'type': 'boolean',
+                              'description': '他の枠保持が30分以上、またはauto_readyの待ち・枠の記録欠如が10分以上。',
+                            },
+                          'inactiveMinutes':
+                            {
+                              'type': 'integer',
+                              'minimum': 0,
+                              'description': '枠の取得時刻、または待ちの開始と受付起動の新しい方からの経過分。詰まりの根拠。',
+                            },
+                        },
+                    },
+                  'turnStopped':
+                    {
+                      'type': 'boolean',
+                      'description': 'thinkingで開始から30分以上経過し、現在のinflight・queuedTurns・retriesに無い相談。分割の子を含む。開始時刻不明・不正はfalse。一覧の分類はai_stopped（要対応）で、保存状態は変えない。',
+                    },
+                  'finishedWithoutIssue':
+                    { 'type': 'boolean', 'description': '一部起票の分割家族の子を、起票せず記録を残して終えた印。' },
+                },
+              'description': '相談の状態別の値。server/internal/consultations/screen_views.go の DraftView が表示用のactionsとurlを付ける。受付受領の段階では一部の欄がまだ存在しない。IN2の自動分割では親のconsultationChildrenに子の相談ID、子のparentConsultationに親IDを持つ。分割済みの親のactionsは空で、返信・操作は各子の相談で続ける。各子は独立した相談として同じproject・provider・ownerで資料確認を進める。固定した全項目の型はここでは採録していない。',
+            },
+          'Todo':
+            {
+              'type': 'object',
+              'additionalProperties': true,
+              'properties':
+                {
+                  "id": {"type":"string"}, "project": {"type":"string"}, "provider": {"type":"string"}, "body": {"type":"string"}, "revision": {"type":"integer"}, "createdAt": {"type":"string"}, "updatedAt": {"type":"string"}, "url": {"type":"string"}, "actions": {"type":"array","items":{"type":"string"}}, "images": {"type":"array","items":{"type":"object","additionalProperties":true}},
+                  'review':
+                    {
+                      'type': 'object',
+                      'required': ['at', 'verdict', 'reason', 'evidence', 'revision', 'dueAt'],
+                      'properties':
+                        {
+                          'at': { 'type': 'string', 'format': 'date-time' },
+                          'verdict': { 'type': 'string', 'enum': ['resolved', 'unresolved', 'unknown'] },
+                          'reason': { 'type': 'string', 'maxLength': 2000 },
+                          'evidence': { 'type': 'array', 'items': { 'type': 'string' } },
+                          'revision': { 'type': 'integer' },
+                          'dueAt': { 'type': 'string', 'format': 'date-time' },
+                        },
+                      'description': '期限後の日次見直し。revisionとdueAtが現在のTODOに一致するときだけ表示。resolvedは削除候補、unresolvedは相談を始める候補、unknownは利用者へ。自動の削除や相談開始は行わない。',
+                    },
+                  'check':
+                    {
+                      'type': ['object', 'null'],
+                      'properties':
+                        {
+                          'problem': { 'type': 'string', 'minLength': 1, 'maxLength': 2000 },
+                          'resolved': { 'type': 'string', 'minLength': 1, 'maxLength': 2000 },
+                          'methods':
+                            {
+                              'type': 'array',
+                              'maxItems': 10,
+                              'items': { 'type': 'string', 'minLength': 1, 'maxLength': 300 },
+                              'description': '1行1件。ファイルあり/なし: 相対パス、文字あり/なし: 相対パス :: 語（200文字以内）、Issue完了/未完了: 共通番号N、コマンド: 文（記録だけ）。パスの..・絶対パス・ワイルドカードは禁止。',
+                            },
+                          'parsedMethods':
+                            {
+                              'type': 'array',
+                              'items':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'kind':
+                                        {
+                                          'type': 'string',
+                                          'enum':
+                                            [
+                                              'fileExists',
+                                              'fileAbsent',
+                                              'textExists',
+                                              'textAbsent',
+                                              'issueCompleted',
+                                              'issueIncomplete',
+                                              'command',
+                                            ],
+                                        },
+                                      'path': { 'type': 'string' },
+                                      'word': { 'type': 'string' },
+                                      'number': { 'type': 'integer', 'minimum': 1 },
+                                      'command': { 'type': 'string' },
+                                    },
+                                  'required': ['kind'],
+                                },
+                              'description': 'サーバーが解析した構造。',
+                            },
+                        },
+                      'required': ['problem', 'resolved', 'methods'],
+                    },
+                  'dueAt':
+                    {
+                      'type': 'string',
+                      'format': 'date-time',
+                      'pattern': 'Z$',
+                      'description': 'ISO 8601 UTC。指定時は保存時刻から1〜30日先。初回の本文保存で省略すると7日後。以後省略時は維持。',
+                    },
+                },
+              'description': 'TODOと画面URL。画面・一時キー・代行の一覧/詳細にはactions。通常のトークンの作成/保存にはactionsなし。server/internal/consultations/todo-routes.go の todoView。',
+            },
+          'SizeEstimateMetric':
+            {
+              'type': 'object',
+              'properties':
+                {
+                  'paired': { 'type': ['integer', 'null'], 'minimum': 0 },
+                  'missingEstimate': { 'type': ['integer', 'null'], 'minimum': 0 },
+                  'missingActual': { 'type': ['integer', 'null'], 'minimum': 0 },
+                  'ratioCount': { 'type': ['integer', 'null'], 'minimum': 0 },
+                  'atLeastDouble': { 'type': ['integer', 'null'], 'minimum': 0 },
+                  'underestimatedRisk': { 'type': ['integer', 'null'], 'minimum': 0 },
+                  'medianRatio': { 'type': ['number', 'null'], 'minimum': 0 },
+                  'meanRatio': { 'type': ['number', 'null'], 'minimum': 0 },
+                },
+            },
+          'SizeEstimatePeriod':
+            {
+              'type': ['object', 'null'],
+              'properties':
+                {
+                  'fromDate': { 'type': 'string' },
+                  'toDate': { 'type': 'string' },
+                  'count': { 'type': 'integer' },
+                  'paired': { 'type': ['integer', 'null'], 'minimum': 0 },
+                  'missingEstimate': { 'type': ['integer', 'null'], 'minimum': 0 },
+                  'missingActual': { 'type': ['integer', 'null'], 'minimum': 0 },
+                  'lines': { '$ref': '#/components/schemas/SizeEstimateMetric' },
+                  'files': { '$ref': '#/components/schemas/SizeEstimateMetric' },
+                  'reason': { 'type': ['string', 'null'] },
+                },
+            },
+          'SizeEstimateStats':
+            {
+              'type': 'object',
+              'description': '起票日時で前後期間とprojectを絞る見込みと実際の比較。更新前の応答ではsizeEstimates自体が省略される。欠測を0にしない。実際は最後の独立レビュー。見込み0は倍率と2倍以上から除外し、過小見込みは行数が実際>riskLinesかつ見込み<=riskLines、ファイル数が実際>=riskFilesかつ見込み<riskFilesで数える。DB読取不能はunavailableとnullを返す。',
+              'properties':
+                {
+                  'project': { 'type': ['string', 'null'] },
+                  'thresholds':
+                    {
+                      'type': 'object',
+                      'properties': { 'riskLines': { 'type': 'integer' }, 'riskFiles': { 'type': 'integer' } },
+                    },
+                  'unavailable': { 'type': 'array', 'items': { 'type': 'string' } },
+                  'skipped':
+                    {
+                      'type': 'object',
+                      'properties': { 'jobs': { 'type': 'integer' }, 'usage': { 'type': 'integer' } },
+                    },
+                  'before': { '$ref': '#/components/schemas/SizeEstimatePeriod' },
+                  'after': { '$ref': '#/components/schemas/SizeEstimatePeriod' },
+                },
+            },
+          'WorkType':
+            {
+              'type': 'string',
+              'enum': ['bugfix', 'feature', 'refactor', 'docs', 'test', 'operations', 'investigation', 'unknown'],
+              'description': '作業の種類。ジョブがあればviewの正規化値、無ければ起票本文の目印。無い・不正ならunknown。既存の依頼へ遡って記録しない。',
+            },
+          'IssueRow':
+            {
+              'type': 'object',
+              'additionalProperties': true,
+              'properties': {
+                  'executionProgress': { '$ref': '#/components/schemas/ExecutionProgress' },
+                  "updatedAt": {"type":["string","null"], "description":"Gitea更新日時と仕事の進捗日時・更新日時の有効な値の最新。UTC固定桁で返す。有効な値がない場合はGitea値を保持する。仕事の更新には進捗のないlease更新も含む。"}, "project": {"type":"string"}, "number": {"type":"integer"}, "desk": {"type":["integer","null"]}, "shownTitle": {"type":"string"}, "status": {"type":"string"}, "host": {"type":"string"}, "url": {"type":"string"}, "followup": {"type":"boolean"}, 'workType': { '$ref': '#/components/schemas/WorkType' } },
+            },
+          'Issue':
+            {
+              'type': 'object',
+              'additionalProperties': true,
+              'properties':
+                {
+                  'executionProgress': { '$ref': '#/components/schemas/ExecutionProgress' },
+                  "updatedAt": {"type":["string","null"], "description":"Gitea更新日時と仕事の進捗日時・更新日時の有効な値の最新。UTC固定桁で返す。有効な値がない場合はGitea値を保持する。仕事の更新には進捗のないlease更新も含む。"}, "project": {"type":"string"}, "number": {"type":"integer"}, "desk": {"type":["integer","null"]}, "shownTitle": {"type":"string"}, "status": {"type":"string"}, "host": {"type":"string"}, "url": {"type":"string"}, "followup": {"type":"boolean"},
+                  'dependencyWaits': { 'type': 'array', 'description': '通常詳細のみ。未解決の依存辺の待ち開始。', 'items': { 'type': 'object', 'required': ['project', 'number', 'startedAt', 'unknown'], 'properties': { 'project': { 'type': 'string' }, 'number': { 'type': 'integer' }, 'startedAt': { 'type': ['string', 'null'], 'format': 'date-time' }, 'unknown': { 'type': 'boolean' } } } },
+                  'finalApprovalTransfers': { 'type': 'array', 'description': '最終承認の引継ぎ履歴。表示用で操作の認可には使わない。', 'items': { 'type': 'object', 'properties': { 'id': { 'type': 'string' }, 'fromHead': { 'type': 'string' }, 'toHead': { 'type': 'string' }, 'diffFingerprint': { 'type': 'string' }, 'at': { 'type': 'string', 'format': 'date-time' } } } },
+                  'workType': { '$ref': '#/components/schemas/WorkType' },
+                  'workTypeLabel': { 'type': 'string', 'description': '作業の種類の表示名。不明は「不明」。' },
+                  'generation':
+                    {
+                      'type': ['integer', 'null'],
+                      'minimum': 0,
+                      'description': '通常のIssue詳細で、取得済みjobs行の受付世代を返す。非負の安全な整数だけを採用し、ジョブなし・欠測・不正値はnull。Issue番号・本文・コメント等から推定しない。',
+                    },
+                  'retryable':
+                    {
+                      'type': 'boolean',
+                      'description': '通常のIssue詳細で返す状態上の再試行可否。受付の正規retryable定義（失敗・レビュー保留・前提待ち・使用量の上限を超えた質問待ち）から導出する。送信時の権限・上限・送信済み照合などの検査は別途行う。',
+                    },
+                  'permissionApproval': { '$ref': '#/components/schemas/PermissionApprovalTarget' },
+                  'releasePending': { 'type': 'boolean', 'description': '難易度に関係なく公開工程の再開待ちを示す。' },
+                  'publishPending': { 'type': 'boolean', 'description': '難易度に関係なく公開工程の再開待ちを示す。' },
+                  'result':
+                    {
+                      'type': 'object',
+                      'additionalProperties': true,
+                      'properties':
+                        {
+                          'reviewFindings':
+                            {
+                              'type': 'object',
+                              'description': 'Workerの結果にある独立レビューの本文。Issue詳細だけで返し、一覧・検索・画面の同期の行には載せない。今回のレビューが無い回は前回のものを返し previous が true になる。findings・findingKinds・findingSeverities・uncertainties・userJudgments・resolvableUncertainties・followups・improvements・postMergeChecks は文字列の配列で、各50件・各4000文字まで。findings が空でも保留の理由を読めるよう、レビューの要約 summary も返す（4000文字まで）。文字列の資格情報は伏せる。uncertainties はWorkerが userJudgments・resolvableUncertainties へ分ける前の過去の結果の欄で、新しい結果では空。レビューの記録が無い・省略されたときは欄が無い。',
+                              'additionalProperties': false,
+                              'required': ['previous', 'decision', 'summary', 'breaking', 'tooLarge', 'findings', 'findingKinds', 'findingSeverities', 'uncertainties', 'userJudgments', 'resolvableUncertainties', 'followups', 'improvements', 'postMergeChecks'],
+                              'properties':
+                                {
+                                  'previous': { 'type': 'boolean' },
+                                  'decision': { 'type': 'string' },
+                                  'summary': { 'type': 'string' },
+                                  'breaking': { 'type': 'boolean' },
+                                  'tooLarge': { 'type': 'boolean' },
+                                  'findings': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'findingKinds': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'findingSeverities': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'uncertainties': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'userJudgments': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'resolvableUncertainties': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'followups': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'improvements': { 'type': 'array', 'items': { 'type': 'string' } },
+                                  'postMergeChecks': { 'type': 'array', 'items': { 'type': 'string' } },
+                                },
+                            },
+                        },
+                      'description': 'Workerの結果の要約。status・summary・questions・unverified など。全項目の固定型は採録していない。',
+                    },
+                  'overLimitApprovals':
+                    {
+                      'type': 'array',
+                      'items': { '$ref': '#/components/schemas/OverLimitApproval' },
+                      'description': '実装回数の上限を超える再試行の個別承認・期限付き許可の履歴。記録が無い場合は省略。',
+                    },
+                  'view': { 'type': 'string', 'const': 'summary', 'description': 'view=summaryの応答だけに付く。通常詳細には無い。' },
+                  'bodyExcerpt': { 'type': 'string', 'maxLength': 200, 'description': 'view=summaryだけ。表示用の本文（無ければbody）から受付の印のコメントを除き、前後の空白を除いた先頭200文字。' },
+                  'bodyTruncated': { 'type': 'boolean', 'description': 'view=summaryだけ。本文が200文字を超え、bodyExcerptが途中で切れているときtrue。' },
+                  'commentCount': { 'type': 'integer', 'minimum': 0, 'description': 'view=summaryだけ。kind=logを除いたコメントの件数。' },
+                  'hasResult': { 'type': 'boolean', 'description': 'view=summaryだけ。kind=resultのコメントがあるときtrue。' },
+                  'latestAsk':
+                    {
+                      'type': ['object', 'null'],
+                      'description': 'view=summaryだけ。kind=askのコメントのうち最後のもの。無ければnull。',
+                      'properties': { 'id': { 'type': 'integer' }, 'body': { 'type': 'string' }, 'createdAt': { 'type': 'string', 'format': 'date-time' }, 'images': { 'type': 'array' } },
+                    },
+                  'contentRevision': { 'type': 'string', 'pattern': '^[0-9a-f]{16}$', 'description': 'view=summaryだけ。本文・画像・kind=logを除いたコメントから求めた16桁の16進文字列。これらが変わると値が変わる。' },
+                },
+              'description': 'Issue詳細。view=summaryの応答は一部の欄だけを返し、view・bodyExcerpt・bodyTruncated・commentCount・hasResult・latestAsk・contentRevisionを足す。server/internal/issueapi/read.go などで組立て、Gitea由来の項目を含む。画面・一時キーにactions、PC別トークンには付かない。全項目の固定型は採録していない。',
+            },
+          'OverLimitApproval':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['statement', 'at', 'sourcePc', 'id', 'implementationRuns', 'limit'],
+              'properties':
+                {
+                  'statement':
+                    {
+                      'type': 'string',
+                      'description': '個別承認の利用者発言、または期限付き許可を使った再試行の原因・直し方を含むtext。',
+                    },
+                  'at': { 'type': 'string', 'format': 'date-time', 'description': '承認した日時。' },
+                  'sourcePc': { 'type': 'string', 'description': '承認を送ったPC名。' },
+                  'id': { 'type': 'string', 'format': 'uuid', 'description': '承認送信の照合に使う送信ID。' },
+                  'implementationRuns': { 'type': 'integer', 'minimum': 0, 'description': '承認時点の実装回数。' },
+                  'limit': { 'type': 'integer', 'minimum': 0, 'description': '承認時点の実装回数の上限。' },
+                  'kind': { 'type': 'string', 'enum': ['usage', 'run_and_usage'], 'description': '使用量超過、または実装回数と使用量の両方の超過。回数のみの従来の承認では省略。' },
+                  'usageLimit': { 'type': 'number', 'description': '承認時点の使用量上限。' },
+                  'usageReason': { 'type': 'string', 'description': '使用量超過の判定理由。' },
+                  'grantId':
+                    {
+                      'type': 'string',
+                      'pattern': '^[0-9a-f]{32}$',
+                      'description': '期限付きプロジェクト許可を使った場合の許可ID。',
+                    },
+                  'grantQuote':
+                    { 'type': 'string', 'description': 'プロジェクト許可の登録根拠となった利用者発言の引用。' },
+                  'pass':
+                    {
+                      'type': 'integer',
+                      'minimum': 1,
+                      'maximum': 2,
+                      'description': '依頼ごとの期限付き許可による累計通過回数。',
+                    },
+                },
+            },
+          'PermissionApprovalTarget':
+            {
+              'description': '権限変更による保留の照合結果。Issue詳細とsummaryで共通。表示のGETは承認・再キューを行わない。通常のレビュー指摘だけの保留・実行中・終了済みには付かない。承認はPOST /api/commentのapprove-permissions（actionsにapprove_permissionsがあるときだけ。unavailableには出ない）。',
+              'oneOf':
+                [
+                  {
+                    'type': 'object',
+                    'additionalProperties': false,
+                    'required': ['head', 'pr', 'files', 'source'],
+                    'properties':
+                      {
+                        'head': { 'type': 'string', 'pattern': '^[a-f0-9]{40}$' },
+                        'pr': { 'type': 'integer', 'minimum': 1 },
+                        'files':
+                          {
+                            'type': 'array',
+                            'minItems': 1,
+                            'uniqueItems': true,
+                            'items': { 'type': 'string' },
+                            'description': '完全な権限ファイル集合。改名・コピーの旧名と新名を含み、省略しない。',
+                          },
+                        'source': { 'type': 'string', 'enum': ['structured', 'legacy', 'refreshed'] },
+                      },
+                  },
+                  {
+                    'type': 'object',
+                    'additionalProperties': false,
+                    'required': ['unavailable'],
+                    'properties':
+                      {
+                        'unavailable':
+                          {
+                            'type': 'string',
+                            'description': '取得不完全・先頭変更・対象不一致等で照合できなかった理由。対象情報は返さない。',
+                          },
+                      },
+                  },
+                ],
+            },
+          'CloseRequest':
+            {
+              'type': 'object',
+              'additionalProperties': true,
+              'description': 'server/internal/issueapi/close.go の closeView。unresolvedActionsは閉じた時点で結果を照合できなかった操作（id・action、投稿済みで画像の転送だけ残る操作はposted=true）。読み取れなかったときはunresolvedActionsUnknown=true。通常のトークンは自分の依頼だけ。代行・画面・一時キーにはactions/fingerprintが付く。状態により項目が異なる。',
+            },
+        },
+      'responses':
+        {
+          'Error400':
+            {
+              'description': '入力形式・JSON・値が不正。',
+              'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } },
+            },
+          'Error401':
+            {
+              'description': '未認証、無効または失効した資格情報。',
+              'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } },
+            },
+          'Error403':
+            {
+              'description': '経路・送り手・運用代行・Origin/CSRFの許可がない。',
+              'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } },
+            },
+          'Error404':
+            {
+              'description': '経路または対象がない。',
+              'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } },
+            },
+          'Error405':
+            {
+              'description': '経路のメソッドが違う。',
+              'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } },
+            },
+          'Error502':
+            {
+              'description': '受付の処理または通信に失敗。',
+              'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } },
+            },
+          'Error503':
+            {
+              'description': '共有DB・構成の読み書きができない。受付の入れ替え中は、受け付けられない色が要求を最大120秒保留して書き手の色へ渡し、渡せなかったとき（期限・停止・相手の色が未設定か交代の途中・本文が1MiB超）は503を返す（Retry-After秒後に再試行）。起票・作成の停止中はcode SERVER_DRAININGの503を返す。渡した後に応答を失ったときは502で、処理済みかどうかは応答から判断できない。GET/HEAD（/nextを除く）で応答ヘッダー前に旧色の停止猶予が切れた502にはX-Issue-Desk-Relay-Stop: 1が付く。これは未受理を意味しない。X-Issue-Desk-Not-Accepted: 1 が付いた503は業務処理に届いておらず、どのメソッドも同じ内容で送り直してよい。',
+              'headers':
+                {
+                  'Retry-After':
+                    { 'description': '再試行までの秒数（入れ替え中は2）。', 'schema': { 'type': 'integer' } },
+                  'X-Issue-Desk-Not-Accepted':
+                    { 'description': '1なら要求は業務処理に届いていない（待機中・交代中）。無い503は処理済みかどうかを応答から判断できない。', 'schema': { 'type': 'string', 'enum': ['1'] } },
+                },
+              'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } },
+            },
+          'Error409':
+            {
+              'description': '版・状態・送信ID・lease/マージの番が競合。',
+              'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } },
+            },
+          'Error429':
+            {
+              'description': '接続の試行回数超過。',
+              'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Error' } } },
+            },
+        },
+    },
+}

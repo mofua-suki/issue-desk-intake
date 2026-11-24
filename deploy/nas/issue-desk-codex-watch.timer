@@ -1,0 +1,10 @@
+[Unit]
+Description=issue-desk（NAS）のCodex起票を毎分巡回する
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=1min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

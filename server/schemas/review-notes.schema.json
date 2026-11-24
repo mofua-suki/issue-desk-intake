@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["assignments"],
+  "properties": {
+    "assignments": {
+      "type": "array",
+      "maxItems": 400,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["noteID", "kind", "text", "quote"],
+        "properties": {
+          "noteID": {"type": "integer", "minimum": 1},
+          "kind": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,79}$"},
+          "text": {"type": "string", "minLength": 1, "maxLength": 400, "pattern": "\\S"},
+          "quote": {"type": "string", "minLength": 1, "maxLength": 400, "pattern": "\\S"}
+        }
+      }
+    }
+  }
+}

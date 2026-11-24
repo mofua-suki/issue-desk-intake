@@ -1,0 +1,180 @@
+[
+  {
+    "name": "empty",
+    "text": "",
+    "fenced": [
+      false
+    ],
+    "lines": [
+      ""
+    ]
+  },
+  {
+    "name": "unclosed with trailing newline",
+    "text": "~~~\r\ninside\r\n",
+    "fenced": [
+      true,
+      true,
+      true
+    ],
+    "lines": [
+      "~~~",
+      "inside",
+      ""
+    ]
+  },
+  {
+    "name": "basic",
+    "text": "before\n```js\ncode\n```\nafter",
+    "fenced": [
+      false,
+      true,
+      true,
+      true,
+      false
+    ],
+    "lines": [
+      "before",
+      "```js",
+      "code",
+      "```",
+      "after"
+    ]
+  },
+  {
+    "name": "tilde length",
+    "text": "  ~~~~lang\n~~~\n```\n~~~~ trailing\n~~~~ \t\nafter",
+    "fenced": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ],
+    "lines": [
+      "  ~~~~lang",
+      "~~~",
+      "```",
+      "~~~~ trailing",
+      "~~~~ \t",
+      "after"
+    ]
+  },
+  {
+    "name": "indent and quotes",
+    "text": "    ```\n> ```\n- ~~~\ntext",
+    "fenced": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "lines": [
+      "    ```",
+      "> ```",
+      "- ~~~",
+      "text"
+    ]
+  },
+  {
+    "name": "backtick info",
+    "text": "```bad`info\ntext\n~~~`ok\ntext\n~~~\nend",
+    "fenced": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ],
+    "lines": [
+      "```bad`info",
+      "text",
+      "~~~`ok",
+      "text",
+      "~~~",
+      "end"
+    ]
+  },
+  {
+    "name": "unclosed",
+    "text": "start\n```\n## 受入条件\n- hidden",
+    "fenced": [
+      false,
+      true,
+      true,
+      true
+    ],
+    "lines": [
+      "start",
+      "```",
+      "## 受入条件",
+      "- hidden"
+    ]
+  },
+  {
+    "name": "crlf",
+    "text": "~~~\r\ninside\r\n~~~\r\nafter",
+    "fenced": [
+      true,
+      true,
+      true,
+      false
+    ],
+    "lines": [
+      "~~~",
+      "inside",
+      "~~~",
+      "after"
+    ]
+  },
+  {
+    "name": "short and trailing",
+    "text": "````\n```\n````x\n`````\nend",
+    "fenced": [
+      true,
+      true,
+      true,
+      true,
+      false
+    ],
+    "lines": [
+      "````",
+      "```",
+      "````x",
+      "`````",
+      "end"
+    ]
+  },
+  {
+    "name": "opening fence with final standalone carriage return",
+    "text": "before\n```\r",
+    "fenced": [false, true],
+    "lines": ["before", "```\r"]
+  },
+  {
+    "name": "closing fence with final standalone carriage return",
+    "text": "~~~\ninside\n~~~\r",
+    "fenced": [true, true, true],
+    "lines": ["~~~", "inside", "~~~\r"]
+  },
+  {
+    "name": "carriage return inside fence info",
+    "text": "```a\rb\ninside\n```\r",
+    "fenced": [true, true, true],
+    "lines": ["```a\rb", "inside", "```\r"]
+  },
+  {
+    "name": "standalone carriage return",
+    "text": "before\rmiddle\nend\r",
+    "fenced": [
+      false,
+      false
+    ],
+    "lines": [
+      "before\rmiddle",
+      "end\r"
+    ]
+  }
+]

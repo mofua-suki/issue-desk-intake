@@ -1,0 +1,188 @@
+{
+  'paths':
+    {
+      '/api/proposals/dismissal':
+        {
+          'get':
+            {
+              'operationId': 'get_proposal_dismissal',
+              'summary': '未採用・走査除外の記録と元コメントを照合する。案IDなしの形式不正はコメントIDで指定し、本文SHA-256・本文・現在の解析失敗と保存時の理由を返す。採用記録があれば409。',
+              'description': '画面セッション（変更時CSRF必須）、一時キー、運用の代行を許可したPC別トークンのみ。未許可トークンは403。管理対象リポジトリのみ。元Issue・コメント・相談を削除せず、AI・起票・Giteaへの書込を行わない。未採用・走査除外の記録と元コメントを照合する。案IDなしの形式不正はコメントIDで指定し、本文SHA-256・本文・現在の解析失敗と保存時の理由を返す。採用記録があれば409。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required':
+                                    [
+                                      'project',
+                                      'number',
+                                      'proposalId',
+                                      'commentId',
+                                      'fingerprint',
+                                      'postedAt',
+                                      'updatedAt',
+                                    ],
+                                  'properties':
+                                    {
+                                      'project': { 'type': 'string', 'pattern': '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' },
+                                      'number': { 'type': 'integer', 'minimum': 1 },
+                                      'proposalId': { 'type': 'string', 'maxLength': 200 },
+                                      'commentId': { 'type': 'integer', 'minimum': 1 },
+                                      'fingerprint': { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' },
+                                      'fingerprintKind': { 'type': 'string', 'enum': ['comment-body-sha256', 'proposal-json-sha256'] },
+                                      'body': { 'type': 'string' },
+                                      'parseError': { 'type': 'string' },
+                                      'recordedReason': { 'type': 'string' },
+                                      'title': { 'type': 'string' },
+                                      'purpose': { 'type': 'string' },
+                                      'acceptance': { 'type': 'array', 'items': { 'type': 'string' } },
+                                      'postedAt': { 'type': 'string', 'format': 'date-time' },
+                                      'updatedAt': { 'type': 'string', 'format': 'date-time' },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'parameters':
+                [
+                  {
+                    'name': 'project',
+                    'in': 'query',
+                    'required': true,
+                    'schema': { 'type': 'string', 'pattern': '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' },
+                  },
+                  { 'name': 'number', 'in': 'query', 'required': true, 'schema': { 'type': 'integer', 'minimum': 1 } },
+                  {
+                    'name': 'proposalId',
+                    'in': 'query',
+                    'required': false,
+                    'schema': { 'type': 'string', 'maxLength': 200 },
+                  },
+                  {
+                    'name': 'commentId',
+                    'in': 'query',
+                    'required': true,
+                    'schema': { 'type': 'integer', 'minimum': 1 },
+                  },
+                ],
+            },
+        },
+      '/api/proposals/dismiss':
+        {
+          'post':
+            {
+              'operationId': 'dismiss_proposal_attention',
+              'summary': '未採用案を理由付きで対応不要にする。同じ案ID・fingerprintだけを要対応から外し、再走査と再起動後も保持する。採用・起票処理との競合、本文変更は409。同じ送信IDと内容の再送は同じ記録を返し、取り消し後の再送では再終了しない。',
+              'description': '画面セッション（変更時CSRF必須）、一時キー、運用の代行を許可したPC別トークンのみ。未許可トークンは403。管理対象リポジトリのみ。元Issue・コメント・相談を削除せず、AI・起票・Giteaへの書込を行わない。未採用案を理由付きで対応不要にする。同じ案ID・fingerprintだけを要対応から外し、再走査と再起動後も保持する。採用・起票処理との競合、本文変更は409。同じ送信IDと内容の再送は同じ記録を返し、取り消し後の再送では再終了しない。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '受付の応答',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required':
+                                    [
+                                      'repo',
+                                      'number',
+                                      'id',
+                                      'operationId',
+                                      'fingerprint',
+                                      'status',
+                                      'reason',
+                                      'dismissedAt',
+                                      'via',
+                                      'history',
+                                    ],
+                                  'properties':
+                                    {
+                                      'repo': { 'type': 'string' },
+                                      'number': { 'type': 'integer', 'minimum': 1 },
+                                      'id': { 'type': 'string' },
+                                      'operationId': { 'type': 'string', 'format': 'uuid' },
+                                      'commentId': { 'type': 'integer', 'minimum': 1 },
+                                      'fingerprint': { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' },
+                                      'title': { 'type': 'string' },
+                                      'status': { 'enum': ['dismissed', 'restored'], 'description': '取消経路の削除後も、既存の保存記録との互換のため restored と restoredAt・restoredVia を残す。' },
+                                      'reason': { 'type': 'string' },
+                                      'dismissedAt': { 'type': 'string', 'format': 'date-time' },
+                                      'via': { 'type': 'string' },
+                                      'restoredAt': { 'type': 'string', 'format': 'date-time' },
+                                      'restoredVia': { 'type': 'string' },
+                                      'history':
+                                        {
+                                          'type': 'array',
+                                          'items': { 'type': 'object', 'additionalProperties': true },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '404': { '$ref': '#/components/responses/Error404' },
+                  '409': { '$ref': '#/components/responses/Error409' },
+                  '502': { '$ref': '#/components/responses/Error502' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required':
+                                ['project', 'number', 'commentId', 'id', 'reason', 'fingerprint'],
+                              'properties':
+                                {
+                                  'project': { 'type': 'string', 'pattern': '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' },
+                                  'number': { 'type': 'integer', 'minimum': 1 },
+                                  'proposalId': { 'type': 'string', 'maxLength': 200 },
+                                  'commentId': { 'type': 'integer', 'minimum': 1 },
+                                  'id': { 'type': 'string', 'format': 'uuid' },
+                                  'reason': { 'type': 'string', 'minLength': 1, 'maxLength': 1000 },
+                                  'fingerprint': { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' },
+                                  'instructionAt':
+                                    {
+                                      'type': 'string',
+                                      'format': 'date-time',
+                                      'description': 'PC別トークン接続では必須。原文の指示日時（オフセット付き）。未来・不正は400、元コメントの最終更新より古ければ409。',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

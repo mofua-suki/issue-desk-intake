@@ -1,0 +1,380 @@
+{
+  'paths':
+    {
+      '/api/v1/hosts/{host}/claude-api-key':
+        {
+          'get': {
+            'operationId': 'get_api_v1_hosts_host_claude_api_key',
+            'summary': '自PCのClaude APIキー配布状態を取得する',
+            'description': '自PCのPC別トークンのみ。取得記録を保存できない場合は503。全応答はno-store。',
+            'x-issue-desk-delegate': false,
+            'security': [{ 'pcToken': [] }],
+            'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+            'responses': {
+              '200': { 'description': '配布状態。', 'headers': { 'Cache-Control': { 'schema': { 'type': 'string', 'const': 'no-store' } } }, 'content': { 'application/json': { 'schema': {
+                'oneOf': [
+                  { 'type': 'object', 'additionalProperties': false, 'required': ['state', 'version', 'key'], 'properties': { 'state': { 'const': 'registered' }, 'version': { 'type': 'string' }, 'key': { 'type': 'string' } } },
+                  { 'type': 'object', 'additionalProperties': false, 'required': ['state', 'version', 'key'], 'properties': { 'state': { 'const': 'unregistered' }, 'version': { 'type': 'null' }, 'key': { 'type': 'null' } } },
+                  { 'type': 'object', 'additionalProperties': false, 'required': ['state', 'version', 'key'], 'properties': { 'state': { 'const': 'cleared' }, 'version': { 'type': 'string' }, 'key': { 'type': 'null' } } }
+                ]
+              } } } },
+              '401': { '$ref': '#/components/responses/Error401' },
+              '403': { '$ref': '#/components/responses/Error403' },
+              '405': { 'description': 'メソッドが違います。' },
+              '503': { '$ref': '#/components/responses/Error503' }
+            }
+          }
+        },
+      '/api/v1/hosts/{host}/hostd-health':
+        {
+          'get':
+            {
+              'operationId': 'get_api_v1_hosts_host_hostd_health',
+              'summary': '保存先から自PCの周期集計を読み直す',
+              'description': '専用idh_認証。他PC403、無効・失効・専用以外401。キャッシュを使わず保存先から読み直す。PC行・周期の記録がなければnull。保存先不在・再読込失敗503。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '周期の集計。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'additionalProperties': false,
+                                  'required': ['hostdHealth'],
+                                  'properties':
+                                    {
+                                      'hostdHealth':
+                                        {
+                                          'type': ['object', 'null'],
+                                          'description': '周期（cycle）だけ。',
+                                          'additionalProperties': true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+            },
+          'post':
+            {
+              'operationId': 'post_api_v1_hosts_host_hostd_health',
+              'summary': 'hostdの周期・指示の結果を送る',
+              'description': '自分のPCだけ。専用idh_認証（他PCは403、無効・失効は401）。cycleだけ、またはcommandResultだけを送る。commandResultは受付が発行した版の指示(desired-imageのcommand)の結果(id・ok・固定の理由語reason・時刻atの4項目だけ)で、未実行の指示のidに対応するものだけを受け付けて指示を完了にし、同じidの同じ内容は冪等、違う内容や未発行のidは400。okのpinは固定の印を置き、okのfollowは外す。他の項目は消さない(issue-desk-worker/docs/client-hostd-commands.md)。未知項目・reportedAt指定は400。同一UPDATEで原子的に保存。行がなければsaved=false。保存・再読込失敗は内部例外を含まない503。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'hostdToken': [] }],
+              'parameters': [{ 'name': 'host', 'in': 'path', 'required': true, 'schema': { 'type': 'string' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'oneOf':
+                                [
+                                  {
+                                    'type': 'object',
+                                    'additionalProperties': false,
+                                    'required': ['commandResult'],
+                                    'properties':
+                                      { 'commandResult': { '$ref': '#/components/schemas/HostdCommandResultInput' } },
+                                  },
+                                  {
+                                    'type': 'object',
+                                    'additionalProperties': false,
+                                    'required': ['cycle'],
+                                    'properties':
+                                      {
+                                        'cycle':
+                                          {
+                                            'type': 'object',
+                                            'additionalProperties': false,
+                                            'required': ['result', 'stage', 'exceptionType', 'at'],
+                                            'dependentRequired': { 'id': ['phase'], 'phase': ['id'] },
+                                            'description': 'id・phase付きは開始と終了を1周期として数える。開始は従来互換のfailedのみ。waitは成功扱いで回数を0にし、終了の失敗は1回。終了後・古い周期のwaitは無視し、待機表示は受信から15分未満。再送・終了後の開始・古い周期は無視。成功終了でリセット。id無しの従来周期はid付き周期を受信するまでは従来の1報告1加算、以降は無視。',
+                                            'properties':
+                                              {
+                                                'id': { 'type': 'string', 'pattern': "^[0-9a-f]{32}(?![\\s\\S])" },
+                                                'phase': { 'enum': ['start', 'wait', 'finish'] },
+                                                'waitingFor': { 'enum': ['drain'] },
+                                                'result': { 'enum': ['success', 'failed'] },
+                                                'stage':
+                                                  {
+                                                    'enum':
+                                                      [
+                                                        'recover',
+                                                        'docker',
+                                                        'client',
+                                                        'swap-finish',
+                                                        'acquire',
+                                                        'swap-start',
+                                                        'apps',
+                                                        'complete',
+                                                      ],
+                                                  },
+                                                'exceptionType':
+                                                  {
+                                                    'type': ['string', 'null'],
+                                                    'maxLength': 256,
+                                                    'pattern': "^[A-Za-z_][A-Za-z0-9_`]*(?:\\.[A-Za-z_][A-Za-z0-9_`]*)+(?:\\+[A-Za-z_][A-Za-z0-9_`]*)*(?![\\s\\S])",
+                                                    'description': '完全修飾型名だけ。改行・例外文は禁止。',
+                                                  },
+                                                'reason':
+                                                  {
+                                                    'type': ['string', 'null'],
+                                                    'enum':
+                                                      [
+                                                        'http_400',
+                                                        'http_401',
+                                                        'http_403',
+                                                        'http_404',
+                                                        'http_5xx',
+                                                        'http_other',
+                                                        'network',
+                                                        'timeout',
+                                                        'docker_exit',
+                                                        'docker_timeout',
+                                                        'state',
+                                                        'other',
+                                                        null,
+                                                      ],
+                                                    'description': '任意。失敗の理由の固定分類。付いていない従来の報告も有効。成功では null か省略。',
+                                                  },
+                                                'httpStatus':
+                                                  {
+                                                    'type': ['integer', 'null'],
+                                                    'minimum': 100,
+                                                    'maximum': 599,
+                                                    'description': '任意。HTTPの状態コード。HTTP以外の失敗では null か省略。',
+                                                  },
+                                                'versions':
+                                                  {
+                                                    'type': 'object',
+                                                    'additionalProperties': false,
+                                                    'required': ['current', 'previous', 'lastGood'],
+                                                    'description': '任意。起動役が報告する現在の版と切り戻し先。現在と異なる候補だけを自動切り戻しに使う。',
+                                                    'properties':
+                                                      {
+                                                        'current':
+                                                          {
+                                                            'type': 'string',
+                                                            'minLength': 1,
+                                                            'maxLength': 128,
+                                                            'pattern': "^(?!.*\\.(?:staging|check)$)[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}(?![\\s\\S])",
+                                                          },
+                                                        'previous':
+                                                          {
+                                                            'type': ['string', 'null'],
+                                                            'minLength': 1,
+                                                            'maxLength': 128,
+                                                            'pattern': "^(?!.*\\.(?:staging|check)$)[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}(?![\\s\\S])",
+                                                          },
+                                                        'lastGood':
+                                                          {
+                                                            'type': ['string', 'null'],
+                                                            'minLength': 1,
+                                                            'maxLength': 128,
+                                                            'pattern': "^(?!.*\\.(?:staging|check)$)[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}(?![\\s\\S])",
+                                                          },
+                                                      },
+                                                  },
+                                                'detail':
+                                                  {
+                                                    'type': ['string', 'null'],
+                                                    'maxLength': 200,
+                                                    'pattern': "^(?!.*(?:[iI][dD][hH]_|://|[A-Za-z]:|\\\\))[\\x20-\\x7e]*(?![\\s\\S])",
+                                                    'description': '任意。失敗の自前例外文または確認箇所と固定の説明。資格情報・URL・パス・非ASCIIを除く。成功ではnullか省略。',
+                                                  },
+                                                'dockerFailure':
+                                                  {
+                                                    'type': ['object', 'null'],
+                                                    'additionalProperties': false,
+                                                    'required': ['command', 'exitCode', 'stderr'],
+                                                    'properties':
+                                                      {
+                                                        'command':
+                                                          {
+                                                            'enum':
+                                                              [
+                                                                'pull',
+                                                                'cp',
+                                                                'compose',
+                                                                'info',
+                                                                'image',
+                                                                'create',
+                                                                'rm',
+                                                                'other',
+                                                              ],
+                                                          },
+                                                        'exitCode':
+                                                          {
+                                                            'type': 'integer',
+                                                            'minimum': -2147483648,
+                                                            'maximum': 2147483647,
+                                                          },
+                                                        'stderr':
+                                                          {
+                                                            'type': 'string',
+                                                            'maxLength': 200,
+                                                            'pattern': "^(?!.*(?:[iI][dD][hH]_|://|[A-Za-z]:|\\\\))[\\x20-\\x7e]*(?![\\s\\S])",
+                                                          },
+                                                      },
+                                                    'description': '失敗時だけ。Dockerの固定分類・終了コード・伏せ字済み標準エラー末尾。引数値・標準出力は含めない。',
+                                                  },
+                                                'swapDiagnostic':
+                                                  {
+                                                    'type': 'object',
+                                                    'additionalProperties': false,
+                                                    'required': ['container', 'logTail', 'ready'],
+                                                    'properties':
+                                                      {
+                                                        'container':
+                                                          {
+                                                            'type': ['object', 'null'],
+                                                            'additionalProperties': false,
+                                                            'required': ['status', 'exitCode', 'restartCount'],
+                                                            'properties':
+                                                              {
+                                                                'status':
+                                                                  {
+                                                                    'type': 'string',
+                                                                    'pattern': "^[a-z]{1,20}(?![\\\\s\\\\S])",
+                                                                  },
+                                                                'exitCode':
+                                                                  {
+                                                                    'type': 'integer',
+                                                                    'minimum': -2147483648,
+                                                                    'maximum': 2147483647,
+                                                                  },
+                                                                'restartCount':
+                                                                  {
+                                                                    'type': 'integer',
+                                                                    'minimum': 0,
+                                                                    'maximum': 2147483647,
+                                                                  },
+                                                              },
+                                                          },
+                                                        'logTail':
+                                                          {
+                                                            'type': 'array',
+                                                            'maxItems': 40,
+                                                            'items':
+                                                              {
+                                                                'type': 'string',
+                                                                'maxLength': 200,
+                                                                'pattern': "^(?!.*(?:[iI][dD][hH]_|://|[A-Za-z]:|\\\\))[\\x20-\\x7e]*(?![\\s\\S])",
+                                                              },
+                                                          },
+                                                        'ready': { 'type': ['boolean', 'null'] },
+                                                      },
+                                                    'description': '任意。stage が swap-start の失敗の周期だけ。新しい client の heartbeat が時間切れになったときの、新しい色のコンテナの状態（取得できなければ null）・ログ末尾（最大40行。固定語 (omitted) の行を含む）・最後に見た heartbeat の ready（無ければ null）。',
+                                                  },
+                                                'at':
+                                                  {
+                                                    'type': 'string',
+                                                    'format': 'date-time',
+                                                    'pattern': "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|\\+00:00)(?![\\s\\S])",
+                                                    'description': '有効なUTC ISO日時。診断用であり集計には使わない。',
+                                                  },
+                                              },
+                                            'allOf':
+                                              [
+                                                {
+                                                  'if':
+                                                    {
+                                                      'required': ['phase'],
+                                                      'properties': { 'phase': { 'const': 'wait' } },
+                                                    },
+                                                  'then':
+                                                    {
+                                                      'required': ['id', 'waitingFor'],
+                                                      'properties':
+                                                        {
+                                                          'result': { 'const': 'success' },
+                                                          'stage': { 'const': 'swap-start' },
+                                                          'waitingFor': { 'const': 'drain' },
+                                                        },
+                                                    },
+                                                  'else':
+                                                    {
+                                                      'not': { 'required': ['waitingFor'] },
+                                                      'if': { 'properties': { 'result': { 'const': 'success' } } },
+                                                      'then': { 'properties': { 'stage': { 'const': 'complete' } } },
+                                                    },
+                                                },
+                                                {
+                                                  'if':
+                                                    {
+                                                      'required': ['phase'],
+                                                      'properties': { 'phase': { 'const': 'start' } },
+                                                    },
+                                                  'then': { 'properties': { 'result': { 'const': 'failed' } } },
+                                                },
+                                                {
+                                                  'if': { 'properties': { 'result': { 'const': 'success' } } },
+                                                  'then':
+                                                    {
+                                                      'properties':
+                                                        {
+                                                          'stage': { 'enum': ['complete', 'swap-start'] },
+                                                          'exceptionType': { 'type': 'null' },
+                                                          'reason': { 'type': 'null' },
+                                                          'httpStatus': { 'type': 'null' },
+                                                          'detail': { 'type': 'null' },
+                                                          'dockerFailure': { 'type': 'null' },
+                                                          'swapDiagnostic': false,
+                                                        },
+                                                    },
+                                                },
+                                              ],
+                                          },
+                                      },
+                                  },
+                                ],
+                            },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '保存したかを返す。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'required': ['saved'],
+                                  'properties': { 'saved': { 'type': 'boolean' } },
+                                  'additionalProperties': false,
+                                },
+                            },
+                        },
+                    },
+                  '400': { '$ref': '#/components/responses/Error400' },
+                  '401': { '$ref': '#/components/responses/Error401' },
+                  '403': { '$ref': '#/components/responses/Error403' },
+                  '405': { '$ref': '#/components/responses/Error405' },
+                  '503': { '$ref': '#/components/responses/Error503' },
+                },
+            },
+        },
+    },
+}

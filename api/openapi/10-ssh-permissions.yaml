@@ -1,0 +1,428 @@
+{
+  'paths':
+    {
+      '/api/ssh-tickets':
+        {
+          'get':
+            {
+              'operationId': 'sshTicketsList',
+              'description': '申請の記録・読取。申請はhost・operation・reason・evidence・emergencyが必須。設定不備は全操作503。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters': [],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '記録した申請、または一覧。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'tickets':
+                                        { 'type': 'array', 'items': { '$ref': '#/components/schemas/SshTicket' } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '画面以外の判断、CSRFまたはOrigin不正。' },
+                  '503': { 'description': '方針が無い・不正、または共有DBが使えない。' },
+                },
+            },
+          'post':
+            {
+              'operationId': 'sshTicketsRequest',
+              'description': '申請を記録する。host・operation・reason・evidence・emergencyが必須。operation=commandではcommandも必須で、固定操作ではcommand項目の指定を拒否する。登録済みhostと、host-ssh.jsonのoperationHostsで許可された操作・PCの組合せが必要。運用代行を許したPCトークンまたは一時キーによる方針登録済みの読み取り専用固定操作は方針承認する。directPRを添えた固定verifyは、運用代行PCと送信先がdirectPRVerificationの登録に一致し、直接PRのコミット列が対象リポジトリの現在の既定枝につながる場合に方針承認する。ほかは同一PC・操作の有効なhost-ssh付与があれば付与承認する。commandでは同一PC・同一commandのハッシュの付与だけが対象。付与なし・対象違い・取消済み・期限切れ、または申請主体が対象外ならrequestedに留まり、受付画面でその申請を個別承認できる。設定不備は503。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters': [],
+              'responses':
+                {
+                  '201':
+                    {
+                      'description': '記録した申請。方針承認時はapprover=policy:statusまたはpolicy:direct-pr:<repo>、付与承認時はapprover=grant:<付与ID>。いずれもdecided_atは申請時刻。両方の対象なら方針承認を優先し付与を検索しない。それ以外はrequested。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/SshTicket' } } },
+                    },
+                  '400': { 'description': '未登録host・operation、または入力不正。' },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': 'CSRFまたはOrigin不正、または直接PRの申請元・対象が未登録。' },
+                  '409': { 'description': '直接PRの基点がリポジトリの既定枝と一致しない。' },
+                  '503': { 'description': '方針・共有DB・対象リポジトリの既定枝を確認できない。' },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/SshTicketRequest' } } },
+                },
+            },
+        },
+      '/api/ssh-tickets/{id}':
+        {
+          'get':
+            {
+              'operationId': 'sshTicketsDetail',
+              'description': '申請の記録・読取。申請はhost・operation・reason・evidence・emergencyが必須。設定不備は全操作503。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string', 'format': 'uuid' } }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '記録した申請、または一覧。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/SshTicket' } } },
+                    },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '画面以外の判断、CSRFまたはOrigin不正。' },
+                  '404': { 'description': '申請が見つからない。' },
+                  '503': { 'description': '方針が無い・不正、または共有DBが使えない。' },
+                },
+            },
+        },
+      '/api/ssh-tickets/{id}/approve':
+        {
+          'post':
+            {
+              'operationId': 'sshTicketsapprove',
+              'description': '画面セッションとCSRFだけでrequestedを判定し、現在の方針で組合せを確認し、承認者と時刻を記録。一時キー・PC別トークン（運用代行を含む）は403。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'parameters':
+                [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string', 'format': 'uuid' } }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '記録した申請、または一覧。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/SshTicket' } } },
+                    },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '画面以外の判断、CSRFまたはOrigin不正。' },
+                  '404': { 'description': '申請が見つからない。' },
+                  '409': { 'description': 'requested以外の状態、または現在の方針で対象外。' },
+                  '503': { 'description': '方針が無い・不正、または共有DBが使えない。' },
+                },
+            },
+        },
+      '/api/ssh-tickets/{id}/deny':
+        {
+          'post':
+            {
+              'operationId': 'sshTicketsdeny',
+              'description': '画面セッションとCSRFだけでrequestedを判定し、承認者と時刻を記録。一時キー・PC別トークン（運用代行を含む）は403。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }],
+              'parameters':
+                [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string', 'format': 'uuid' } }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '記録した申請、または一覧。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/SshTicket' } } },
+                    },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '画面以外の判断、CSRFまたはOrigin不正。' },
+                  '404': { 'description': '申請が見つからない。' },
+                  '409': { 'description': 'requested以外の状態。' },
+                  '503': { 'description': '方針が無い・不正、または共有DBが使えない。' },
+                },
+            },
+        },
+      '/api/ssh-tickets/{id}/issue':
+        {
+          'post':
+            {
+              'operationId': 'sshTicketsIssue',
+              'description': 'signer.token と同名のPC別トークン専用。現在のhost登録と操作を確認し、command操作では保存済みcommandの妥当性も確認する。方針承認は発券時にも読み取り専用登録が必要。承認記録あり・承認からTTL未満・未発券だけ発券。期限切れはexpired。承認の無い申請は発券しない。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }],
+              'parameters':
+                [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string', 'format': 'uuid' } }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'issuedの申請行とprincipal、ttlMinutes、forceCommand。command操作では保存されたcommand全文を変更せずforceCommandに返す。expires_atは発券からTTL。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'allOf':
+                                    [
+                                      { '$ref': '#/components/schemas/SshTicket' },
+                                      {
+                                        'type': 'object',
+                                        'required': ['principal', 'ttlMinutes', 'forceCommand'],
+                                        'properties':
+                                          {
+                                            'principal': { 'type': 'string' },
+                                            'ttlMinutes': { 'type': 'integer', 'minimum': 1, 'maximum': 60 },
+                                            'forceCommand': { 'type': 'string' },
+                                          },
+                                      },
+                                    ],
+                                },
+                            },
+                        },
+                    },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '署名役以外のPC別トークン、一時キー、画面。' },
+                  '404': { 'description': '申請が見つからない。' },
+                  '409': { 'description': '承認記録なし、再発券、期限切れ、現在の方針で対象を許可していない。' },
+                  '503': { 'description': '方針が無い・不正、共有DBが使えない。' },
+                },
+            },
+        },
+      '/api/ssh-tickets/{id}/result':
+        {
+          'post':
+            {
+              'operationId': 'sshTicketsResult',
+              'description': '同じ申請トークン、または一時キー申請への一時キーだけがissuedに一回記録。summaryは全文を伏せ字にしてから先頭2000文字まで切り詰めてreportedにする。画面申請は結果API対象外。',
+              'x-issue-desk-delegate': false,
+              'security': [{ 'pcToken': [] }, { 'cliKey': [] }],
+              'parameters':
+                [{ 'name': 'id', 'in': 'path', 'required': true, 'schema': { 'type': 'string', 'format': 'uuid' } }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required': ['connectionResult', 'exitCode', 'summary'],
+                              'properties':
+                                {
+                                  'connectionResult': { 'type': 'string', 'enum': ['connected', 'failed'] },
+                                  'exitCode':
+                                    { 'type': ['integer', 'null'], 'minimum': -2147483648, 'maximum': 2147483647 },
+                                  'summary': { 'type': 'string', 'description': '伏せ字処理後、先頭2000文字を保存。' },
+                                },
+                            },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'reportedの申請行。',
+                      'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/SshTicket' } } },
+                    },
+                  '400': { 'description': '入力不正。' },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '申請元と異なるトークン、画面、Origin不正。' },
+                  '404': { 'description': '申請が見つからない。' },
+                  '409': { 'description': 'issued以外、結果を記録済み。' },
+                  '503': { 'description': '方針が無い・不正、共有DBが使えない。' },
+                },
+            },
+        },
+      '/api/permission-grants':
+        {
+          'get':
+            {
+              'operationId': 'permissionGrantsList',
+              'description': '許可の付与の一覧。status=active（既定。取り消し済みと期限切れを除く）かall、kindで絞り込み。画面・一時キー・運用の代行を許したPC別トークン。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'status',
+                    'in': 'query',
+                    'required': false,
+                    'schema': { 'type': 'string', 'enum': ['active', 'all'] },
+                  },
+                  {
+                    'name': 'kind',
+                    'in': 'query',
+                    'required': false,
+                    'schema':
+                      {
+                        'type': 'string',
+                        'enum': ['nas-claude-rule', 'hostd-repair', 'host-ssh', 'implementation-limit-retry', 'db-read'],
+                      },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '許可の付与の一覧。',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  'type': 'object',
+                                  'properties':
+                                    {
+                                      'grants':
+                                        {
+                                          'type': 'array',
+                                          'items': { '$ref': '#/components/schemas/PermissionGrant' },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                  '400': { 'description': '絞り込みの指定不正。' },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '運用の代行を許していないPC別トークン、CSRFまたはOrigin不正。' },
+                  '503': { 'description': '共有DBが使えない。' },
+                },
+            },
+          'post':
+            {
+              'operationId': 'permissionGrantsRegister',
+              'description': '利用者の発言を根拠に許可の付与を登録する。evidence（引用1〜2000文字・登録の7日以内の発言時刻）が必須。期限は ttlSeconds 60〜86400（既定3600）、恒久（permanent）は nas-claude-rule だけ。同じidの同じ内容は200で冪等、違えば409。有効な付与は10件まで、同じ種類と対象は1件。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters': [],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    { 'application/json': { 'schema': { '$ref': '#/components/schemas/PermissionGrantRequest' } } },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '同じidで同じ内容の再送（保存も通知もしない）。',
+                      'content':
+                        { 'application/json': { 'schema': { '$ref': '#/components/schemas/PermissionGrant' } } },
+                    },
+                  '201':
+                    {
+                      'description': '登録した許可の付与。iPhoneへ通知する。',
+                      'content':
+                        { 'application/json': { 'schema': { '$ref': '#/components/schemas/PermissionGrant' } } },
+                    },
+                  '400':
+                    {
+                      'description': '根拠なし・形違い、一覧外の種類や対象、未知の項目、範囲外のTTL、許さない恒久。何も保存しない。',
+                    },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '運用の代行を許していないPC別トークン、CSRFまたはOrigin不正。' },
+                  '409': { 'description': '同じidで内容が違う、有効な付与が10件、同じ種類と対象が有効。' },
+                  '503': { 'description': '共有DBが使えない。' },
+                },
+            },
+        },
+      '/api/permission-grants/{id}':
+        {
+          'get':
+            {
+              'operationId': 'permissionGrantsDetail',
+              'description': '許可の付与1件（取り消し済み・期限切れも読める。statusで区別）。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'id',
+                    'in': 'path',
+                    'required': true,
+                    'schema': { 'type': 'string', 'pattern': '^[0-9a-f]{32}$' },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '許可の付与。',
+                      'content':
+                        { 'application/json': { 'schema': { '$ref': '#/components/schemas/PermissionGrant' } } },
+                    },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '運用の代行を許していないPC別トークン。' },
+                  '404': { 'description': '見つからない。' },
+                  '503': { 'description': '共有DBが使えない。' },
+                },
+            },
+        },
+      '/api/permission-grants/{id}/revoke':
+        {
+          'post':
+            {
+              'operationId': 'permissionGrantsRevoke',
+              'description': '許可の付与を取り消す。登録できる主体（画面・一時キー・運用の代行を許したPC別トークン）が使える。取り消し済み・期限切れは変えず200（冪等。通知もしない）。変えたときはiPhoneへ通知する。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'screenSession': [], 'csrfToken': [] }, { 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'id',
+                    'in': 'path',
+                    'required': true,
+                    'schema': { 'type': 'string', 'pattern': '^[0-9a-f]{32}$' },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '取り消し後の許可の付与。',
+                      'content':
+                        { 'application/json': { 'schema': { '$ref': '#/components/schemas/PermissionGrant' } } },
+                    },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '運用の代行を許していないPC別トークン、CSRFまたはOrigin不正。' },
+                  '404': { 'description': '見つからない。' },
+                  '503': { 'description': '共有DBが使えない。' },
+                },
+            },
+        },
+      '/api/permission-grants/{id}/applied':
+        {
+          'post':
+            {
+              'operationId': 'permissionGrantsApplied',
+              'description': '反映済みの印を有効な付与にだけ記録する（最初の時刻を残す）。運用の代行を許したPC別トークンと一時キーだけ。画面は403。host-sshは使用時にも host-ssh.json で操作・PCの組合せを検査し直す。',
+              'x-issue-desk-delegate': true,
+              'security': [{ 'cliKey': [] }, { 'pcToken': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'id',
+                    'in': 'path',
+                    'required': true,
+                    'schema': { 'type': 'string', 'pattern': '^[0-9a-f]{32}$' },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': '反映済みを記録した許可の付与。',
+                      'content':
+                        { 'application/json': { 'schema': { '$ref': '#/components/schemas/PermissionGrant' } } },
+                    },
+                  '401': { 'description': '未認証。' },
+                  '403': { 'description': '画面、運用の代行を許していないPC別トークン、Origin不正。' },
+                  '404': { 'description': '見つからない。' },
+                  '409': { 'description': '取り消し済み・期限切れ、または対象が現在の方針で許可されていない。' },
+                  '503': { 'description': '共有DBが使えない。' },
+                },
+            },
+        },
+    },
+}

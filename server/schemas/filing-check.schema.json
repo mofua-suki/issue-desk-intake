@@ -1,0 +1,235 @@
+{
+  "type": "object",
+  "$defs": {
+    "evidenceTextRange": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "section"
+          ],
+          "properties": {
+            "section": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "startLine",
+            "endLine"
+          ],
+          "properties": {
+            "startLine": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "endLine": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "proceed",
+    "reason",
+    "dependsOnIssues",
+    "evidenceRequests",
+    "duplicate",
+    "dependencyEvidence",
+    "refusalCategory"
+  ],
+  "properties": {
+    "duplicate": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "candidateId",
+        "commonTargets",
+        "targetPurposeQuote",
+        "candidatePurposeQuote"
+      ],
+      "properties": {
+        "candidateId": {
+          "type": "string"
+        },
+        "targetPurposeQuote": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidatePurposeQuote": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commonTargets": {
+          "type": "array",
+          "maxItems": 24,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "value"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "path",
+                  "setting",
+                  "symbol",
+                  "api"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "evidenceRequests": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidateId",
+          "kind",
+          "selection"
+        ],
+        "properties": {
+          "candidateId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "body",
+              "reference"
+            ]
+          },
+          "selection": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "body",
+              "reference",
+              "messages"
+            ],
+            "properties": {
+              "body": {
+                "$ref": "#/$defs/evidenceTextRange"
+              },
+              "reference": {
+                "$ref": "#/$defs/evidenceTextRange"
+              },
+              "messages": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "proceed": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "dependsOnIssues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "number"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "gitea"
+            ]
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "dependencyEvidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidateId",
+          "number"
+        ],
+        "properties": {
+          "candidateId": {
+            "type": "string",
+            "pattern": "^(request|job):[1-9][0-9]*$"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "refusalCategory": {
+      "type": "string",
+      "enum": [
+        "none",
+        "input_limit_only",
+        "other",
+        "unknown"
+      ],
+      "description": "AIが報告した停止理由の分類。入力上限だけ、その他、停止なし、不明。"
+    }
+  }
+}
