@@ -25,6 +25,7 @@ type materials struct {
 	bootstrapped map[*projectState]bool
 	restoring    bool
 	evidence     evidenceResult
+	handoff      []handoffItem
 	group        []string
 }
 

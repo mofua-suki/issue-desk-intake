@@ -93,6 +93,14 @@ func (m *materials) data(compact bool) (Record, map[string]bool, map[string]bool
 				delivered[documentKey(doc)] = true
 			}
 		}
+		for _, item := range m.handoff {
+			doc := item.doc
+			if doc.Project == name {
+				docs = append(docs, doc)
+				delivered[documentKey(doc)] = true
+				bodies[name+":"+doc.Path] = true
+			}
+		}
 		used := projectBytes(p.Reads) + m.evidenceBytes(name)
 		project := Record{"name": name, "branch": p.Branch, "revision": p.Revision, "documents": docs, "unreadFiles": unread, "readLimit": Record{"file": maxFile, "total": maxProject, "used": used, "remaining": maxProject - used}, "index": "repo-index", "search": "repo-search"}
 		if !compact {
@@ -105,7 +113,7 @@ func (m *materials) data(compact bool) (Record, map[string]bool, map[string]bool
 		}
 		projects = append(projects, project)
 	}
-	result := Record{"projects": projects, "notice": m.state.Notice}
+	result := Record{"projects": projects, "notice": m.state.Notice + m.state.HandoffNotice}
 	if len(m.group) > 0 {
 		result["repositoryGroup"] = m.group
 	}
@@ -175,6 +183,12 @@ func resumedPrompt(full string, d Record, m *materials, state *sessionState, del
 		}
 	}
 	for _, doc := range m.evidence.documents {
+		if delivered[documentKey(doc)] && !state.Sent[documentKey(doc)] {
+			docs = append(docs, doc)
+		}
+	}
+	for _, item := range m.handoff {
+		doc := item.doc
 		if delivered[documentKey(doc)] && !state.Sent[documentKey(doc)] {
 			docs = append(docs, doc)
 		}

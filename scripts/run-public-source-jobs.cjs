@@ -170,7 +170,28 @@ function prepare(target, job, root, output, previous) {
       maxBuffer: 1024 * 1024,
     },
   );
-  if (result.error || result.status !== 0) throw Error('prepare failed');
+  if (result.error || result.status !== 0) {
+    const pattern =
+      /^候補準備失敗: (公開前検査に失敗|置換元がありません|指定パスが通常ファイルではありません|runnerの固定SHA-256が一致しません): ([A-Za-z0-9._/-]{1,200})$/;
+    const matches = (result.stderr || '')
+      .split('\n')
+      .map((line) => pattern.exec(line))
+      .filter(Boolean)
+      .filter(
+        (m) =>
+          !m[2].startsWith('/') &&
+          !m[2].includes('..') &&
+          m[2]
+            .split('/')
+            .every(
+              (part) => part && part !== '.' && part.toLowerCase() !== '.git',
+            ),
+      );
+    const error = Error('prepare failed');
+    if (matches.length === 1)
+      error.safeReason = matches[0][1] + ': ' + matches[0][2];
+    throw error;
+  }
   const evidence = JSON.parse(result.stdout);
   if (
     evidence.target !== target ||
@@ -294,8 +315,12 @@ function main(args) {
               ': ' +
               prepare(target, jobs[target], root, args[4], args[6]),
           );
-        } catch {
-          console.log(target + ': 失敗');
+        } catch (error) {
+          console.log(
+            target +
+              ': 失敗' +
+              (error.safeReason ? '（' + error.safeReason + '）' : ''),
+          );
           failed = true;
         }
       }

@@ -1,5 +1,6 @@
 #!/bin/sh
-# Run as the SSH account. Stdin contains the repository name and a registration token.
+# Run as the SSH account. Stdin contains the repository name, a registration token,
+# and optionally `reregister` to move an existing runner to a recreated repository of the same name.
 set +x
 set -eu
 umask 077
@@ -30,6 +31,13 @@ esac
 IFS= read -r registration || fail 'GitHubの登録トークンがありません。'
 case "$registration" in
   ''|*[!A-Za-z0-9_-]*) fail 'GitHubの登録トークンの形式が不正です。' ;;
+esac
+mode=
+# 末尾に改行が無くても、読めた値は残す。
+IFS= read -r mode || :
+case "$mode" in
+  ''|reregister) ;;
+  *) fail '3行目は空か reregister だけです。' ;;
 esac
 
 version=2.338.2
@@ -96,7 +104,53 @@ fi
 cd "$directory"
 url="https://github.com/mofua-suki/$github_repo"
 runner_url_regex="($url|https://github.com/mofua-suki/$repository)"
-if [ -f .runner ]; then
+if [ "$mode" = reregister ] && [ -f .runner ]; then
+  # 同じ名前で作り直したリポジトリへ付け替える。旧リポジトリ側の登録は GitHub に残す（オフライン表示）。
+  # 旧い資格情報で動くプロセスを残さないよう、止まったことを確かめてから登録し直す。
+  if [ "$platform" = Linux ]; then
+    systemctl --user stop "$unit" || fail '付け替えの前にランナーを止められません。'
+    ! systemctl --user is-active --quiet "$unit" || fail '付け替えの前にランナーが止まりません。'
+  elif [ -f .service ]; then
+    old_plist=$(cat .service); old_label=${old_plist##*/}
+    if launchctl print "$domain/${old_label%.plist}" >/dev/null 2>&1; then
+      launchctl bootout "$domain/${old_label%.plist}" || fail '付け替えの前にランナーを止められません。'
+      # bootout は止まり切る前に戻ることがあるので、外れたことを確かめる。
+      i=0
+      while launchctl print "$domain/${old_label%.plist}" >/dev/null 2>&1; do
+        i=$((i + 1)); [ "$i" -le 20 ] || fail '付け替えの前にランナーが止まりません。'
+        sleep 1
+      done
+    fi
+  fi
+  # 失敗したら旧い登録に戻せるよう、消さずに退避する。
+  # 新しい版のランナーは登録を *_migrated にも持ち、どれかが残ると config.sh が「登録済み」で断る。
+  backup=.reregister-backup
+  rm -rf "$backup"; mkdir "$backup"
+  for f in .runner .runner_migrated .credentials .credentials_migrated .credentials_rsaparams; do
+    [ ! -e "$f" ] || mv "$f" "$backup/"
+  done
+  config_log=.reregister-config.log
+  if ! ./config.sh --unattended --replace --url "$url" --token "$registration" \
+    --name "$machine" --labels "$labels" </dev/null >"$config_log" 2>&1; then
+    # 原因が分かるよう、登録の出力の末尾を表示する（トークンは伏せる）。
+    printf '%s\n' '--- config.sh の出力（末尾）---' >&2
+    tail -n 20 "$config_log" | sed "s/$registration/***/g" >&2 || :
+    rm -f "$config_log"
+    rm -f .runner .runner_migrated .credentials .credentials_migrated .credentials_rsaparams
+    for f in .runner .runner_migrated .credentials .credentials_migrated .credentials_rsaparams; do
+      [ ! -e "$backup/$f" ] || mv "$backup/$f" .
+    done
+    rmdir "$backup"
+    if [ "$platform" = Linux ]; then
+      systemctl --user start "$unit" || :
+    elif [ -f .service ]; then
+      launchctl bootstrap "$domain" "$(cat .service)" || :
+    fi
+    fail 'GitHubランナーの付け替えに失敗したので、旧い登録に戻しました。上の出力で原因を確かめてください。'
+  fi
+  rm -f "$config_log"
+  rm -rf "$backup"
+elif [ -f .runner ]; then
   # GitHubの設定ファイル上の登録先と端末名を照合する。
   grep -Eq '"gitHubUrl":[[:space:]]*"'"$runner_url_regex"'/?".*' .runner &&
     grep -Eq '"agentName":[[:space:]]*"'"$machine"'".*' .runner ||

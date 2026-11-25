@@ -400,6 +400,18 @@ func PlanSplit(d Record) ([]Record, error) {
 		} else {
 			child["context"] = d["context"]
 		}
+		if parentContext := row(d["context"]); parentContext != nil {
+			childContext := clone(row(child["context"]))
+			if childContext == nil {
+				childContext = Record{}
+			}
+			handoff, err := handoffForChild(parentContext["handoff"], index+1)
+			if err != nil {
+				return nil, err
+			}
+			childContext["handoff"] = handoff
+			child["context"] = childContext
+		}
 		if strings.TrimSpace(fleet.Text(p["heavyReason"])) != "" {
 			child["heavyReason"] = strings.TrimSpace(fleet.Text(p["heavyReason"]))
 		}

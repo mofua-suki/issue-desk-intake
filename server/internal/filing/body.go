@@ -290,6 +290,9 @@ func Prepare(ctx context.Context, c BuildConfig, d Record) (Prepared, error) {
 		body += "\n<!-- issue-desk-images-pending -->"
 	}
 	if utfSize(body) > bodyLimit(c.Config) {
+		if targets := handoffTargets(row(d["context"])["handoff"]); targets != "" {
+			return out, fail(400, "起票本文が容量上限を超えています。資料を含む依頼を分けてください: "+targets)
+		}
 		return out, fail(400, "起票本文が上限を超えています。依頼を分けてください。")
 	}
 	labels := []int64{}
@@ -368,6 +371,9 @@ func checkFilingDraft(ctx context.Context, c BuildConfig, d Record) (*completion
 			return nil, "", nil, fail(409, e.Error())
 		}
 	}
+	if e = validateHandoff(c, d, execution); e != nil {
+		return nil, "", nil, e
+	}
 	if utfSize(fleet.Text(d["body"])) > 20000 {
 		return nil, "", nil, fail(400, "依頼本文は20000文字以内で指定してください。")
 	}
@@ -402,6 +408,9 @@ func referenceSections(c BuildConfig, d Record, reference string) []string {
 			evidence = c.ContextEvidence(context)
 		}
 		references = append(references, evidence)
+		if handoff := handoffReferenceSection(context["handoff"]); handoff != "" {
+			references = append(references, handoff)
+		}
 	}
 	return references
 }

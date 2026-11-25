@@ -108,6 +108,9 @@ func (s *Service) finalize(ctx context.Context, d, answer Record, m *materials) 
 			projects[repo] = value
 		}
 	}
+	if answer["ready"] == true && len(m.handoff) > 0 {
+		contextValue["handoff"] = m.handoffRecords()
+	}
 	answer["context"] = contextValue
 	return s.save(ctx, d, Record{"context": contextValue})
 }

@@ -112,6 +112,15 @@ func (m *materials) seed(ctx context.Context) error {
 			return err
 		}
 	}
+	// Bring explicitly named cross-repository ranges into the first consultation
+	// input so the assistant can inspect them before forming a filing plan.
+	m.state.HandoffNotice = ""
+	if _, problem := m.prepareHandoff(ctx, m.draft, Record{"ready": true, "body": m.draft["body"]}); problem != "" {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		m.state.HandoffNotice = "必要資料を取得できません: " + problem + "。"
+	}
 	return m.finishSeed(ctx)
 }
 

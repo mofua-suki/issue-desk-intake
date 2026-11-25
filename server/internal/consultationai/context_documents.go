@@ -97,6 +97,18 @@ func (m *materials) read(ctx context.Context, item ReadRequest) (Document, bool,
 		return doc, false, err
 	}
 	doc.SHA256 = digest(source)
+	// A line request is evidence for its entire inclusive interval.  Do not
+	// record a truncated interval as if the missing end had been read.
+	if item.Mode == "lines" {
+		normalized := strings.ReplaceAll(source, "\r\n", "\n")
+		count := 0
+		if normalized != "" {
+			count = len(strings.Split(strings.TrimSuffix(normalized, "\n"), "\n"))
+		}
+		if item.End > count {
+			return refused("range", len(source))
+		}
+	}
 	if continuation {
 		doc.Text = source
 	} else {

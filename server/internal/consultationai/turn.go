@@ -272,6 +272,14 @@ func (s *Service) Turn(ctx context.Context, original Record) (result Record, err
 			}
 			return nil, &ai.Failure{Kind: "proposal", DeskCode: "TOO_MANY_PROPOSALS", Message: "分割案を上限以内へまとめ直せませんでした。保存済みの相談で理由と元の要件を確認してください。"}
 		}
+		freshHandoff, handoffProblem := m.prepareHandoff(ctx, d, answer)
+		if handoffProblem != "" {
+			controllerQuestion(answer, "必要資料を取得できませんでした。\n"+handoffProblem, handoffProblem)
+		} else if freshHandoff {
+			trigger = "context_read"
+			extra = "実装担当への引継ぎ資料を取得しました。本文と版を確認してください。"
+			continue
+		}
 		executionProblem := s.executionPlanProblem(ctx, d, answer, m)
 		completionProblem := completionPlanProblem(d, answer)
 		if executionProblem != "" || completionProblem != "" {

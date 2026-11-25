@@ -102,7 +102,15 @@ try {
   temp = fs.mkdtempSync(path.join(os.tmpdir(), 'public-prepare-'));
   const reg = path.join(temp, 'registry.json');
   fs.writeFileSync(reg, JSON.stringify({[target]: {...entry.source, sha}}), {mode:0o600});
-  const result = execFileSync('sh', [path.join(script,'build-public-source.sh'), '--target',target,'--registry',reg,'--output',output], {encoding:'utf8', stdio:['ignore','pipe','pipe'], env:{PATH:process.env.PATH || '/usr/bin:/bin', HOME:temp}});
+  let result;
+  try {
+    result = execFileSync('sh', [path.join(script,'build-public-source.sh'), '--target',target,'--registry',reg,'--output',output], {encoding:'utf8', stdio:['ignore','pipe','pipe'], env:{PATH:process.env.PATH || '/usr/bin:/bin', HOME:temp}});
+  } catch (error) {
+    const lines = typeof error.stderr === 'string' ? error.stderr.split('\n') : [];
+    const pattern = /^公開ソース生成失敗: (公開前検査に失敗|置換元がありません|指定パスが通常ファイルではありません|runnerの固定SHA-256が一致しません): ([A-Za-z0-9._/-]{1,200})$/;
+    const matches = lines.map(line => pattern.exec(line)).filter(Boolean).filter(m => !m[2].startsWith('/') && !m[2].includes('..') && m[2].split('/').every(part => part && part !== '.' && part.toLowerCase() !== '.git'));
+    throw Error(matches.length === 1 ? matches[0][1] + ': ' + matches[0][2] : '登録・生成・検査を完了できません');
+  }
   const match = /^tree-sha256: ([a-f0-9]{64})$/m.exec(result);
   if (!match || treeId(output) !== match[1]) throw Error('生成木の照合に失敗');
   const index = path.join(temp,'index');

@@ -983,3 +983,161 @@ test('必須CIと結果記録', () => {
     rmSync(f.root, { recursive: true, force: true });
   }
 });
+
+function failureReasonFixtures(
+  check: (
+    result: ReturnType<typeof spawnSync>,
+    reason: string,
+    secrets: string[],
+  ) => void,
+) {
+  const root = mkdtempSync(join(tmpdir(), 'reason-fixture-'));
+  try {
+    const source = join(root, 'private-source'),
+      destination = join(root, 'private-public'),
+      bin = join(root, 'bin');
+    for (const dir of [source, destination, bin]) mkdirSync(dir);
+    const git = (dir: string, ...args: string[]) =>
+      execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).trim();
+    for (const dir of [source, destination]) {
+      git(dir, 'init', '-q');
+      git(dir, 'config', 'user.name', 'Fixture');
+      git(dir, 'config', 'user.email', 'fixture@example.invalid');
+      writeFileSync(
+        join(dir, 'file.txt'),
+        'content unique-reject-0 unique-from-0\n',
+      );
+      if (dir === source) {
+        mkdirSync(join(dir, 'deploy/nas-host'), { recursive: true });
+        writeFileSync(
+          join(dir, 'deploy/nas-host/install-github-actions-runner.sh'),
+          'runner\n',
+        );
+        writeFileSync(
+          join(dir, 'host-ssh.json'),
+          JSON.stringify({
+            operations: { 'install-github-actions-runner': 'a'.repeat(64) },
+            extra: 'unique-from-3',
+          }),
+        );
+        symlinkSync('file.txt', join(dir, 'link.txt'));
+      }
+      git(dir, 'add', '.');
+      git(dir, 'commit', '-qm', 'fixture');
+    }
+    writeFileSync(join(bin, 'docker'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    const cases = [
+      {
+        paths: ['file.txt'],
+        outputs: { 'file.txt': 'published/rejected.txt' },
+        reject: ['unique-reject-0'],
+        replacements: [
+          { path: 'file.txt', from: 'unique-from-0', to: 'unique-to-0' },
+        ],
+        reason: '公開前検査に失敗: published/rejected.txt',
+      },
+      {
+        paths: ['file.txt'],
+        outputs: { 'file.txt': 'published/replaced.txt' },
+        reject: ['unique-reject-1'],
+        replacements: [
+          { path: 'file.txt', from: 'unique-from-1', to: 'unique-to-1' },
+        ],
+        reason: '置換元がありません: published/replaced.txt',
+      },
+      {
+        paths: ['link.txt'],
+        outputs: { 'link.txt': 'published/link.txt' },
+        reject: ['unique-reject-2'],
+        replacements: [
+          { path: 'link.txt', from: 'unique-from-2', to: 'unique-to-2' },
+        ],
+        reason: '指定パスが通常ファイルではありません: published/link.txt',
+      },
+      {
+        paths: [
+          'host-ssh.json',
+          'deploy/nas-host/install-github-actions-runner.sh',
+        ],
+        outputs: {
+          'deploy/nas-host/install-github-actions-runner.sh':
+            'published/runner.sh',
+        },
+        reject: ['unique-reject-3'],
+        replacements: [
+          { path: 'host-ssh.json', from: 'unique-from-3', to: 'unique-to-3' },
+        ],
+        reason: 'runnerの固定SHA-256が一致しません: published/runner.sh',
+      },
+    ];
+    for (const [index, item] of cases.entries()) {
+      const registry = join(root, 'registry-' + index + '.json'),
+        jobs = join(root, 'jobs-' + index + '.json');
+      const { reason, ...definition } = item;
+      writeFileSync(
+        registry,
+        JSON.stringify({
+          intake: {
+            source: {
+              ...definition,
+              repo: source,
+              ci: 'intake',
+              verify: 'intake',
+              image: 'example@sha256:' + 'a'.repeat(64),
+            },
+            ref: 'HEAD',
+            publicRepo: destination,
+            publicRef: 'HEAD',
+          },
+        }),
+      );
+      writeFileSync(
+        jobs,
+        JSON.stringify({ intake: { entry: 'public-source', registry } }),
+      );
+      const result = spawnSync(
+        'sh',
+        [
+          resolve('scripts/run-public-source-jobs.sh'),
+          '--prepare',
+          '--registry',
+          jobs,
+          '--output',
+          join(root, 'output-' + index),
+        ],
+        {
+          encoding: 'utf8',
+          env: { ...process.env, PATH: bin + ':' + process.env.PATH },
+        },
+      );
+      check(result, reason, [
+        `unique-reject-${index}`,
+        `unique-from-${index}`,
+        `unique-to-${index}`,
+        root,
+        registry,
+        jobs,
+        source,
+        destination,
+        '/tmp/public-prepare-',
+      ]);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test('登録方式の失敗理由: 検査名と相対パス', () => {
+  failureReasonFixtures((result, reason) => {
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, `intake: 失敗（${reason}）\n`);
+  });
+});
+
+test('登録方式の失敗理由: 機密を出さない', () => {
+  failureReasonFixtures((result, _reason, secrets) => {
+    assert.equal(result.status, 1);
+    const output = String(result.stdout) + String(result.stderr);
+    for (const secret of secrets) assert.equal(output.includes(secret), false);
+  });
+});

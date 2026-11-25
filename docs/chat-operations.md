@@ -494,3 +494,14 @@ git ls-files -co --exclude-standard -z | while IFS= read -r -d '' f; do case "$f
 確定の意図は既存draftsのsubmissionRequest（確定元revision・at・送り手owner/kind）とauto_readyに保存する。受理直後に既存Engineが起票を開始し、Quiesce・Shutdownは結果保存を待つ。起票再開の既存周期は1分。再起動後も同じ下書きから再開する。画面（画像付きも含む）とチャットCLIはasync=trueで返信を送り、同じ送信IDをGETして適用完了を待つ。返信の意図は既存actionsのreply-request:<UUID>に、資格情報を含めず保存する。本文のinput・送り手owner/kind・経路via・status・結果を持ち、queuedは起動時と1分周期で再開する。投稿の重複照合には従来の同じ送信IDのactionsを使う。確定した拒否はfailedとして残す。通信断・5xx等はqueuedとerrorを保存し、同じ送信IDで結果を照合して再開する。自動で別IDの返信を作らない。
 
 新しいDBテーブルや既存レコードの移行は不要。古い版へ戻す前に、下書きのauto_ready/submitting/submit_unknownと、返信GETのqueuedが解消したことを確認する。旧版はreply-requestレコードを実行しないため、queuedを残して戻した場合は対応版へ戻して同じ送信IDで再開する。投稿済みか不明な返信を別IDで送り直さない。既存actionsとdraftsを含む通常のDBバックアップ・復元で意図と二重投稿防止記録を一緒に復元する。
+
+## SSHでWorkerのAIの認証状態を読む
+
+`host-ssh.json` の `ai-auth-status` は、接続先のWorkerの容器（`issue-desk-client`）の中で `claude auth status`・`codex login status` を流し、ログインの有無・方式（`claude.ai`・`長期OAuth`・`APIキー`・`不明`）・契約の種類と、保存済みの資格情報の期限（Claude の `expiresAt`・`refreshTokenExpiresAt`、Codex の `last_refresh`）だけを返す。CLIの文面はそのまま返さず、決まった語（`ChatGPTでログイン`・`APIキーでログイン`・`未ログイン`・`失敗(<終了コード>)`・`状態をJSONで読めません` など）に置き換える。トークン・鍵・メールアドレス・組織IDなど資格情報の値は返さない。容器に入れないときの docker の出力は、`worker-logs` と同じ規則に語頭の `sk-`・`api key` を加えて秘匿の行を除いて8KiBまで返す。最後の行は必ず、ほかの固定操作と同じ `verify=<docker の終了コード>` で、操作の終了コードも同じ値にする（時間切れの124でも、入口は接続成功・操作の失敗として報告する）。
+接続先は Docker でWorkerを動かす `gt12-pro`・`a9-max`・`x1-pro1`・`x1-pro2`・`nab-9s` に限る（`operationHosts`）。容器の中でコマンドを流すため `readOnlyOperations` に入れず、許可の付与はPCと操作ごとに利用者の発言で登録する。
+
+```bash
+~/Workspace/issue-desk-intake/deploy/nas-host/host-ssh.sh --host gt12-pro --operation ai-auth-status --reason '<理由>'
+```
+
+`loggedIn=true` でも、更新用の期限（`refreshExpiresAt`）を過ぎていれば次の呼び出しで認証に失敗する。Codex の `last_refresh` は最後に更新した時刻で、期限そのものではない。

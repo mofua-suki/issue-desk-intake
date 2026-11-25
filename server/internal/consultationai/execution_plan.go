@@ -97,6 +97,11 @@ func executionPlanWithMaterialsProblem(answer Record, m *materials) string {
 				continue
 			}
 			for _, input := range r.Inputs {
+				revision := ""
+				if match := handoffReference.FindStringSubmatch(input); match != nil && match[0] == strings.TrimSpace(input) && match[2] != "" {
+					revision = match[2]
+					input = match[1] + ":" + match[3] + ":" + match[4]
+				}
 				target := repo
 				file := executionMultipleRanges.ReplaceAllString(input, "")
 				file = evidenceRangeSuffix.ReplaceAllString(file, "")
@@ -111,6 +116,20 @@ func executionPlanWithMaterialsProblem(answer Record, m *materials) string {
 					if doc.Project == target {
 						docs = append(docs, doc)
 					}
+				}
+				for _, item := range m.handoff {
+					if item.doc.Project == target {
+						docs = append(docs, item.doc)
+					}
+				}
+				if revision != "" {
+					filtered := docs[:0]
+					for _, doc := range docs {
+						if strings.HasPrefix(doc.Version, revision) {
+							filtered = append(filtered, doc)
+						}
+					}
+					docs = filtered
 				}
 				found := executionInputRangesAvailable(input, target, docs, m.state.Delivered)
 				for _, doc := range docs {

@@ -21,6 +21,7 @@ const {createHash} = require('node:crypto');
 const {execFileSync} = require('node:child_process');
 const defaultPolicy = process.argv[2];
 let temp;
+let safeFailure;
 let registered = process.argv.slice(3).includes('--registry');
 try {
   const args = process.argv.slice(3), options = {};
@@ -94,11 +95,16 @@ try {
     if (seen.has(p) || [...seen].some(other => p.startsWith(other + '/') || other.startsWith(p + '/'))) throw Error('出力先が衝突します');
     seen.add(p);
   }
+  const failCheck = (check, outputPath, legacy) => {
+    const confidential = [...definition.reject, ...definition.replacements.flatMap(r => [r.from, r.to])].filter(Boolean);
+    if (!confidential.some(value => outputPath.includes(value)) && /^[A-Za-z0-9._/-]{1,200}$/.test(outputPath) && !outputPath.startsWith('/') && !outputPath.includes('..') && outputPath.split('/').every(part => part && part !== '.' && part.toLowerCase() !== '.git')) safeFailure = check + ': ' + outputPath;
+    throw Error(legacy);
+  };
   for (const {name, dest: outputPath, bundled} of items) {
     const entry = tree.get(name);
     const useBundledLicense = bundled && name === 'LICENSE';
     const useBundledWorkflow = bundled && name === workflow;
-    if (!useBundledLicense && !useBundledWorkflow && (!entry || entry.type !== 'blob' || !['100644', '100755'].includes(entry.mode))) throw Error('指定パスが通常ファイルではありません: ' + name);
+    if (!useBundledLicense && !useBundledWorkflow && (!entry || entry.type !== 'blob' || !['100644', '100755'].includes(entry.mode))) failCheck('指定パスが通常ファイルではありません', outputPath, '指定パスが通常ファイルではありません: ' + name);
     const mode = !useBundledLicense && !useBundledWorkflow && entry.mode === '100755' ? 0o755 : 0o644;
     let data = useBundledLicense
       ? fs.readFileSync(path.join(path.dirname(defaultPolicy), '../deploy/public/LICENSE'))
@@ -108,7 +114,7 @@ try {
     const replacements = bundled ? [] : definition.replacements.filter(r => r.path === name);
     if (replacements.length) {
       let content = new TextDecoder('utf-8', {fatal: true}).decode(data);
-      for (const r of replacements) { if (!content.includes(r.from)) throw Error('置換元がありません: ' + name); content = content.split(r.from).join(r.to); }
+      for (const r of replacements) { if (!content.includes(r.from)) failCheck('置換元がありません', outputPath, '置換元がありません: ' + name); content = content.split(r.from).join(r.to); }
       data = Buffer.from(content);
     }
     const content = data.toString('utf8');
@@ -119,7 +125,7 @@ try {
       /\bgithub_pat_[A-Za-z0-9_]{20,}\b/,
       /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/,
     ];
-    if (knownSecrets.some(pattern => pattern.test(content)) || definition.reject.some(s => data.includes(Buffer.from(s)))) throw Error('公開前検査に失敗: ' + name);
+    if (knownSecrets.some(pattern => pattern.test(content)) || definition.reject.some(s => data.includes(Buffer.from(s)))) failCheck('公開前検査に失敗', outputPath, '公開前検査に失敗: ' + name);
     const dest = path.join(temp, outputPath);
     fs.mkdirSync(path.dirname(dest), {recursive: true});
     fs.writeFileSync(dest, data, {mode, flag: 'wx'});
@@ -134,7 +140,7 @@ try {
     catch { /* Report the same actionable error for malformed definitions. */ }
     const hashes = typeof operation === 'string' ? [...operation.matchAll(/(?<![0-9a-fA-F])[0-9a-fA-F]{64}(?![0-9a-fA-F])/g)].map(m => m[0]) : [];
     const actual = createHash('sha256').update(fs.readFileSync(path.join(temp, outputName(runnerFile)))).digest('hex');
-    if (hashes.length !== 1 || hashes[0] !== actual) throw Error(operationName + ': ' + operationFile + ' と ' + runnerFile + ' の固定 SHA-256 が一意でないか一致しません');
+    if (hashes.length !== 1 || hashes[0] !== actual) failCheck('runnerの固定SHA-256が一致しません', outputName(runnerFile), operationName + ': ' + operationFile + ' と ' + runnerFile + ' の固定 SHA-256 が一意でないか一致しません');
   }
   fs.chmodSync(temp, 0o755);
   let treeHash;
@@ -156,7 +162,7 @@ try {
     console.log('公開前検査: 成功 (' + outputPaths.length + ' files, ' + commit + ')');
   }
 } catch (error) {
-  console.error('公開ソース生成失敗: ' + (registered ? '登録・生成・検査を完了できません' : error.message));
+  console.error('公開ソース生成失敗: ' + (registered ? (safeFailure || '登録・生成・検査を完了できません') : error.message));
   process.exitCode = 1;
 } finally {
   if (temp) fs.rmSync(temp, {recursive: true, force: true});

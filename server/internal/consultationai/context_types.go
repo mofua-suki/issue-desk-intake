@@ -60,6 +60,7 @@ type contextState struct {
 	Pending                    []ReadRequest            `json:"pending"`
 	Remaining                  int                      `json:"pendingRemaining"`
 	Notice                     string                   `json:"notice,omitempty"`
+	HandoffNotice              string                   `json:"handoffNotice,omitempty"`
 	// Delivered は、この相談で受付AIへ本文を配信した資料の鍵（documentKey）。会話の破棄（圧縮）やプロンプトからの本文の除外のあとも残る。
 	Delivered map[string]bool `json:"delivered,omitempty"`
 }

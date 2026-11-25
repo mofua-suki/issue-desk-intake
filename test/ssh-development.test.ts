@@ -239,7 +239,12 @@ test('呼出元は依頼と照合済み成果物を保存し、一時bundleと�
     fs.writeFileSync(path.join(source, 'README.md'), 'fixture');
     git('add', '.');
     git('commit', '-m', 'base');
-    git('remote', 'add', 'origin', 'gitea-nas:mofua-suki/issue-desk-worker.git');
+    git(
+      'remote',
+      'add',
+      'origin',
+      'gitea-nas:mofua-suki/issue-desk-worker.git',
+    );
     fs.writeFileSync(
       path.join(bin, 'sh'),
       `#!${process.execPath}

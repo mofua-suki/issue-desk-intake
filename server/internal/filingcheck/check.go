@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"issue-desk-intake/server/internal/consultationai"
 	"issue-desk-intake/server/internal/contract"
 	"issue-desk-intake/server/internal/fleet"
 	"issue-desk-intake/server/internal/usage"
@@ -32,6 +33,20 @@ func (s *Service) Check(ctx context.Context, original Record, triggers ...string
 		return err
 	}
 	material = clone(material)
+	if consultationai.HasFilingReferences(d) {
+		config, err := s.options.Config(ctx)
+		if err != nil {
+			return err
+		}
+		docs, problem, err := consultationai.FilingMaterials(ctx, s.options.Gitea, config, d)
+		if err != nil {
+			return err
+		}
+		if problem != "" {
+			return fail("必要資料を取得できません: " + problem)
+		}
+		material["namedMaterials"] = docs
+	}
 	snapshot := fingerprint(material)
 	if hold := obj(d["filingCheckHold"]); hold != nil && trigger == "automatic_recovery" && hold["fingerprint"] == snapshot {
 		return fail("起票前の確認を停止中です: " + fleet.Text(hold["reason"]) + "。必要な資料を相談へ追加し再送してください。")
